@@ -47,8 +47,9 @@ With `DEMO_MODE=true`, the app becomes a public demo:
   site) and LLM calls per guest and per day (`DEMO_*` variables);
 - an hourly job removes guests older than 24 hours with their work, and when the
   current month has no published schedule it empties the data and imports the seed
-  again with **rolling demo months** (the current month and the next two) and a
-  freshly generated reference schedule containing deliberate mistakes;
+  again with **rolling demo months** (the current month and the next two), each
+  with a freshly generated published schedule; the current month contains the
+  deliberate mistakes;
 - only `ADMIN_EMAIL` addresses can register (for the site owner).
 
 ## Development

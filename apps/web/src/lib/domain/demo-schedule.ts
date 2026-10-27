@@ -56,6 +56,15 @@ export interface DemoSchedule {
 export function generateDemoSchedule(
   plan: SeedPlan,
   target: { year: number; month: number } = plan.demoMonths[0],
+  /** false = a clean schedule (the later demo months). */
+  {
+    withMistakes = true,
+    previous,
+  }: {
+    withMistakes?: boolean;
+    /** The previous month, so rest and weekly limits hold across the boundary. */
+    previous?: DemoSchedule;
+  } = {},
 ): DemoSchedule {
   const base = seedPlanToScheduleInput(plan, target);
   const dates = monthDates(target.year, target.month);
@@ -87,6 +96,23 @@ export function generateDemoSchedule(
     setCell(a.employeeId, a.date, a);
     if (a.isLocked || a.dayCode !== REST_DAY)
       locked.add(key(a.employeeId, a.date));
+  }
+  // Last week of the previous month: fixed context for rest, weekly counts and
+  // the validator (dates before the month are read as the previous-month tail).
+  if (previous) {
+    const days = monthDates(previous.year, previous.month);
+    for (const [section, rows] of Object.entries(previous.grids)) {
+      for (const [name, codes] of Object.entries(rows)) {
+        codes.forEach((value, i) => {
+          if (i < days.length - 7) return;
+          const shift = base.shiftTypes.find(
+            (t) => t.sectionId === section && t.code === value,
+          );
+          setCell(name, days[i], shift ? work(shift.id) : code(value));
+          locked.add(key(name, days[i]));
+        });
+      }
+    }
   }
 
   function input(): ScheduleInput {
@@ -388,6 +414,7 @@ export function generateDemoSchedule(
   };
   // Each mistake is best effort: a month without a matching day simply skips it.
   const attempt = (fn: () => void) => {
+    if (!withMistakes) return;
     try {
       fn();
     } catch {
