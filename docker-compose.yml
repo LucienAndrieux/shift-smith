@@ -1,0 +1,32 @@
+# Local development: Postgres and the OR-Tools solver. The app runs on the host
+# with `pnpm dev`. After changing services/solver: `docker compose up -d --build`.
+name: shift-smith-dev
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: planner
+      POSTGRES_PASSWORD: planner
+      POSTGRES_DB: planner
+      TZ: ${APP_TIMEZONE:-Europe/Paris}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # Postgres 18 images keep their data under /var/lib/postgresql/<major>/docker.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U planner -d planner"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  solver:
+    build: ./services/solver
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+
+volumes:
+  pgdata:

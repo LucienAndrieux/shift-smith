@@ -1,0 +1,25 @@
+{
+  "name": "shift-smith",
+  "private": true,
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "check": "pnpm --filter web check",
+    "test": "pnpm --filter web test",
+    "lint": "pnpm --filter web lint",
+    "format": "pnpm --filter web format",
+    "typecheck": "pnpm --filter web typecheck",
+    "db:generate": "pnpm --filter web db:generate",
+    "db:reset": "pnpm --filter web db:reset",
+    "db:migrate": "pnpm --filter web db:migrate",
+    "db:seed": "pnpm --filter web db:seed",
+    "db:generate-demo": "pnpm --filter web db:generate-demo",
+    "db:studio": "pnpm --filter web db:studio",
+    "db:export-schedule": "pnpm --filter web db:export-schedule",
+    "db:import-schedule": "pnpm --filter web db:import-schedule"
+  }
+}

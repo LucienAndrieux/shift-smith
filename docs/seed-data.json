@@ -1,0 +1,2190 @@
+{
+  "_meta": {
+    "hotel": "Demo Alpine Lodge (fictional mountain hotel)",
+    "location": "Valbrume, French Alps (fictional village)",
+    "timezone": "Europe/Paris",
+    "country": "FR",
+    "demo_months": [
+      "2026-11",
+      "2026-12",
+      "2027-01"
+    ],
+    "notes": [
+      "Every person, hotel, place and date in this file is fictional.",
+      "Paid minutes of a shift = sum over periods of (end - start - unpaid_break_minutes). Gaps between periods are unpaid.",
+      "end '24:00' means midnight at the end of the day. The night shift D runs 00:00-07:30 on the day it is assigned.",
+      "Public holidays are generated for _meta.country; the reference schedule is written by scripts/generate-demo-schedule.ts."
+    ]
+  },
+  "day_codes": [
+    {
+      "code": "OF",
+      "label": "Day off (weekly rest)",
+      "kind": "rest",
+      "is_due_day": false,
+      "credits_time": false
+    },
+    {
+      "code": "PH",
+      "label": "Public holiday",
+      "kind": "absence",
+      "is_due_day": true,
+      "credits_time": true
+    },
+    {
+      "code": "AL",
+      "label": "Annual leave",
+      "kind": "absence",
+      "is_due_day": true,
+      "credits_time": true
+    },
+    {
+      "code": "SL",
+      "label": "Sick leave",
+      "kind": "absence",
+      "is_due_day": true,
+      "credits_time": true
+    },
+    {
+      "code": "BD",
+      "label": "Birthday leave",
+      "kind": "absence",
+      "is_due_day": true,
+      "credits_time": true
+    },
+    {
+      "code": "TL",
+      "label": "Time off in lieu",
+      "kind": "absence",
+      "is_due_day": true,
+      "credits_time": false
+    },
+    {
+      "code": "TR",
+      "label": "Training",
+      "kind": "absence",
+      "is_due_day": true,
+      "credits_time": true
+    },
+    {
+      "code": "OL",
+      "label": "Other paid leave",
+      "kind": "absence",
+      "is_due_day": true,
+      "credits_time": true
+    },
+    {
+      "code": "UL",
+      "label": "Unpaid leave",
+      "kind": "absence",
+      "is_due_day": false,
+      "credits_time": false
+    }
+  ],
+  "sections": [
+    {
+      "code": "reception",
+      "name": "Reception",
+      "coverage": "24/7",
+      "note": "Reception shifts are 8h paid (no break away from the desk) against a 37.5h contract; the extra time is returned as one TL day per month. The night auditor's D shift is 7.5h.",
+      "shift_types": [
+        {
+          "code": "A",
+          "periods": [
+            {
+              "start": "07:30",
+              "end": "12:00"
+            },
+            {
+              "start": "13:00",
+              "end": "16:30"
+            }
+          ]
+        },
+        {
+          "code": "B",
+          "periods": [
+            {
+              "start": "15:30",
+              "end": "18:15"
+            },
+            {
+              "start": "18:45",
+              "end": "24:00"
+            }
+          ]
+        },
+        {
+          "code": "C",
+          "periods": [
+            {
+              "start": "11:15",
+              "end": "14:15"
+            },
+            {
+              "start": "14:45",
+              "end": "19:45"
+            }
+          ]
+        },
+        {
+          "code": "D",
+          "periods": [
+            {
+              "start": "00:00",
+              "end": "07:30"
+            }
+          ],
+          "note": "Night audit"
+        },
+        {
+          "code": "E",
+          "periods": [
+            {
+              "start": "09:30",
+              "end": "13:45"
+            },
+            {
+              "start": "14:45",
+              "end": "18:30"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "housekeeping",
+      "name": "Housekeeping",
+      "coverage": "day",
+      "note": "Standard week = 5 x 7.5h. C is the short shift of the reduced contract.",
+      "shift_types": [
+        {
+          "code": "A",
+          "periods": [
+            {
+              "start": "08:15",
+              "end": "12:45"
+            },
+            {
+              "start": "13:45",
+              "end": "16:45"
+            }
+          ]
+        },
+        {
+          "code": "B",
+          "periods": [
+            {
+              "start": "08:45",
+              "end": "13:15"
+            },
+            {
+              "start": "14:15",
+              "end": "17:15"
+            }
+          ]
+        },
+        {
+          "code": "C",
+          "periods": [
+            {
+              "start": "08:15",
+              "end": "14:15"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "restaurant",
+      "name": "Restaurant & Bar",
+      "coverage": "07:00-24:00",
+      "note": "Split shifts around breakfast, lunch and dinner service.",
+      "shift_types": [
+        {
+          "code": "A",
+          "periods": [
+            {
+              "start": "07:00",
+              "end": "10:30"
+            },
+            {
+              "start": "12:30",
+              "end": "14:45"
+            },
+            {
+              "start": "19:15",
+              "end": "21:30"
+            }
+          ]
+        },
+        {
+          "code": "B",
+          "periods": [
+            {
+              "start": "09:15",
+              "end": "11:45"
+            },
+            {
+              "start": "12:15",
+              "end": "15:15"
+            },
+            {
+              "start": "20:15",
+              "end": "22:15"
+            }
+          ]
+        },
+        {
+          "code": "C",
+          "periods": [
+            {
+              "start": "11:30",
+              "end": "15:15"
+            },
+            {
+              "start": "18:15",
+              "end": "22:30"
+            }
+          ]
+        },
+        {
+          "code": "D",
+          "periods": [
+            {
+              "start": "15:15",
+              "end": "19:45"
+            },
+            {
+              "start": "20:15",
+              "end": "23:45"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "kitchen",
+      "name": "Kitchen",
+      "coverage": "07:30-21:30",
+      "shift_types": [
+        {
+          "code": "A",
+          "periods": [
+            {
+              "start": "09:45",
+              "end": "14:45"
+            },
+            {
+              "start": "18:30",
+              "end": "21:30"
+            }
+          ]
+        },
+        {
+          "code": "B",
+          "periods": [
+            {
+              "start": "08:30",
+              "end": "12:30"
+            },
+            {
+              "start": "13:00",
+              "end": "17:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "storeroom",
+      "name": "Storeroom",
+      "coverage": "08:30-18:30",
+      "shift_types": [
+        {
+          "code": "A",
+          "periods": [
+            {
+              "start": "08:30",
+              "end": "12:30"
+            },
+            {
+              "start": "13:15",
+              "end": "16:45"
+            }
+          ]
+        },
+        {
+          "code": "B",
+          "periods": [
+            {
+              "start": "10:00",
+              "end": "13:00"
+            },
+            {
+              "start": "14:00",
+              "end": "18:30"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "maintenance",
+      "name": "Maintenance",
+      "coverage": "day",
+      "shift_types": [
+        {
+          "code": "A",
+          "periods": [
+            {
+              "start": "07:45",
+              "end": "12:00"
+            },
+            {
+              "start": "13:15",
+              "end": "16:30"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "global_rules": [
+    {
+      "code": "weekly_contract_hours_default",
+      "value": 37.5,
+      "hard": true
+    },
+    {
+      "code": "max_consecutive_work_days",
+      "value": 6,
+      "hard": true
+    },
+    {
+      "code": "min_rest_between_shifts_hours",
+      "value": 11,
+      "hard": true
+    },
+    {
+      "code": "weekend_off_per_month",
+      "value": 1,
+      "hard": true,
+      "applies_to": "employees with requires_monthly_weekend_off = true",
+      "definition": "Saturday + Sunday of the same weekend both off"
+    },
+    {
+      "code": "birthday_off",
+      "value": true,
+      "hard": true,
+      "code_used": "BD"
+    },
+    {
+      "code": "two_rest_days_per_week",
+      "value": true,
+      "hard": true,
+      "note": "Normally the employee's fixed rest days, coded OF"
+    },
+    {
+      "code": "approved_leave_is_fixed",
+      "value": true,
+      "hard": true
+    }
+  ],
+  "employees": [
+    {
+      "name": "Amara Okafor",
+      "full_name": "Amara Chidinma Okafor",
+      "employee_number": "EMP-0412",
+      "section": "reception",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "mon",
+        "tue"
+      ],
+      "monthly_tl_days": 0,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "D",
+          "preferred": true
+        }
+      ],
+      "role_note": "Night auditor",
+      "birthday": "03-22"
+    },
+    {
+      "name": "Henrik Lindqvist",
+      "full_name": "Henrik Olof Lindqvist",
+      "employee_number": "EMP-0957",
+      "section": "reception",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "thu",
+        "fri"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "E",
+          "preferred": true
+        },
+        {
+          "code": "A",
+          "max_per_week": 2,
+          "note": "Covers the 07:30 start at most twice a week"
+        }
+      ],
+      "birthday": "07-08"
+    },
+    {
+      "name": "Yuki Tanaka",
+      "full_name": "Yuki Tanaka",
+      "employee_number": "EMP-1180",
+      "section": "reception",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "wed",
+        "thu"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": true,
+      "allowed_shifts": [
+        {
+          "code": "A",
+          "preferred": true
+        },
+        {
+          "code": "C"
+        },
+        {
+          "code": "E"
+        }
+      ],
+      "birthday": "11-14"
+    },
+    {
+      "name": "Rafael Moreno",
+      "full_name": "Rafael Ignacio Moreno",
+      "employee_number": "EMP-0733",
+      "section": "reception",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "sat",
+        "sun"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        },
+        {
+          "code": "C"
+        },
+        {
+          "code": "D"
+        },
+        {
+          "code": "E"
+        }
+      ],
+      "role_note": "Covers the night shift when the night auditor is off",
+      "birthday": "02-27"
+    },
+    {
+      "name": "Leila Haddad",
+      "full_name": "Leila Haddad",
+      "employee_number": "EMP-1046",
+      "section": "reception",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "sun",
+        "mon"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": true,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        },
+        {
+          "code": "C"
+        },
+        {
+          "code": "D"
+        },
+        {
+          "code": "E"
+        }
+      ],
+      "birthday": "09-03"
+    },
+    {
+      "name": "Tomasz Nowak",
+      "full_name": "Tomasz Piotr Nowak",
+      "employee_number": "EMP-0868",
+      "section": "reception",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "tue",
+        "wed"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "B",
+          "preferred": true
+        }
+      ],
+      "birthday": "05-16"
+    },
+    {
+      "name": "Chloé Bernard",
+      "full_name": "Chloé Bernard",
+      "employee_number": "EMP-1294",
+      "section": "reception",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "fri",
+        "sat"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": true,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        },
+        {
+          "code": "C",
+          "rare": true
+        },
+        {
+          "code": "E"
+        }
+      ],
+      "birthday": "12-19"
+    },
+    {
+      "name": "Priya Raman",
+      "full_name": "Priya Lakshmi Raman",
+      "employee_number": "EMP-0521",
+      "section": "housekeeping",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "sat",
+        "sun"
+      ],
+      "monthly_tl_days": 0,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        }
+      ],
+      "birthday": "01-19"
+    },
+    {
+      "name": "Fatou Diop",
+      "full_name": "Fatou Diop",
+      "employee_number": "EMP-0689",
+      "section": "housekeeping",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "mon",
+        "tue"
+      ],
+      "monthly_tl_days": 0,
+      "requires_monthly_weekend_off": true,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        }
+      ],
+      "birthday": "06-11"
+    },
+    {
+      "name": "Ingrid Solberg",
+      "full_name": "Ingrid Marie Solberg",
+      "employee_number": "EMP-0915",
+      "section": "housekeeping",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "wed",
+        "thu"
+      ],
+      "monthly_tl_days": 0,
+      "requires_monthly_weekend_off": true,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        }
+      ],
+      "birthday": "04-02"
+    },
+    {
+      "name": "Mateo Ricci",
+      "full_name": "Mateo Ricci",
+      "employee_number": "EMP-1107",
+      "section": "housekeeping",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "thu",
+        "fri"
+      ],
+      "monthly_tl_days": 0,
+      "requires_monthly_weekend_off": true,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        }
+      ],
+      "birthday": "08-24"
+    },
+    {
+      "name": "Olga Petrenko",
+      "full_name": "Olga Petrenko",
+      "employee_number": "EMP-0376",
+      "section": "housekeeping",
+      "weekly_hours": 30,
+      "fixed_days_off": [
+        "sun",
+        "mon"
+      ],
+      "monthly_tl_days": 0,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "C",
+          "preferred": true
+        }
+      ],
+      "reduced_schedule": true,
+      "birthday": "10-28",
+      "note": "Reduced-hours contract: 5 x 6h."
+    },
+    {
+      "name": "Siobhan Kelly",
+      "full_name": "Siobhan Kelly",
+      "employee_number": "EMP-1233",
+      "section": "housekeeping",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "tue",
+        "wed"
+      ],
+      "monthly_tl_days": 0,
+      "requires_monthly_weekend_off": true,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        }
+      ],
+      "birthday": "03-05"
+    },
+    {
+      "name": "Nadia Belkacem",
+      "full_name": "Nadia Belkacem",
+      "employee_number": "EMP-0994",
+      "section": "housekeeping",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "fri",
+        "sat"
+      ],
+      "monthly_tl_days": 0,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        }
+      ],
+      "birthday": "05-30"
+    },
+    {
+      "name": "Kwame Mensah",
+      "full_name": "Kwame Kofi Mensah",
+      "employee_number": "EMP-0647",
+      "section": "restaurant",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "mon",
+        "tue"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": true,
+      "allowed_shifts": [
+        {
+          "code": "A",
+          "preferred": true
+        },
+        {
+          "code": "B"
+        },
+        {
+          "code": "C"
+        },
+        {
+          "code": "D"
+        }
+      ],
+      "birthday": "11-27"
+    },
+    {
+      "name": "Elena Kovacs",
+      "full_name": "Elena Kovacs",
+      "employee_number": "EMP-1052",
+      "section": "restaurant",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "wed",
+        "thu"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": true,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        },
+        {
+          "code": "C"
+        },
+        {
+          "code": "D"
+        }
+      ],
+      "birthday": "02-09"
+    },
+    {
+      "name": "Arjun Mehta",
+      "full_name": "Arjun Mehta",
+      "employee_number": "EMP-0781",
+      "section": "restaurant",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "sun",
+        "mon"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        },
+        {
+          "code": "C"
+        },
+        {
+          "code": "D"
+        }
+      ],
+      "birthday": "07-21"
+    },
+    {
+      "name": "Zoë Hartmann",
+      "full_name": "Zoë Hartmann",
+      "employee_number": "EMP-1365",
+      "section": "restaurant",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "tue",
+        "wed"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B",
+          "rare": true
+        },
+        {
+          "code": "C"
+        },
+        {
+          "code": "D"
+        }
+      ],
+      "birthday": "09-14"
+    },
+    {
+      "name": "Diego Alvarez",
+      "full_name": "Diego Alvarez",
+      "employee_number": "EMP-0459",
+      "section": "restaurant",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "thu",
+        "fri"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        },
+        {
+          "code": "C"
+        },
+        {
+          "code": "D",
+          "max_per_week": 2,
+          "note": "At most two late shifts a week"
+        }
+      ],
+      "birthday": "06-25"
+    },
+    {
+      "name": "Hamid Rahimi",
+      "full_name": "Hamid Rahimi",
+      "employee_number": "EMP-0563",
+      "section": "kitchen",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "wed",
+        "thu"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B",
+          "per_week": 2,
+          "note": "Opens the kitchen twice a week"
+        }
+      ],
+      "birthday": "12-03"
+    },
+    {
+      "name": "Sakura Ito",
+      "full_name": "Sakura Ito",
+      "employee_number": "EMP-1121",
+      "section": "kitchen",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "sun",
+        "mon"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        }
+      ],
+      "birthday": "04-17"
+    },
+    {
+      "name": "Bruno Lefèvre",
+      "full_name": "Bruno Lefèvre",
+      "employee_number": "EMP-0824",
+      "section": "kitchen",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "fri",
+        "sat"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "A",
+          "preferred": true
+        }
+      ],
+      "birthday": "10-06"
+    },
+    {
+      "name": "Aisha Bello",
+      "full_name": "Aisha Bello",
+      "employee_number": "EMP-0938",
+      "section": "kitchen",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "mon",
+        "tue"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        }
+      ],
+      "birthday": "08-12"
+    },
+    {
+      "name": "Jonas Weber",
+      "full_name": "Jonas Weber",
+      "employee_number": "EMP-1276",
+      "section": "kitchen",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "tue",
+        "wed"
+      ],
+      "monthly_tl_days": 1,
+      "requires_monthly_weekend_off": true,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        }
+      ],
+      "birthday": "01-30"
+    },
+    {
+      "name": "Mei Lin Chen",
+      "full_name": "Mei Lin Chen",
+      "employee_number": "EMP-0705",
+      "section": "storeroom",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "sat",
+        "sun"
+      ],
+      "monthly_tl_days": 0,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "A",
+          "preferred": true
+        },
+        {
+          "code": "B"
+        }
+      ],
+      "birthday": "05-04"
+    },
+    {
+      "name": "Samuel Adeyemi",
+      "full_name": "Samuel Adeyemi",
+      "employee_number": "EMP-1018",
+      "section": "storeroom",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "mon",
+        "tue"
+      ],
+      "monthly_tl_days": 0,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        },
+        {
+          "code": "B"
+        }
+      ],
+      "birthday": "03-29"
+    },
+    {
+      "name": "Viktor Horvath",
+      "full_name": "Viktor Horvath",
+      "employee_number": "EMP-0851",
+      "section": "maintenance",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "wed",
+        "thu"
+      ],
+      "monthly_tl_days": 0,
+      "requires_monthly_weekend_off": true,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        }
+      ],
+      "birthday": "09-21"
+    },
+    {
+      "name": "Noah Fischer",
+      "full_name": "Noah Fischer",
+      "employee_number": "EMP-1339",
+      "section": "maintenance",
+      "weekly_hours": 37.5,
+      "fixed_days_off": [
+        "mon",
+        "tue"
+      ],
+      "monthly_tl_days": 0,
+      "requires_monthly_weekend_off": false,
+      "allowed_shifts": [
+        {
+          "code": "A"
+        }
+      ],
+      "birthday": "06-01"
+    }
+  ],
+  "employee_relations": [
+    {
+      "type": "same_days_off",
+      "a": "Viktor Horvath",
+      "b": "Ingrid Solberg",
+      "reason": "couple"
+    },
+    {
+      "type": "same_days_off",
+      "a": "Arjun Mehta",
+      "b": "Sakura Ito",
+      "reason": "couple"
+    },
+    {
+      "type": "different_weekend_off",
+      "a": "Leila Haddad",
+      "b": "Siobhan Kelly",
+      "reason": "share a car-pool"
+    },
+    {
+      "type": "different_weekend_off",
+      "a": "Chloé Bernard",
+      "b": "Jonas Weber",
+      "reason": "cover each other's weekend duties"
+    }
+  ],
+  "absences": [
+    {
+      "employee": "Nadia Belkacem",
+      "code": "SL",
+      "start": "2026-10-19",
+      "end": "2026-12-13",
+      "end_to_confirm": true
+    },
+    {
+      "employee": "Aisha Bello",
+      "code": "SL",
+      "start": "2026-11-16",
+      "end": "2027-01-10",
+      "end_to_confirm": true
+    },
+    {
+      "employee": "Samuel Adeyemi",
+      "code": "AL",
+      "start": "2026-11-04",
+      "end": "2026-11-06"
+    },
+    {
+      "employee": "Henrik Lindqvist",
+      "code": "AL",
+      "start": "2026-11-09",
+      "end": "2026-11-15"
+    },
+    {
+      "employee": "Priya Raman",
+      "code": "AL",
+      "start": "2026-11-18",
+      "end": "2026-11-20"
+    },
+    {
+      "employee": "Mateo Ricci",
+      "code": "AL",
+      "start": "2026-11-23",
+      "end": "2026-11-29"
+    },
+    {
+      "employee": "Leila Haddad",
+      "code": "TR",
+      "start": "2026-11-25",
+      "end": "2026-11-25",
+      "note": "First-aid refresher"
+    },
+    {
+      "employee": "Tomasz Nowak",
+      "code": "OL",
+      "start": "2026-12-04",
+      "end": "2026-12-04",
+      "note": "Moving house"
+    },
+    {
+      "employee": "Bruno Lefèvre",
+      "code": "AL",
+      "start": "2026-12-08",
+      "end": "2026-12-12"
+    },
+    {
+      "employee": "Elena Kovacs",
+      "code": "AL",
+      "start": "2026-12-14",
+      "end": "2026-12-20"
+    },
+    {
+      "employee": "Rafael Moreno",
+      "code": "AL",
+      "start": "2026-12-22",
+      "end": "2026-12-28"
+    },
+    {
+      "employee": "Fatou Diop",
+      "code": "AL",
+      "start": "2026-12-30",
+      "end": "2027-01-06"
+    },
+    {
+      "employee": "Zoë Hartmann",
+      "code": "AL",
+      "start": "2027-01-11",
+      "end": "2027-01-17"
+    },
+    {
+      "employee": "Noah Fischer",
+      "code": "AL",
+      "start": "2027-01-18",
+      "end": "2027-01-22"
+    },
+    {
+      "employee": "Diego Alvarez",
+      "code": "UL",
+      "start": "2027-01-25",
+      "end": "2027-01-26"
+    }
+  ],
+  "opening_balances": [
+    {
+      "employee": "Henrik Lindqvist",
+      "minutes": 240,
+      "note": "Overtime carried over from October"
+    },
+    {
+      "employee": "Yuki Tanaka",
+      "minutes": -120,
+      "note": "Left early twice in October"
+    },
+    {
+      "employee": "Kwame Mensah",
+      "minutes": 480,
+      "note": "Covered a colleague's shift in October"
+    },
+    {
+      "employee": "Olga Petrenko",
+      "minutes": 60
+    },
+    {
+      "employee": "Mei Lin Chen",
+      "minutes": -90
+    },
+    {
+      "employee": "Hamid Rahimi",
+      "minutes": 150
+    }
+  ],
+  "staffing_requirements": {
+    "note": "Minimum headcount per section, shift code and day. Editable per date via overrides.",
+    "rules": [
+      {
+        "section": "reception",
+        "shift": "A",
+        "min": 1,
+        "days": "all",
+        "note": "someone takes over from the night shift at 07:30"
+      },
+      {
+        "section": "reception",
+        "shift": "B",
+        "min": 1,
+        "days": "all"
+      },
+      {
+        "section": "reception",
+        "shift": "D",
+        "min": 1,
+        "days": "all"
+      },
+      {
+        "section": "housekeeping",
+        "shift": "A",
+        "min": 2,
+        "days": "all"
+      },
+      {
+        "section": "restaurant",
+        "shift": "ANY",
+        "min": 2,
+        "days": "all"
+      },
+      {
+        "section": "kitchen",
+        "shift": "A",
+        "min": 2,
+        "days": "all"
+      },
+      {
+        "section": "storeroom",
+        "shift": "ANY",
+        "min": 1,
+        "days": "all"
+      },
+      {
+        "section": "maintenance",
+        "shift": "ANY",
+        "min": 1,
+        "days": "all"
+      }
+    ]
+  },
+  "reference_schedule": {
+    "month": "2026-11",
+    "note": "Generated by scripts/generate-demo-schedule.ts. Deliberate mistakes: Yuki Tanaka works on her birthday (2026-11-14); Leila Haddad works B on 2026-11-04, then A the next morning; Fatou Diop works a rest day (2026-11-10); Ingrid Solberg works while her partner rests (2026-11-19); Restaurant & Bar has a single person on 2026-11-01; Chloé Bernard and Jonas Weber are both off on 2026-11-07; Tomasz Nowak is put on the night shift (2026-11-05).",
+    "grids": {
+      "reception": {
+        "Amara Okafor": [
+          "D",
+          "OF",
+          "OF",
+          "D",
+          "D",
+          "D",
+          "D",
+          "D",
+          "OF",
+          "OF",
+          "D",
+          "D",
+          "D",
+          "D",
+          "D",
+          "OF",
+          "OF",
+          "D",
+          "D",
+          "D",
+          "D",
+          "D",
+          "OF",
+          "OF",
+          "D",
+          "D",
+          "D",
+          "D",
+          "D",
+          "OF"
+        ],
+        "Henrik Lindqvist": [
+          "A",
+          "A",
+          "A",
+          "E",
+          "OF",
+          "OF",
+          "E",
+          "E",
+          "AL",
+          "AL",
+          "AL",
+          "OF",
+          "OF",
+          "AL",
+          "AL",
+          "TL",
+          "A",
+          "E",
+          "OF",
+          "OF",
+          "E",
+          "E",
+          "A",
+          "A",
+          "E",
+          "OF",
+          "OF",
+          "E",
+          "E",
+          "A"
+        ],
+        "Yuki Tanaka": [
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "TL",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "A",
+          "OF",
+          "OF",
+          "A"
+        ],
+        "Rafael Moreno": [
+          "OF",
+          "D",
+          "D",
+          "D",
+          "D",
+          "D",
+          "OF",
+          "OF",
+          "D",
+          "TL",
+          "D",
+          "D",
+          "D",
+          "OF",
+          "OF",
+          "D",
+          "D",
+          "D",
+          "D",
+          "D",
+          "OF",
+          "OF",
+          "D",
+          "D",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "D"
+        ],
+        "Leila Haddad": [
+          "OF",
+          "D",
+          "D",
+          "B",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "OF",
+          "D",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "TL",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "D",
+          "TR",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF"
+        ],
+        "Tomasz Nowak": [
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "D",
+          "B",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "TL",
+          "B",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "B",
+          "B",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "B",
+          "B",
+          "B",
+          "B",
+          "B"
+        ],
+        "Chloé Bernard": [
+          "A",
+          "A",
+          "B",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "E",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "A",
+          "TL",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "E",
+          "E",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "A",
+          "A"
+        ]
+      },
+      "housekeeping": {
+        "Priya Raman": [
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "AL",
+          "AL",
+          "AL",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A"
+        ],
+        "Fatou Diop": [
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF"
+        ],
+        "Ingrid Solberg": [
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "B",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A"
+        ],
+        "Mateo Ricci": [
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "B",
+          "B",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "B",
+          "B",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "B",
+          "B",
+          "AL",
+          "AL",
+          "AL",
+          "OF",
+          "OF",
+          "AL",
+          "AL",
+          "A"
+        ],
+        "Olga Petrenko": [
+          "OF",
+          "OF",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "OF",
+          "OF",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "OF",
+          "OF",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "OF",
+          "OF",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "OF",
+          "OF"
+        ],
+        "Siobhan Kelly": [
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "B",
+          "B",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "B"
+        ],
+        "Nadia Belkacem": [
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL"
+        ]
+      },
+      "restaurant": {
+        "Kwame Mensah": [
+          "A",
+          "C",
+          "OF",
+          "A",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "OF",
+          "OF",
+          "TL",
+          "B",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "A",
+          "B",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "A",
+          "B",
+          "BD",
+          "A",
+          "C",
+          "OF"
+        ],
+        "Elena Kovacs": [
+          "OF",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "A",
+          "OF",
+          "OF",
+          "C",
+          "TL",
+          "OF",
+          "OF",
+          "A",
+          "B",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "A",
+          "C",
+          "C",
+          "C",
+          "C",
+          "OF",
+          "OF",
+          "A",
+          "B",
+          "B",
+          "B"
+        ],
+        "Arjun Mehta": [
+          "OF",
+          "OF",
+          "A",
+          "B",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "A",
+          "B",
+          "TL",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "A",
+          "B",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "A",
+          "B",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF"
+        ],
+        "Zoë Hartmann": [
+          "OF",
+          "C",
+          "OF",
+          "OF",
+          "A",
+          "D",
+          "D",
+          "D",
+          "D",
+          "OF",
+          "OF",
+          "A",
+          "TL",
+          "C",
+          "C",
+          "C",
+          "OF",
+          "OF",
+          "A",
+          "D",
+          "D",
+          "D",
+          "D",
+          "OF",
+          "OF",
+          "A",
+          "C",
+          "C",
+          "C",
+          "C"
+        ],
+        "Diego Alvarez": [
+          "OF",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "A",
+          "C",
+          "C",
+          "C",
+          "C",
+          "OF",
+          "OF",
+          "TL",
+          "B",
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "A",
+          "C",
+          "C",
+          "C",
+          "C",
+          "OF",
+          "OF",
+          "A",
+          "B",
+          "B"
+        ]
+      },
+      "kitchen": {
+        "Hamid Rahimi": [
+          "B",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "TL",
+          "OF",
+          "OF",
+          "B",
+          "B",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "B",
+          "B",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "B",
+          "B",
+          "A",
+          "A"
+        ],
+        "Sakura Ito": [
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "TL",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF"
+        ],
+        "Bruno Lefèvre": [
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "TL",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A"
+        ],
+        "Aisha Bello": [
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "TL",
+          "A",
+          "A",
+          "A",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL",
+          "SL"
+        ],
+        "Jonas Weber": [
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "B",
+          "B",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "OF",
+          "TL",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A"
+        ]
+      },
+      "storeroom": {
+        "Mei Lin Chen": [
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A"
+        ],
+        "Samuel Adeyemi": [
+          "A",
+          "OF",
+          "OF",
+          "AL",
+          "AL",
+          "AL",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF"
+        ]
+      },
+      "maintenance": {
+        "Viktor Horvath": [
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A"
+        ],
+        "Noah Fischer": [
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF",
+          "OF",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "OF"
+        ]
+      }
+    }
+  }
+}

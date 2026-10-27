@@ -1,0 +1,70 @@
+# Production stack. Run from the repository root:
+#   docker compose -f infra/docker-compose.prod.yml --env-file .env up -d --build
+name: shift-smith
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: planner
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: planner
+      TZ: ${APP_TIMEZONE:-Europe/Paris}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    # Not published on the host: only reachable from the other services.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U planner -d planner"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgres://planner:${POSTGRES_PASSWORD}@postgres:5432/planner
+      BETTER_AUTH_URL: https://${APP_DOMAIN:?Set APP_DOMAIN in .env}
+      SOLVER_URL: http://solver:8000
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Paris}
+      TZ: ${APP_TIMEZONE:-Europe/Paris}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      solver:
+        condition: service_started
+    expose:
+      - "3000"
+
+  # OR-Tools CP-SAT solver (FastAPI), reachable only from `web`.
+  solver:
+    build:
+      context: ../services/solver
+    restart: unless-stopped
+    expose:
+      - "8000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

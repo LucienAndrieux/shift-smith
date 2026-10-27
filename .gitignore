@@ -1,0 +1,25 @@
+# Dependencies and build output
+node_modules/
+.next/
+.next-build/
+.next-previous/
+dist-scripts/
+__pycache__/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+
+# Data that must never be committed: database dumps, backups, logs
+/backups/
+/logs/
+*.dump
+*.sql.gz
+*.bak
+*.log
+
+# OS and editor files
+.DS_Store
+Thumbs.db
