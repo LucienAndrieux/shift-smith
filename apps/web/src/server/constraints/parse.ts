@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import OpenAI from "openai";
-import { zodTextFormat } from "openai/helpers/zod";
+import { zodResponseFormat } from "openai/helpers/zod";
 import { db } from "@/db";
 import { naturalLanguageConstraints } from "@/db/schema";
 import { checkParsedConstraint } from "@/lib/constraints/check";
@@ -18,7 +18,8 @@ import {
 const TIMEOUT_MS = 60_000;
 
 /**
- * Parses one stored constraint with OpenAI Structured Outputs and stores the result.
+ * Parses one stored constraint with an LLM (any OpenAI-compatible chat completions
+ * API with JSON-schema structured outputs) and stores the result.
  * Never throws: any failure ends in status `failed` with a readable `parse_error`.
  */
 export async function parseConstraint(constraintId: string): Promise<void> {
@@ -28,39 +29,44 @@ export async function parseConstraint(constraintId: string): Promise<void> {
     .where(eq(naturalLanguageConstraints.id, constraintId));
   if (!row || (row.status !== "pending" && row.status !== "failed")) return;
 
-  const { OPENAI_API_KEY, OPENAI_MODEL } = env();
+  const { LLM_API_KEY, LLM_BASE_URL, LLM_MODEL } = env();
   const fail = (message: string) =>
     db
       .update(naturalLanguageConstraints)
-      .set({ status: "failed", parseError: message, model: OPENAI_MODEL })
+      .set({ status: "failed", parseError: message, model: LLM_MODEL })
       .where(eq(naturalLanguageConstraints.id, constraintId));
 
-  if (!OPENAI_API_KEY) {
-    await fail("OPENAI_API_KEY is not configured.");
+  if (!LLM_API_KEY) {
+    await fail("LLM_API_KEY is not configured.");
     return;
   }
 
   try {
     const context = await buildContext(row.targetYear, row.targetMonth);
     const client = new OpenAI({
-      apiKey: OPENAI_API_KEY,
+      apiKey: LLM_API_KEY,
+      baseURL: LLM_BASE_URL || undefined,
       timeout: TIMEOUT_MS,
       maxRetries: 1,
     });
-    const response = await client.responses.parse({
-      model: OPENAI_MODEL,
-      input: [
+    const response = await client.chat.completions.parse({
+      model: LLM_MODEL,
+      messages: [
         { role: "system", content: context.instructions },
         { role: "user", content: row.rawText },
       ],
-      text: {
-        format: zodTextFormat(parsedConstraintSchema, "constraint_operations"),
-      },
+      response_format: zodResponseFormat(
+        parsedConstraintSchema,
+        "constraint_operations",
+      ),
     });
-    const parsed = response.output_parsed;
+    const message = response.choices[0]?.message;
+    const parsed = message?.parsed;
     if (!parsed) {
       await fail(
-        "The model returned no structured result (possibly a refusal).",
+        message?.refusal
+          ? `The model refused: ${message.refusal}`
+          : "The model returned no structured result.",
       );
       return;
     }
@@ -88,7 +94,7 @@ export async function parseConstraint(constraintId: string): Promise<void> {
       error instanceof OpenAI.APIConnectionTimeoutError
         ? `The model did not answer within ${TIMEOUT_MS / 1000}s.`
         : error instanceof OpenAI.APIError
-          ? `OpenAI error ${error.status ?? ""}: ${error.message}`
+          ? `LLM API error ${error.status ?? ""}: ${error.message}`
           : error instanceof Error
             ? error.message
             : String(error);

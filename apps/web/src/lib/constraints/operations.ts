@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Typed operations extracted from a free-text constraint by the LLM (OpenAI
+ * Typed operations extracted from a free-text constraint by the LLM (structured
  * Structured Outputs). Structured Outputs requires every field to be present, so
  * optional values are `nullable` rather than optional.
  */

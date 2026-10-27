@@ -6,7 +6,7 @@ an hour bank, one-click repairs, full-month generation with OR-Tools,
 natural-language constraints and admin approval of accounts.
 
 **Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 + shadcn/ui ·
-PostgreSQL 18 · Drizzle ORM · Better Auth · pg-boss · OpenAI · Python FastAPI +
+PostgreSQL 18 · Drizzle ORM · Better Auth · pg-boss · any OpenAI-compatible LLM · Python FastAPI +
 OR-Tools CP-SAT · Vitest · Biome · Docker Compose + Caddy.
 
 ```
@@ -41,7 +41,8 @@ cp .env.example .env
 ```
 
 Edit `.env`: set `BETTER_AUTH_SECRET` (`openssl rand -base64 32`), `ADMIN_EMAIL`
-and, to parse natural-language constraints, `OPENAI_API_KEY` / `OPENAI_MODEL`.
+and, to parse natural-language constraints, `LLM_API_KEY` / `LLM_BASE_URL` /
+`LLM_MODEL` (OpenAI, Groq or any OpenAI-compatible API with structured outputs).
 
 ```bash
 docker compose up -d --build
@@ -100,7 +101,7 @@ cp .env.example .env
 
 In `.env`, set at least `APP_DOMAIN` (e.g. `planning.example.com`),
 `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `ADMIN_EMAIL`, the `SMTP_*` values, the
-OpenAI variables, `APP_TIMEZONE` and `HOTEL_NAME`. `DATABASE_URL` and
+`LLM_*` variables, `APP_TIMEZONE` and `HOTEL_NAME`. `DATABASE_URL` and
 `BETTER_AUTH_URL` are derived by the compose file.
 
 ```bash
@@ -161,7 +162,7 @@ docker compose -f infra/docker-compose.prod.yml --env-file .env start web
 - **Generation:** for months after the current one, "Generate" asks the OR-Tools
   solver for a complete schedule (hard rules enforced, staffing and preferences
   optimised) and saves it as a new draft to review and publish.
-- **Constraints:** free text → pg-boss job → OpenAI Structured Outputs → review card →
+- **Constraints:** free text → pg-boss job → LLM with JSON-schema structured outputs → review card →
   admin approval materialises the operations (`source = constraint`).
 - **Printable monthly sheet:** PDF export of a version, per section or for the
   whole hotel.

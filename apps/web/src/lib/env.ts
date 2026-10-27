@@ -18,8 +18,14 @@ const serverEnvSchema = z.object({
   SMTP_USER: z.string().optional().default(""),
   SMTP_PASSWORD: z.string().optional().default(""),
   SMTP_FROM: z.string().default("ShiftSmith <no-reply@localhost>"),
-  OPENAI_API_KEY: z.string().optional().default(""),
-  OPENAI_MODEL: z.string().default("gpt-5-nano"),
+  /** Any OpenAI-compatible chat completions API (OpenAI, Groq, Mistral, Ollama…). */
+  LLM_API_KEY: z.string().optional().default(""),
+  /** Empty = OpenAI. */
+  LLM_BASE_URL: z
+    .union([z.url(), z.literal("")])
+    .optional()
+    .default(""),
+  LLM_MODEL: z.string().default("gpt-5-nano"),
   SOLVER_URL: z.url().default("http://localhost:8000"),
   /** Shown on the printable monthly sheet. */
   HOTEL_NAME: z.string().default("Demo Alpine Lodge"),
