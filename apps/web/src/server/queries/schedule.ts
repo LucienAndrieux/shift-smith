@@ -15,6 +15,8 @@ import {
   loadMonthContext,
   loadPreviousMonthTail,
 } from "@/server/month-context";
+import { canSeeSchedule } from "@/server/schedules";
+import type { CurrentUser } from "@/server/session";
 import { getShiftTypes } from "./reference";
 
 export type ScheduleView = Awaited<ReturnType<typeof getScheduleView>>;
@@ -37,26 +39,23 @@ function pickSchedule<T extends { version: number; status: string }>(
 
 /**
  * Everything the schedule screen needs, as plain serialisable data.
- * With `publishedOnly` (read-only users), drafts and archived versions are never
- * loaded: the month shows its published version or nothing.
+ * Only the versions the user may see are loaded (canSeeSchedule): admins see every
+ * version, demo managers the published one and their own drafts, viewers the
+ * published one or nothing.
  */
 export async function getScheduleView(
   year: number,
   month: number,
   requestedVersion: number | null,
-  { publishedOnly }: { publishedOnly: boolean },
+  { user }: { user: CurrentUser },
 ) {
-  const versions = await db
-    .select()
-    .from(schedules)
-    .where(
-      and(
-        eq(schedules.year, year),
-        eq(schedules.month, month),
-        publishedOnly ? eq(schedules.status, "published") : undefined,
-      ),
-    )
-    .orderBy(asc(schedules.version));
+  const versions = (
+    await db
+      .select()
+      .from(schedules)
+      .where(and(eq(schedules.year, year), eq(schedules.month, month)))
+      .orderBy(asc(schedules.version))
+  ).filter((s) => canSeeSchedule(user, s));
   const schedule = pickSchedule(versions, requestedVersion);
 
   const [
@@ -132,6 +131,7 @@ export async function getScheduleView(
           title: schedule.title,
           notes: schedule.notes,
           closedAt: schedule.closedAt?.toISOString() ?? null,
+          createdBy: schedule.createdBy,
         }
       : null,
     versions: versions.map((v) => ({

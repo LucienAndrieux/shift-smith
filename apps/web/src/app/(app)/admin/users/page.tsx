@@ -1,4 +1,4 @@
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db";
@@ -11,7 +11,12 @@ export const metadata: Metadata = { title: "Users" };
 
 export default async function AdminUsersPage() {
   const me = await requireAdmin();
-  const rows = await db.select().from(user).orderBy(asc(user.createdAt));
+  // Demo guests are temporary and never managed here.
+  const rows = await db
+    .select()
+    .from(user)
+    .where(eq(user.isAnonymous, false))
+    .orderBy(asc(user.createdAt));
   const approverName = new Map(rows.map((u) => [u.id, u.name]));
 
   return (
@@ -26,7 +31,7 @@ export default async function AdminUsersPage() {
           id: u.id,
           name: u.name,
           email: u.email,
-          role: u.role,
+          role: u.role === "admin" ? "admin" : "viewer",
           accessStatus: u.accessStatus,
           createdAt: formatDateTime(u.createdAt),
           approvedAt: u.approvedAt ? formatDateTime(u.approvedAt) : null,

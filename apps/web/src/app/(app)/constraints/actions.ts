@@ -6,14 +6,29 @@ import { naturalLanguageConstraints } from "@/db/schema";
 import { parsedConstraintSchema } from "@/lib/constraints/operations";
 import { constraintFormSchema } from "@/lib/schemas/constraints";
 import { idSchema } from "@/lib/schemas/reference";
-import { ActionError, adminAction } from "@/server/action";
+import { ActionError, plannerAction } from "@/server/action";
 import { audit } from "@/server/audit";
 import { applyOperations } from "@/server/constraints/apply";
+import { applyOperationsToOwnDraft } from "@/server/demo/constraints";
+import { assertLlmAllowed } from "@/server/demo/limits";
 import { enqueueConstraintParse } from "@/server/jobs/boss";
+import type { CurrentUser } from "@/server/session";
 
-export const submitConstraint = adminAction(
+/** Demo managers only handle the constraints they wrote. */
+async function loadOwnConstraint(id: string, user: CurrentUser) {
+  const [row] = await db
+    .select()
+    .from(naturalLanguageConstraints)
+    .where(eq(naturalLanguageConstraints.id, id));
+  if (!row || (user.role !== "admin" && row.createdBy !== user.id))
+    throw new ActionError("Constraint not found.");
+  return row;
+}
+
+export const submitConstraint = plannerAction(
   constraintFormSchema,
   async ({ rawText, target }, user) => {
+    await assertLlmAllowed(user);
     const [targetYear, targetMonth] = target.split("-").map(Number);
     const [row] = await db
       .insert(naturalLanguageConstraints)
@@ -48,7 +63,9 @@ export const submitConstraint = adminAction(
   },
 );
 
-export const retryConstraint = adminAction(idSchema, async ({ id }, user) => {
+export const retryConstraint = plannerAction(idSchema, async ({ id }, user) => {
+  await loadOwnConstraint(id, user);
+  await assertLlmAllowed(user);
   const [row] = await db
     .update(naturalLanguageConstraints)
     .set({ status: "pending", parseError: null })
@@ -64,57 +81,76 @@ export const retryConstraint = adminAction(idSchema, async ({ id }, user) => {
   await enqueueConstraintParse(id);
 });
 
-export const approveConstraint = adminAction(idSchema, async ({ id }, user) => {
-  await db.transaction(async (tx) => {
-    const [row] = await tx
-      .select()
-      .from(naturalLanguageConstraints)
-      .where(eq(naturalLanguageConstraints.id, id))
-      .for("update");
-    if (!row) throw new ActionError("Constraint not found.");
-    if (row.status !== "parsed") {
-      throw new ActionError(
-        "Only successfully parsed constraints can be approved.",
-      );
-    }
-    const parsed = parsedConstraintSchema.parse(row.parsed);
-    const applied = await applyOperations(tx, parsed.operations, {
-      constraintId: id,
-      userId: user.id,
-      rawText: row.rawText,
+export const approveConstraint = plannerAction(
+  idSchema,
+  async ({ id }, user) => {
+    await loadOwnConstraint(id, user);
+    await db.transaction(async (tx) => {
+      const [row] = await tx
+        .select()
+        .from(naturalLanguageConstraints)
+        .where(eq(naturalLanguageConstraints.id, id))
+        .for("update");
+      if (!row) throw new ActionError("Constraint not found.");
+      if (row.status !== "parsed") {
+        throw new ActionError(
+          "Only successfully parsed constraints can be approved.",
+        );
+      }
+      const parsed = parsedConstraintSchema.parse(row.parsed);
+      const applied =
+        user.role === "admin"
+          ? await applyOperations(tx, parsed.operations, {
+              constraintId: id,
+              userId: user.id,
+              rawText: row.rawText,
+            })
+          : await applyOperationsToOwnDraft(tx, parsed.operations, {
+              user,
+              year: row.targetYear,
+              month: row.targetMonth,
+              constraintId: id,
+            });
+      await tx
+        .update(naturalLanguageConstraints)
+        .set({
+          status: "approved",
+          reviewedBy: user.id,
+          reviewedAt: new Date(),
+        })
+        .where(eq(naturalLanguageConstraints.id, id));
+      await audit(tx, {
+        userId: user.id,
+        action: "approve",
+        entity: "natural_language_constraint",
+        entityId: id,
+        diff: { appliedOperations: applied },
+      });
     });
-    await tx
-      .update(naturalLanguageConstraints)
-      .set({ status: "approved", reviewedBy: user.id, reviewedAt: new Date() })
-      .where(eq(naturalLanguageConstraints.id, id));
-    await audit(tx, {
-      userId: user.id,
-      action: "approve",
-      entity: "natural_language_constraint",
-      entityId: id,
-      diff: { appliedOperations: applied },
-    });
-  });
-});
+  },
+);
 
-export const rejectConstraint = adminAction(idSchema, async ({ id }, user) => {
-  const [row] = await db
-    .select()
-    .from(naturalLanguageConstraints)
-    .where(eq(naturalLanguageConstraints.id, id));
-  if (!row) throw new ActionError("Constraint not found.");
-  if (row.status === "approved")
-    throw new ActionError("This constraint was already applied.");
-  await db.transaction(async (tx) => {
-    await tx
-      .update(naturalLanguageConstraints)
-      .set({ status: "rejected", reviewedBy: user.id, reviewedAt: new Date() })
-      .where(eq(naturalLanguageConstraints.id, id));
-    await audit(tx, {
-      userId: user.id,
-      action: "reject",
-      entity: "natural_language_constraint",
-      entityId: id,
+export const rejectConstraint = plannerAction(
+  idSchema,
+  async ({ id }, user) => {
+    const row = await loadOwnConstraint(id, user);
+    if (row.status === "approved")
+      throw new ActionError("This constraint was already applied.");
+    await db.transaction(async (tx) => {
+      await tx
+        .update(naturalLanguageConstraints)
+        .set({
+          status: "rejected",
+          reviewedBy: user.id,
+          reviewedAt: new Date(),
+        })
+        .where(eq(naturalLanguageConstraints.id, id));
+      await audit(tx, {
+        userId: user.id,
+        action: "reject",
+        entity: "natural_language_constraint",
+        entityId: id,
+      });
     });
-  });
-});
+  },
+);

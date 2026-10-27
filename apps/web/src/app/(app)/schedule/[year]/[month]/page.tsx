@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { currentYearMonth } from "@/lib/dates";
 import { formatMonth } from "@/lib/domain/calendar";
 import { getScheduleView } from "@/server/queries/schedule";
-import { requireApprovedUser } from "@/server/session";
+import { canPlan, requireApprovedUser } from "@/server/session";
 import { ScheduleWorkspace } from "./schedule-workspace";
 
 export async function generateMetadata({
@@ -32,18 +32,25 @@ export default async function SchedulePage({
       ? Number(version)
       : null;
 
-  const view = await getScheduleView(year, month, requested, {
-    publishedOnly: user.role !== "admin",
-  });
+  const view = await getScheduleView(year, month, requested, { user });
   await connection();
   const now = currentYearMonth();
-  const isAdmin = user.role === "admin";
+  const planner = canPlan(user);
+  const schedule = view.schedule;
+  const ownDraft =
+    schedule?.status === "draft" && schedule.createdBy === user.id;
   return (
     <ScheduleWorkspace
       view={view}
-      isAdmin={isAdmin}
-      // The solver generates months after the current one only.
-      canGenerate={isAdmin && year * 12 + month > now.year * 12 + now.month}
+      permissions={{
+        canPlan: planner,
+        canPublish: user.role === "admin",
+        canEditCurrent:
+          user.role === "admin" || (user.role === "demo" && ownDraft),
+        // The solver generates months after the current one only.
+        canGenerate: planner && year * 12 + month > now.year * 12 + now.month,
+        isDemo: user.role === "demo",
+      }}
     />
   );
 }

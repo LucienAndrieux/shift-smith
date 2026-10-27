@@ -6,7 +6,7 @@ import { scheduleAssignments } from "@/db/schema";
 import { formatDayMonth } from "@/lib/domain/calendar";
 import { suggestFixes } from "@/lib/domain/repair";
 import { applyFixSchema, suggestFixesSchema } from "@/lib/schemas/schedule";
-import { ActionError, adminAction } from "@/server/action";
+import { ActionError, plannerAction } from "@/server/action";
 import { audit } from "@/server/audit";
 import { loadScheduleInput } from "@/server/month-context";
 import { loadEditableSchedule } from "@/server/schedules";
@@ -27,10 +27,10 @@ export interface FixSuggestionView {
 }
 
 /** Up to five local edits that remove the given error without adding any. */
-export const suggestScheduleFixes = adminAction(
+export const suggestScheduleFixes = plannerAction(
   suggestFixesSchema,
-  async ({ scheduleId, violation }): Promise<FixSuggestionView[]> => {
-    const schedule = await loadEditableSchedule(scheduleId);
+  async ({ scheduleId, violation }, user): Promise<FixSuggestionView[]> => {
+    const schedule = await loadEditableSchedule(scheduleId, user);
     const input = await loadScheduleInput(db, schedule);
     const suggestions = suggestFixes(input, violation);
 
@@ -70,10 +70,10 @@ export const suggestScheduleFixes = adminAction(
 );
 
 /** Applies one suggestion, refusing if any cell changed since it was computed. */
-export const applyScheduleFix = adminAction(
+export const applyScheduleFix = plannerAction(
   applyFixSchema,
   async ({ scheduleId, changes }, user) => {
-    await loadEditableSchedule(scheduleId);
+    await loadEditableSchedule(scheduleId, user);
     await db.transaction(async (tx) => {
       for (const c of changes) {
         const where = and(

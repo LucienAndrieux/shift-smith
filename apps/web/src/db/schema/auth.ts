@@ -15,7 +15,8 @@ import {
  * fields declared as `user.additionalFields` in `src/lib/auth.ts`.
  */
 
-export const userRole = pgEnum("user_role", ["admin", "viewer"]);
+/** `demo`: guest manager of the public demo (edits its own drafts only). */
+export const userRole = pgEnum("user_role", ["admin", "demo", "viewer"]);
 export const accessStatus = pgEnum("access_status", [
   "pending",
   "approved",
@@ -36,13 +37,19 @@ export const user = pgTable(
     approvedBy: uuid().references((): AnyPgColumn => user.id, {
       onDelete: "set null",
     }),
+    /** Guest of the public demo (Better Auth anonymous plugin). */
+    isAnonymous: boolean().notNull().default(false),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true })
       .notNull()
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (t) => [index().on(t.accessStatus), index().on(t.approvedBy)],
+  (t) => [
+    index().on(t.accessStatus),
+    index().on(t.approvedBy),
+    index().on(t.isAnonymous, t.createdAt),
+  ],
 );
 
 export const session = pgTable(

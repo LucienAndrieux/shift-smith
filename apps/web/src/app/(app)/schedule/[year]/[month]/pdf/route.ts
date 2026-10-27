@@ -35,7 +35,7 @@ export async function GET(
     versionParam && /^\d+$/.test(versionParam) ? Number(versionParam) : null;
 
   const view = await getScheduleView(year, month, version, {
-    publishedOnly: user.role !== "admin",
+    user,
   });
   if (!view.schedule) {
     return NextResponse.json(

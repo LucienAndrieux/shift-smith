@@ -20,7 +20,13 @@ import { FieldGroup } from "@/components/ui/field";
 import { authClient } from "@/lib/auth-client";
 import { signInSchema } from "@/lib/schemas/auth";
 
-export function SignInForm() {
+export function SignInForm({
+  title = "Log in",
+  allowRegister = true,
+}: {
+  title?: string;
+  allowRegister?: boolean;
+}) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const form = useForm<z.infer<typeof signInSchema>>({
@@ -42,7 +48,7 @@ export function SignInForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Log in</CardTitle>
+        <CardTitle>{title}</CardTitle>
         <CardDescription>
           Monthly staff schedules for your hotel.
         </CardDescription>
@@ -78,9 +84,11 @@ export function SignInForm() {
             >
               Forgot password?
             </Link>
-            <Button asChild variant="outline">
-              <Link href="/sign-up">Register</Link>
-            </Button>
+            {allowRegister && (
+              <Button asChild variant="outline">
+                <Link href="/sign-up">Register</Link>
+              </Button>
+            )}
           </FieldGroup>
         </form>
       </CardContent>

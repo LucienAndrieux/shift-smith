@@ -1,6 +1,18 @@
 import type { ScheduleView } from "@/server/queries/schedule";
 
 export type View = ScheduleView;
+
+/** What the current user may do on the schedule screen (computed server-side). */
+export interface SchedulePermissions {
+  /** Create, duplicate and generate drafts (admin or demo manager). */
+  canPlan: boolean;
+  canPublish: boolean;
+  /** The displayed version is editable by this user. */
+  canEditCurrent: boolean;
+  canGenerate: boolean;
+  /** Demo manager: works on private drafts only. */
+  isDemo: boolean;
+}
 export type ViewShift = View["shiftTypes"][number];
 export type ViewDayCode = View["dayCodes"][number];
 export type ViewEmployee = View["employees"][number];

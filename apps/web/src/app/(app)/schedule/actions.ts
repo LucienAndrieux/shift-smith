@@ -16,10 +16,11 @@ import {
   scheduleIdSchema,
   setCellSchema,
 } from "@/lib/schemas/schedule";
-import { ActionError, adminAction } from "@/server/action";
+import { ActionError, adminAction, plannerAction } from "@/server/action";
 import { audit } from "@/server/audit";
+import { assertDraftQuota } from "@/server/demo/limits";
 import { loadMonthContext } from "@/server/month-context";
-import { loadEditableSchedule } from "@/server/schedules";
+import { canSeeSchedule, loadEditableSchedule } from "@/server/schedules";
 
 async function nextVersion(year: number, month: number) {
   const [row] = await db
@@ -29,8 +30,8 @@ async function nextVersion(year: number, month: number) {
   return (row?.version ?? 0) + 1;
 }
 
-export const setCell = adminAction(setCellSchema, async (input, user) => {
-  const schedule = await loadEditableSchedule(input.scheduleId);
+export const setCell = plannerAction(setCellSchema, async (input, user) => {
+  const schedule = await loadEditableSchedule(input.scheduleId, user);
   const { shiftTypeId, dayCode } = decodeCellValue(input.value);
   if (
     input.date.slice(0, 7) !==
@@ -114,9 +115,10 @@ export const setCell = adminAction(setCellSchema, async (input, user) => {
   });
 });
 
-export const createDraft = adminAction(
+export const createDraft = plannerAction(
   newDraftSchema,
   async ({ year, month, prefill }, user) => {
+    await assertDraftQuota(user);
     const version = await nextVersion(year, month);
     const cells = prefill
       ? prefillAssignments(await loadMonthContext(db, year, month))
@@ -151,14 +153,16 @@ export const createDraft = adminAction(
   },
 );
 
-export const duplicateSchedule = adminAction(
+export const duplicateSchedule = plannerAction(
   scheduleIdSchema,
   async ({ scheduleId }, user) => {
     const [source] = await db
       .select()
       .from(schedules)
       .where(eq(schedules.id, scheduleId));
-    if (!source) throw new ActionError("Schedule not found.");
+    if (!source || !canSeeSchedule(user, source))
+      throw new ActionError("Schedule not found.");
+    await assertDraftQuota(user);
     const version = await nextVersion(source.year, source.month);
     return db.transaction(async (tx) => {
       const [copy] = await tx
@@ -261,14 +265,15 @@ export const publishSchedule = adminAction(
   },
 );
 
-export const deleteDraft = adminAction(
+export const deleteDraft = plannerAction(
   scheduleIdSchema,
   async ({ scheduleId }, user) => {
     const [schedule] = await db
       .select()
       .from(schedules)
       .where(eq(schedules.id, scheduleId));
-    if (!schedule) throw new ActionError("Schedule not found.");
+    if (!schedule || !canSeeSchedule(user, schedule))
+      throw new ActionError("Schedule not found.");
     if (schedule.status !== "draft")
       throw new ActionError("Only drafts can be deleted.");
     await db.transaction(async (tx) => {

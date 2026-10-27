@@ -1,7 +1,7 @@
 import "server-only";
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { type CurrentUser, requireAdmin } from "./session";
+import { type CurrentUser, requireAdmin, requirePlanner } from "./session";
 
 export type ActionResult<T = undefined> =
   | { ok: true; data: T; message?: string }
@@ -21,8 +21,29 @@ export function adminAction<S extends z.ZodType, T = undefined>(
   /** Read-only actions (polling, previews) skip the router refresh. */
   options: { refreshOnSuccess?: boolean } = {},
 ) {
+  return guardedAction(requireAdmin, schema, handler, options);
+}
+
+/**
+ * Same as adminAction for planning actions open to demo managers too. Handlers must
+ * restrict demo managers to their own drafts (loadEditableSchedule does).
+ */
+export function plannerAction<S extends z.ZodType, T = undefined>(
+  schema: S,
+  handler: (input: z.infer<S>, user: CurrentUser) => Promise<T>,
+  options: { refreshOnSuccess?: boolean } = {},
+) {
+  return guardedAction(requirePlanner, schema, handler, options);
+}
+
+function guardedAction<S extends z.ZodType, T>(
+  requireUser: () => Promise<CurrentUser>,
+  schema: S,
+  handler: (input: z.infer<S>, user: CurrentUser) => Promise<T>,
+  options: { refreshOnSuccess?: boolean },
+) {
   return async (input: z.input<S>): Promise<ActionResult<T>> => {
-    const user = await requireAdmin();
+    const user = await requireUser();
     const parsed = schema.safeParse(input);
     if (!parsed.success) {
       return {

@@ -8,13 +8,17 @@ import {
   generateScheduleSchema,
   solverRunIdSchema,
 } from "@/lib/schemas/schedule";
-import { ActionError, adminAction } from "@/server/action";
+import { ActionError, plannerAction } from "@/server/action";
 import { audit } from "@/server/audit";
+import {
+  assertDraftQuota,
+  assertGenerationAllowed,
+} from "@/server/demo/limits";
 import { enqueueSolveSchedule } from "@/server/jobs/boss";
 import { buildSolveRequest } from "@/server/solver/run";
 
 /** Queues a full-month generation with the OR-Tools solver (future months only). */
-export const startScheduleGeneration = adminAction(
+export const startScheduleGeneration = plannerAction(
   generateScheduleSchema,
   async ({ year, month, timeLimitSeconds }, user) => {
     const now = currentYearMonth();
@@ -23,6 +27,8 @@ export const startScheduleGeneration = adminAction(
         "Generation is only available for months after the current one.",
       );
     }
+    await assertDraftQuota(user);
+    await assertGenerationAllowed(user);
     const [run] = await db
       .insert(solverRuns)
       .values({ year, month, status: "queued", createdBy: user.id })
@@ -54,20 +60,22 @@ export const startScheduleGeneration = adminAction(
   },
 );
 
-export const getScheduleGeneration = adminAction(
+export const getScheduleGeneration = plannerAction(
   solverRunIdSchema,
-  async ({ runId }) => {
+  async ({ runId }, user) => {
     const [run] = await db
       .select({
         status: solverRuns.status,
         error: solverRuns.error,
         output: solverRuns.output,
         version: schedules.version,
+        createdBy: solverRuns.createdBy,
       })
       .from(solverRuns)
       .leftJoin(schedules, eq(schedules.id, solverRuns.scheduleId))
       .where(eq(solverRuns.id, runId));
-    if (!run) throw new ActionError("Generation not found.");
+    if (!run || (user.role !== "admin" && run.createdBy !== user.id))
+      throw new ActionError("Generation not found.");
     const output = run.output as {
       status?: string;
       stats?: { wallTimeSeconds?: number };

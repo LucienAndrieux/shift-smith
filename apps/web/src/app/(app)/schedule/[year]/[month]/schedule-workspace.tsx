@@ -7,7 +7,7 @@ import { readableTextColor } from "@/lib/colors";
 import { MonthGrid } from "./month-grid";
 import { ScheduleToolbar } from "./schedule-toolbar";
 import { SectionPicker } from "./section-picker";
-import { indexView, type View } from "./types";
+import { indexView, type SchedulePermissions, type View } from "./types";
 import { ValidationPanel } from "./validation-panel";
 import { WeekView } from "./week-view";
 
@@ -15,19 +15,17 @@ const ALL = "all";
 
 export function ScheduleWorkspace({
   view,
-  isAdmin,
-  canGenerate,
+  permissions,
 }: {
   view: View;
-  isAdmin: boolean;
-  canGenerate: boolean;
+  permissions: SchedulePermissions;
 }) {
   const index = useMemo(() => indexView(view), [view]);
   const [section, setSection] = useState<string>(ALL);
   const [mode, setMode] = useState<"month" | "week">("month");
   const sectionId = section === ALL ? null : section;
   const canEdit =
-    isAdmin &&
+    permissions.canEditCurrent &&
     view.schedule !== null &&
     view.schedule.status !== "archived" &&
     view.schedule.closedAt === null;
@@ -36,8 +34,7 @@ export function ScheduleWorkspace({
     <div className="flex flex-col gap-4">
       <ScheduleToolbar
         view={view}
-        isAdmin={isAdmin}
-        canGenerate={canGenerate}
+        permissions={permissions}
         sectionCode={
           view.sections.find((s) => s.id === sectionId)?.code ?? null
         }
@@ -46,7 +43,7 @@ export function ScheduleWorkspace({
       {!view.schedule ? (
         <Alert>
           <AlertDescription>
-            {isAdmin
+            {permissions.canPlan
               ? "No schedule exists for this month yet. Create a draft to start planning."
               : "No schedule has been published for this month yet."}
           </AlertDescription>

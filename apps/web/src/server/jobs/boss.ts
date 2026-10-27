@@ -8,6 +8,8 @@ import { PgBoss } from "pg-boss";
 export const QUEUES = {
   parseConstraint: "parse-constraint",
   solveSchedule: "solve-schedule",
+  /** Demo mode only: hourly guest purge and rolling demo months. */
+  demoMaintenance: "demo-maintenance",
 } as const;
 
 export interface ParseConstraintJob {
@@ -33,6 +35,7 @@ export function getBoss(): Promise<PgBoss> {
       retryLimit: 0,
       expireInSeconds: 15 * 60,
     });
+    await boss.createQueue(QUEUES.demoMaintenance, { retryLimit: 0 });
     return boss;
   })().catch((error) => {
     globalForBoss.boss = undefined;

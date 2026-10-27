@@ -110,6 +110,14 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
   The worker registers its queues at server start: restart `pnpm dev` after
   adding a queue.
 - Solver contract and model notes: `services/solver/README.md`.
+- Demo mode (`DEMO_MODE=true`): guests via the Better Auth anonymous plugin
+  (`app/demo-actions.ts`), role `demo` = guest manager. `plannerAction` (admin or
+  demo) guards planning actions; `loadEditableSchedule` / `canSeeSchedule`
+  (`server/schedules.ts`) restrict demo managers to their own drafts. Quotas in
+  `server/demo/limits.ts`; hourly `demo-maintenance` job purges guests and calls
+  `ensureDemoMonth` (`server/demo/reset.ts`: truncate + seed shifted to the current
+  month with `shiftSeedFile` + `generateDemoSchedule`). Reference pages stay
+  admin-only (`role === "admin"`).
 - Deployment: Docker Compose + Caddy (`infra/`), or natively on Windows Server
   (`infra/windows/`, NSSM services `ShiftSmithWeb` / `ShiftSmithSolver`) with
   `next start`; the Docker image builds the standalone output

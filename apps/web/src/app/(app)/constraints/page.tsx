@@ -1,4 +1,4 @@
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
@@ -14,7 +14,7 @@ import {
   getSections,
   getShiftTypes,
 } from "@/server/queries/reference";
-import { requireApprovedUser } from "@/server/session";
+import { canPlan, requireApprovedUser } from "@/server/session";
 import { ConstraintsView } from "./constraints-view";
 
 export const metadata: Metadata = { title: "Constraints" };
@@ -26,6 +26,12 @@ export default async function ConstraintsPage() {
     db
       .select()
       .from(naturalLanguageConstraints)
+      // Demo guests only see their own constraints.
+      .where(
+        me.isGuest
+          ? eq(naturalLanguageConstraints.createdBy, me.id)
+          : undefined,
+      )
       .orderBy(desc(naturalLanguageConstraints.createdAt))
       .limit(50),
     getEmployees(),
@@ -57,7 +63,8 @@ export default async function ConstraintsPage() {
         description="Write a constraint in plain language. It is parsed by the AI model into typed operations; nothing is applied until an admin approves it."
       />
       <ConstraintsView
-        isAdmin={me.role === "admin"}
+        isAdmin={canPlan(me)}
+        isDemo={me.role === "demo"}
         defaultTarget={defaultTarget}
         items={rows.map((r) => {
           const parsed = parsedConstraintSchema.safeParse(r.parsed);

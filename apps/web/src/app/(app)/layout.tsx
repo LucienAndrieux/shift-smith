@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { AppSidebarNav } from "@/components/app-sidebar-nav";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { DemoBanner } from "@/components/demo/demo-banner";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
@@ -58,11 +59,20 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           <ThemeToggle />
         </header>
         <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 md:p-6">
+          <Suspense fallback={null}>
+            <GuestBanner />
+          </Suspense>
           <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
         </div>
       </SidebarInset>
     </SidebarProvider>
   );
+}
+
+async function GuestBanner() {
+  const user = await requireApprovedUser();
+  if (!user.isGuest) return null;
+  return <DemoBanner mode={user.role === "demo" ? "manager" : "viewer"} />;
 }
 
 async function SidebarNav() {
@@ -77,12 +87,14 @@ async function SidebarUser() {
       <div className="flex items-center gap-2">
         <span className="truncate font-medium">{user.name}</span>
         <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-          {user.role}
+          {user.role === "demo" ? "manager (demo)" : user.role}
         </Badge>
       </div>
-      <span className="truncate text-xs text-muted-foreground">
-        {user.email}
-      </span>
+      {!user.isGuest && (
+        <span className="truncate text-xs text-muted-foreground">
+          {user.email}
+        </span>
+      )}
       <SignOutButton className="justify-start px-0" />
     </div>
   );

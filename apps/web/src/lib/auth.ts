@@ -1,14 +1,20 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import { betterAuth } from "better-auth";
+import { APIError, betterAuth } from "better-auth";
+import { createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
+import { anonymous } from "better-auth/plugins";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { env, isAdminEmail } from "@/lib/env";
 import { appUrl, sendEmail } from "@/server/email";
 
+const demoMode = process.env.DEMO_MODE === "true";
+
 /**
  * Better Auth: email + password. New accounts are `viewer` / `pending` until an admin
  * approves them, except addresses listed in ADMIN_EMAIL which become approved admins.
+ * In demo mode, visitors enter as anonymous guests (see src/server/demo) and only
+ * ADMIN_EMAIL addresses may register.
  */
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
@@ -31,7 +37,7 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       role: {
-        type: ["admin", "viewer"],
+        type: ["admin", "demo", "viewer"],
         required: false,
         defaultValue: "viewer",
         input: false,
@@ -50,6 +56,22 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
+          if ((user as { isAnonymous?: boolean }).isAnonymous) {
+            // Guests start read-only; enterDemo() upgrades managers to `demo`.
+            return {
+              data: {
+                ...user,
+                role: "viewer",
+                accessStatus: "approved",
+                approvedAt: new Date(),
+              },
+            };
+          }
+          if (demoMode && !isAdminEmail(user.email)) {
+            throw new APIError("FORBIDDEN", {
+              message: "Registration is closed on the demo.",
+            });
+          }
           if (!isAdminEmail(user.email)) {
             return {
               data: { ...user, role: "viewer", accessStatus: "pending" },
@@ -65,6 +87,7 @@ export const auth = betterAuth({
           };
         },
         after: async (user) => {
+          if ((user as { isAnonymous?: boolean }).isAnonymous) return;
           if (isAdminEmail(user.email)) return;
           await sendEmail({
             to: env().ADMIN_EMAIL,
@@ -75,7 +98,23 @@ export const auth = betterAuth({
       },
     },
   },
-  plugins: [nextCookies()],
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === "/sign-in/anonymous" && !demoMode) {
+        throw new APIError("NOT_FOUND");
+      }
+    }),
+  },
+  plugins: [
+    // Guest access of the public demo; the endpoint is refused outside demo mode.
+    anonymous({
+      emailDomainName: "guest.invalid",
+      generateName: () => "Guest",
+      disableDeleteAnonymousUser: true,
+    }),
+    // Must stay last: sets the cookies of auth calls made from Server Actions.
+    nextCookies(),
+  ],
 });
 
 export type Session = typeof auth.$Infer.Session;

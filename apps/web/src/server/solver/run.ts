@@ -147,6 +147,8 @@ export async function runSolver(runId: string) {
           status: "draft",
           source: "solver",
           title: `${formatMonth(run.year, run.month)} — generated v${version}`,
+          // The draft belongs to whoever asked for it (demo managers see their own).
+          createdBy: run.createdBy,
         })
         .returning({ id: schedules.id });
       if (result.assignments.length > 0) {

@@ -27,6 +27,18 @@ const serverEnvSchema = z.object({
     .default(""),
   LLM_MODEL: z.string().default("gpt-5-nano"),
   SOLVER_URL: z.url().default("http://localhost:8000"),
+  /**
+   * Public demo: visitors enter as guests (manager or viewer) without an account,
+   * edit private drafts only, and the data is reset to rolling demo months.
+   */
+  DEMO_MODE: z
+    .enum(["true", "false", ""])
+    .optional()
+    .transform((v) => v === "true"),
+  DEMO_MAX_DRAFTS: z.coerce.number().int().positive().default(3),
+  DEMO_GENERATIONS_PER_HOUR: z.coerce.number().int().positive().default(3),
+  DEMO_LLM_PER_DAY: z.coerce.number().int().positive().default(10),
+  DEMO_LLM_GLOBAL_PER_DAY: z.coerce.number().int().positive().default(100),
   /** Shown on the printable monthly sheet. */
   HOTEL_NAME: z.string().default("Demo Alpine Lodge"),
 });

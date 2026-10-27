@@ -43,7 +43,7 @@ import {
   publishSchedule,
 } from "../../actions";
 import { GenerateDialog } from "./generate-dialog";
-import type { View } from "./types";
+import type { SchedulePermissions, View } from "./types";
 
 const STATUS_VARIANT = {
   draft: "outline",
@@ -53,14 +53,11 @@ const STATUS_VARIANT = {
 
 export function ScheduleToolbar({
   view,
-  isAdmin,
-  canGenerate,
+  permissions,
   sectionCode,
 }: {
   view: View;
-  isAdmin: boolean;
-  /** Admin on a month after the current one. */
-  canGenerate: boolean;
+  permissions: SchedulePermissions;
   /** Section shown on screen (null = all), used by the PDF export. */
   sectionCode: string | null;
 }) {
@@ -99,7 +96,7 @@ export function ScheduleToolbar({
       {schedule && (
         <>
           {/* Read-only users only ever receive the published version. */}
-          {isAdmin && (
+          {permissions.canPlan && view.versions.length > 1 && (
             <Select
               value={String(schedule.version)}
               onValueChange={(v) => goToVersion(Number(v))}
@@ -110,7 +107,10 @@ export function ScheduleToolbar({
               <SelectContent>
                 {view.versions.map((v) => (
                   <SelectItem key={v.id} value={String(v.version)}>
-                    v{v.version} · {v.status} · {v.source}
+                    v{v.version} · {v.status}
+                    {permissions.isDemo && v.status === "draft"
+                      ? " · yours"
+                      : ` · ${v.source}`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -129,9 +129,11 @@ export function ScheduleToolbar({
 
       <div className="flex-1" />
 
-      {isAdmin && (
+      {permissions.canPlan && (
         <div className="flex flex-wrap gap-2">
-          {canGenerate && <GenerateDialog year={year} month={month} />}
+          {permissions.canGenerate && (
+            <GenerateDialog year={year} month={month} />
+          )}
           <NewDraftDialog
             year={year}
             month={month}
@@ -156,7 +158,8 @@ export function ScheduleToolbar({
               <span className="hidden sm:inline">as draft</span>
             </Button>
           )}
-          {schedule?.status !== "published" &&
+          {permissions.canPublish &&
+            schedule?.status !== "published" &&
             schedule &&
             schedule.status !== "archived" && (
               <ConfirmButton
@@ -172,7 +175,7 @@ export function ScheduleToolbar({
                 }
               />
             )}
-          {schedule?.status === "archived" && (
+          {permissions.canPublish && schedule?.status === "archived" && (
             <ConfirmButton
               title={`Publish archived version ${schedule.version} again?`}
               confirmLabel="Publish"
@@ -185,7 +188,7 @@ export function ScheduleToolbar({
               }
             />
           )}
-          {schedule?.status === "draft" && (
+          {permissions.canEditCurrent && schedule?.status === "draft" && (
             <ConfirmButton
               title={`Delete draft v${schedule.version}?`}
               description="All its cells are deleted. This cannot be undone."

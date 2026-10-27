@@ -32,6 +32,25 @@ by an early one, a rest day worked, a couple without a shared rest day, a
 short-staffed restaurant, two colleagues off the same weekend, a shift outside an
 employee's skills) so the validator and the "Fix" button have something to show.
 
+## Public demo mode
+
+With `DEMO_MODE=true`, the app becomes a public demo:
+
+- the sign-in page offers **Explore as a manager** and **Explore read-only**: a
+  guest account is created on the fly (Better Auth anonymous plugin), no sign-up;
+- a guest manager duplicates a version or generates a month to get **private
+  drafts**, edits them, uses Fix, Generate, the PDF export and natural-language
+  constraints (approving one applies its absences and forced shifts to the
+  guest's own draft); reference data, publishing, the hour-bank close and user
+  management stay admin-only, checked server-side in every action;
+- quotas: drafts per guest, generations per hour (one at a time on the whole
+  site) and LLM calls per guest and per day (`DEMO_*` variables);
+- an hourly job removes guests older than 24 hours with their work, and when the
+  current month has no published schedule it empties the data and imports the seed
+  again with **rolling demo months** (the current month and the next two) and a
+  freshly generated reference schedule containing deliberate mistakes;
+- only `ADMIN_EMAIL` addresses can register (for the site owner).
+
 ## Development
 
 Prerequisites: **Node.js 24+**, **pnpm** (`npm i -g pnpm`), **Docker Desktop**.

@@ -63,10 +63,13 @@ const STATUS_STYLE: Record<
 export function ConstraintsView({
   items,
   isAdmin,
+  isDemo,
   defaultTarget,
 }: {
   items: ConstraintItem[];
+  /** May submit and review constraints (admin or demo manager). */
   isAdmin: boolean;
+  isDemo: boolean;
   defaultTarget: string;
 }) {
   const router = useRouter();
@@ -81,6 +84,12 @@ export function ConstraintsView({
 
   return (
     <div className="flex flex-col gap-4">
+      {isDemo && (
+        <p className="text-sm text-muted-foreground">
+          Demo: approving a constraint applies its absences and forced shifts to
+          your own draft of the target month; shared data is never changed.
+        </p>
+      )}
       {isAdmin && <NewConstraintForm defaultTarget={defaultTarget} />}
       {items.length === 0 && (
         <p className="text-sm text-muted-foreground">No constraints yet.</p>

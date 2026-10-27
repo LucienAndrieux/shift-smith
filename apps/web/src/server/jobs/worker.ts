@@ -1,4 +1,8 @@
+import { currentYearMonth } from "@/lib/dates";
+import { env } from "@/lib/env";
 import { parseConstraint } from "@/server/constraints/parse";
+import { purgeExpiredGuests } from "@/server/demo/guests";
+import { ensureDemoMonth } from "@/server/demo/reset";
 import { runSolver } from "@/server/solver/run";
 import {
   getBoss,
@@ -28,9 +32,27 @@ export async function startWorkers() {
         await runSolver(job.data.runId);
       }
     });
+    if (env().DEMO_MODE) {
+      await boss.work(QUEUES.demoMaintenance, async () => {
+        await demoMaintenance();
+      });
+      await boss.schedule(QUEUES.demoMaintenance, "5 * * * *");
+      void demoMaintenance();
+    }
     console.info("[jobs] worker started");
   } catch (error) {
     globalForWorker.workersStarted = false;
     console.error("[jobs] could not start the worker:", error);
+  }
+}
+
+/** Removes expired guests and moves the demo data to the current month if needed. */
+async function demoMaintenance() {
+  try {
+    const purged = await purgeExpiredGuests();
+    if (purged > 0) console.info(`[demo] ${purged} expired guest(s) removed`);
+    await ensureDemoMonth(currentYearMonth());
+  } catch (error) {
+    console.error("[demo] maintenance failed:", error);
   }
 }
