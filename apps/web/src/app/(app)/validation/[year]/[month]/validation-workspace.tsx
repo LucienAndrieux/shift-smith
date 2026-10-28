@@ -22,7 +22,7 @@ export function ValidationWorkspace({
     <div className="flex flex-col gap-4">
       <VersionHeader view={view} basePath="/validation" />
       {view.schedule ? (
-        <ValidationPanel view={view} index={index} canEdit={canEdit} />
+        <ValidationPanel sources={[{ view, index, canEdit }]} />
       ) : (
         <Alert>
           <AlertDescription>

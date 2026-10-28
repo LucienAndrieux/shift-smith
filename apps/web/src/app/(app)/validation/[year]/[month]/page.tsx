@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { formatMonth } from "@/lib/domain/calendar";
-import { getScheduleView } from "@/server/queries/schedule";
+import { getValidationTarget } from "@/server/queries/validation";
 import { requireApprovedUser } from "@/server/session";
 import { ValidationWorkspace } from "./validation-workspace";
 
@@ -35,31 +35,12 @@ export default async function ValidationPage({
       ? Number(version)
       : null;
 
-  let view = await getScheduleView(year, month, requested, { user });
-  // Without an explicit version, open the latest draft the user can fix.
-  const editableDraft =
-    requested === null
-      ? view.versions
-          .filter(
-            (v) =>
-              v.status === "draft" &&
-              (user.role === "admin" ||
-                (user.role === "demo" && v.createdBy === user.id)),
-          )
-          .at(-1)
-      : undefined;
-  if (editableDraft && editableDraft.version !== view.schedule?.version) {
-    view = await getScheduleView(year, month, editableDraft.version, { user });
-  }
+  const { view, canEdit } = await getValidationTarget(
+    user,
+    year,
+    month,
+    requested,
+  );
   await connection();
-  const schedule = view.schedule;
-  const editable =
-    schedule !== null &&
-    schedule.status !== "archived" &&
-    schedule.closedAt === null &&
-    (user.role === "admin" ||
-      (user.role === "demo" &&
-        schedule.status === "draft" &&
-        schedule.createdBy === user.id));
-  return <ValidationWorkspace view={view} canEdit={editable} />;
+  return <ValidationWorkspace view={view} canEdit={canEdit} />;
 }

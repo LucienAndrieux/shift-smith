@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDayMonth } from "@/lib/domain/calendar";
+import { formatDayMonth, MONTH_NAMES } from "@/lib/domain/calendar";
 import { violationIdentity } from "@/lib/domain/validator";
 import { cn } from "@/lib/utils";
 import { FixDialog } from "./fix-dialog";
@@ -19,21 +19,20 @@ import type { View, ViewIndex } from "./types";
 
 type Severity = "error" | "warning";
 
-/**
- * Violations of a version: one collapsible block for the errors, then one for the
- * warnings, each listing location, date and description, with a Fix button on
- * every line when the version is editable.
- */
-export function ValidationPanel({
-  view,
-  index,
-  canEdit,
-}: {
+/** One schedule version checked by the panel (one per month on /validation). */
+export interface ValidationSource {
   view: View;
   index: ViewIndex;
-  /** The version is editable by this user: shows the "Fix" buttons. */
+  /** The version is editable by this user: shows its "Fix" buttons. */
   canEdit: boolean;
-}) {
+}
+
+/**
+ * Violations of one or several versions: one collapsible block for the errors,
+ * then one for the warnings, each listing location, date and description in date
+ * order, with a Fix button on every line of an editable version.
+ */
+export function ValidationPanel({ sources }: { sources: ValidationSource[] }) {
   const [open, setOpen] = useState<Set<Severity>>(new Set(["error"]));
   const toggle = (severity: Severity) =>
     setOpen((current) => {
@@ -43,13 +42,18 @@ export function ValidationPanel({
       return next;
     });
 
-  const readOnlyHint =
-    !canEdit && view.schedule ? (
-      <p className="text-sm text-muted-foreground">
-        To use Fix, open a draft you can edit (duplicate this version from the
-        schedule page if needed).
-      </p>
-    ) : null;
+  const rows = sources.flatMap((source) =>
+    source.view.violations.map((v) => ({
+      v,
+      source,
+      // Month-level violations sort at the start of their month.
+      sortKey:
+        v.date ??
+        `${source.view.year}-${String(source.view.month).padStart(2, "0")}-00`,
+    })),
+  );
+  const anyEditable = sources.some((s) => s.canEdit);
+  const anyReadOnly = sources.some((s) => !s.canEdit && s.view.schedule);
 
   const blocks: { severity: Severity; title: string }[] = [
     { severity: "error", title: "Errors" },
@@ -58,13 +62,17 @@ export function ValidationPanel({
 
   return (
     <div className="flex flex-col gap-3">
-      {readOnlyHint}
+      {anyReadOnly && (
+        <p className="text-sm text-muted-foreground">
+          Fix is available on the drafts you can edit: duplicate a published
+          version from the schedule page to get one.
+        </p>
+      )}
       {blocks.map(({ severity, title }) => {
-        const items = view.violations
-          .filter((v) => v.severity === severity)
-          .toSorted((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
+        const items = rows
+          .filter((r) => r.v.severity === severity)
+          .toSorted((a, b) => a.sortKey.localeCompare(b.sortKey));
         const expanded = open.has(severity);
-        const showFix = canEdit && view.schedule !== null;
         return (
           <section
             key={severity}
@@ -111,38 +119,44 @@ export function ValidationPanel({
                         <TableHead>Location</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Description</TableHead>
-                        {showFix && <TableHead className="w-16" />}
+                        {anyEditable && <TableHead className="w-16" />}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {items.map((v, i) => (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: violations have no id
-                        <TableRow key={i}>
-                          <TableCell className="whitespace-nowrap">
-                            {v.employeeId
-                              ? index.employeeById.get(v.employeeId)?.name
-                              : (index.sectionById.get(v.sectionId ?? "")
-                                  ?.name ?? "—")}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            {v.date
-                              ? formatDayMonth(v.date)
-                              : (v.weekKey ?? "Month")}
-                          </TableCell>
-                          <TableCell className="whitespace-normal">
-                            {v.message}
-                          </TableCell>
-                          {showFix && view.schedule && (
-                            <TableCell className="text-right">
-                              <FixDialog
-                                scheduleId={view.schedule.id}
-                                violation={violationIdentity(v)}
-                                message={v.message}
-                              />
+                      {items.map(({ v, source }, i) => {
+                        const { view, index, canEdit } = source;
+                        return (
+                          // biome-ignore lint/suspicious/noArrayIndexKey: violations have no id
+                          <TableRow key={i}>
+                            <TableCell className="whitespace-nowrap">
+                              {v.employeeId
+                                ? index.employeeById.get(v.employeeId)?.name
+                                : (index.sectionById.get(v.sectionId ?? "")
+                                    ?.name ?? "—")}
                             </TableCell>
-                          )}
-                        </TableRow>
-                      ))}
+                            <TableCell className="whitespace-nowrap">
+                              {v.date
+                                ? formatDayMonth(v.date)
+                                : (v.weekKey ??
+                                  `${MONTH_NAMES[view.month - 1].slice(0, 3)} ${view.year}`)}
+                            </TableCell>
+                            <TableCell className="whitespace-normal">
+                              {v.message}
+                            </TableCell>
+                            {anyEditable && (
+                              <TableCell className="text-right">
+                                {canEdit && view.schedule && (
+                                  <FixDialog
+                                    scheduleId={view.schedule.id}
+                                    violation={violationIdentity(v)}
+                                    message={v.message}
+                                  />
+                                )}
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
