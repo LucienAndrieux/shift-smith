@@ -46,11 +46,11 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           </Suspense>
         </SidebarContent>
         <SidebarFooter>
+          {/* Just above the account block; stays visible when collapsed. */}
+          <ThemeToggle align="start" />
           <Suspense>
             <SidebarUser />
           </Suspense>
-          {/* Bottom left of the app, also visible when the sidebar is collapsed. */}
-          <ThemeToggle align="start" />
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>
