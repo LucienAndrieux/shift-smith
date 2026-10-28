@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, ListChecks } from "lucide-react";
+import { BookOpen, Clock3, ListChecks } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -79,6 +79,15 @@ export function ScheduleWorkspace({
             />
             <div className="flex items-center gap-2">
               <ValidationLink view={view} />
+              <Button variant="outline" size="sm" asChild>
+                <Link
+                  href={`/hours/${view.year}/${view.month}${
+                    view.schedule ? `?version=${view.schedule.version}` : ""
+                  }`}
+                >
+                  <Clock3 /> Hours
+                </Link>
+              </Button>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm">

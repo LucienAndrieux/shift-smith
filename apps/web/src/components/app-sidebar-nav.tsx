@@ -3,6 +3,7 @@
 import {
   CalendarDays,
   ClipboardList,
+  Clock3,
   Gauge,
   ListChecks,
   type LucideIcon,
@@ -36,6 +37,7 @@ interface NavItem {
 const MAIN: NavItem[] = [
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/validation", label: "Validation", icon: ListChecks },
+  { href: "/hours", label: "Hours", icon: Clock3 },
   { href: "/employees", label: "Employees", icon: Users },
   { href: "/absences", label: "Absences", icon: Plane },
   { href: "/hour-bank", label: "Hour bank", icon: Timer },
