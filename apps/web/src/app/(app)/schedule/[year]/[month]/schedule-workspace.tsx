@@ -1,7 +1,14 @@
 "use client";
 
+import { BookOpen } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { readableTextColor } from "@/lib/colors";
 import { MonthGrid } from "./month-grid";
@@ -70,19 +77,32 @@ export function ScheduleWorkspace({
                 })),
               ]}
             />
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              size="sm"
-              value={mode}
-              onValueChange={(v) => v && setMode(v as typeof mode)}
-            >
-              <ToggleGroupItem value="month">Month</ToggleGroupItem>
-              <ToggleGroupItem value="week">Week</ToggleGroupItem>
-            </ToggleGroup>
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <BookOpen /> Legend
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="end"
+                  className="w-[40rem] max-w-[calc(100vw-2rem)] p-0"
+                >
+                  <Legend view={view} sectionId={sectionId} />
+                </PopoverContent>
+              </Popover>
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                size="sm"
+                value={mode}
+                onValueChange={(v) => v && setMode(v as typeof mode)}
+              >
+                <ToggleGroupItem value="month">Month</ToggleGroupItem>
+                <ToggleGroupItem value="week">Week</ToggleGroupItem>
+              </ToggleGroup>
+            </div>
           </div>
-
-          <Legend view={view} sectionId={sectionId} />
           {mode === "month" ? (
             <MonthGrid
               view={view}
@@ -113,7 +133,7 @@ interface LegendItem {
 }
 
 /**
- * One code per line. In a section tab, each shift shows its hours; in "All", shift
+ * Shift and day codes, shown in the "Legend" popover. One code per line. In a section tab, each shift shows its hours; in "All", shift
  * codes are listed once (colours are per code) with the sections that use them,
  * since hours differ by section.
  */
@@ -149,7 +169,7 @@ function Legend({ view, sectionId }: { view: View; sectionId: string | null }) {
   }));
 
   return (
-    <div className="grid gap-4 rounded-md border p-3 text-xs md:grid-cols-[1fr_1fr]">
+    <div className="grid gap-4 p-3 text-xs md:grid-cols-[1fr_1fr]">
       <LegendList
         title={sectionId ? "Shifts" : "Shifts (select a section for hours)"}
         items={shifts}
