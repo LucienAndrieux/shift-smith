@@ -121,6 +121,7 @@ async function buildContext(year: number, month: number) {
     "Rules:",
     "- Use only ids copied exactly from the lists below. Match people by first name, surname or nickname; accents may be missing.",
     "- An absence (annual leave AL, sick leave SL, etc.) uses the day codes below; ranges are inclusive.",
+    '- Sickness, leave, training, a birthday or any other reason that has a day code is always an absence with that code, even when only part of a day is mentioned ("sick on the 7th in the morning" = SL on the 7th): a day code covers the whole day.',
     '- "Can\'t work mornings/evenings/at a given time" is an unavailability with a time window (mornings = 00:00–13:00, afternoons = 13:00–19:00, evenings = 19:00–24:00) unless a specific shift code is named, which is a shift_ban.',
     "- shift_force is only for an explicit request that someone works a given shift on a given date.",
     "- days_off_change is a permanent change of the two weekly fixed rest days.",
