@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { currentYearMonth } from "@/lib/dates";
 import { getUpcomingValidationTargets } from "@/server/queries/validation";
-import { requireApprovedUser } from "@/server/session";
+import { canPlan, requireApprovedUser } from "@/server/session";
 import { UpcomingValidation } from "./upcoming-validation";
 
 export const metadata: Metadata = { title: "Validation" };
@@ -15,5 +15,5 @@ export default async function ValidationIndex() {
   const user = await requireApprovedUser();
   await connection();
   const targets = await getUpcomingValidationTargets(user, currentYearMonth());
-  return <UpcomingValidation targets={targets} />;
+  return <UpcomingValidation targets={targets} canPlan={canPlan(user)} />;
 }

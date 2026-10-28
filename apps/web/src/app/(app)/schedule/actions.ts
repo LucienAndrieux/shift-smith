@@ -20,7 +20,11 @@ import { ActionError, adminAction, plannerAction } from "@/server/action";
 import { audit } from "@/server/audit";
 import { assertDraftQuota } from "@/server/demo/limits";
 import { loadMonthContext } from "@/server/month-context";
-import { canSeeSchedule, loadEditableSchedule } from "@/server/schedules";
+import {
+  canSeeSchedule,
+  createDraftCopy,
+  loadEditableSchedule,
+} from "@/server/schedules";
 
 async function nextVersion(year: number, month: number) {
   const [row] = await db
@@ -163,47 +167,8 @@ export const duplicateSchedule = plannerAction(
     if (!source || !canSeeSchedule(user, source))
       throw new ActionError("Schedule not found.");
     await assertDraftQuota(user);
-    const version = await nextVersion(source.year, source.month);
-    return db.transaction(async (tx) => {
-      const [copy] = await tx
-        .insert(schedules)
-        .values({
-          year: source.year,
-          month: source.month,
-          version,
-          status: "draft",
-          source: "manual",
-          title: `${formatMonth(source.year, source.month)} — draft v${version} (from v${source.version})`,
-          notes: source.notes,
-          createdBy: user.id,
-        })
-        .returning();
-      const cells = await tx
-        .select()
-        .from(scheduleAssignments)
-        .where(eq(scheduleAssignments.scheduleId, scheduleId));
-      if (cells.length > 0) {
-        await tx.insert(scheduleAssignments).values(
-          cells.map((c) => ({
-            scheduleId: copy.id,
-            employeeId: c.employeeId,
-            date: c.date,
-            shiftTypeId: c.shiftTypeId,
-            dayCode: c.dayCode,
-            isLocked: c.isLocked,
-            note: c.note,
-          })),
-        );
-      }
-      await audit(tx, {
-        userId: user.id,
-        action: "duplicate",
-        entity: "schedule",
-        entityId: copy.id,
-        diff: { from: scheduleId, version, cells: cells.length },
-      });
-      return { id: copy.id, version };
-    });
+    const copy = await createDraftCopy(source, user);
+    return { id: copy.id, version: copy.version };
   },
 );
 

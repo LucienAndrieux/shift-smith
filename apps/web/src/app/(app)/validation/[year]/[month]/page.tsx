@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { formatMonth } from "@/lib/domain/calendar";
 import { getValidationTarget } from "@/server/queries/validation";
-import { requireApprovedUser } from "@/server/session";
+import { canPlan, requireApprovedUser } from "@/server/session";
 import { ValidationWorkspace } from "./validation-workspace";
 
 export async function generateMetadata({
@@ -42,5 +42,11 @@ export default async function ValidationPage({
     requested,
   );
   await connection();
-  return <ValidationWorkspace view={view} canEdit={canEdit} />;
+  return (
+    <ValidationWorkspace
+      view={view}
+      canEdit={canEdit}
+      canPlan={canPlan(user)}
+    />
+  );
 }

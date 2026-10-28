@@ -12,8 +12,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 export function ValidationWorkspace({
   view,
   canEdit,
+  canPlan,
 }: {
   view: View;
+  /** Admin or demo manager: shows the Fix buttons. */
+  canPlan: boolean;
   /** The displayed version is editable by this user: shows the Fix buttons. */
   canEdit: boolean;
 }) {
@@ -22,7 +25,10 @@ export function ValidationWorkspace({
     <div className="flex flex-col gap-4">
       <VersionHeader view={view} basePath="/validation" />
       {view.schedule ? (
-        <ValidationPanel sources={[{ view, index, canEdit }]} />
+        <ValidationPanel
+          sources={[{ view, index, canEdit }]}
+          canPlan={canPlan}
+        />
       ) : (
         <Alert>
           <AlertDescription>

@@ -32,7 +32,14 @@ export interface ValidationSource {
  * then one for the warnings, each listing location, date and description in date
  * order, with a Fix button on every line of an editable version.
  */
-export function ValidationPanel({ sources }: { sources: ValidationSource[] }) {
+export function ValidationPanel({
+  sources,
+  canPlan,
+}: {
+  sources: ValidationSource[];
+  /** Admin or demo manager: every line gets a Fix button. */
+  canPlan: boolean;
+}) {
   const [open, setOpen] = useState<Set<Severity>>(new Set(["error"]));
   const toggle = (severity: Severity) =>
     setOpen((current) => {
@@ -52,8 +59,6 @@ export function ValidationPanel({ sources }: { sources: ValidationSource[] }) {
         `${source.view.year}-${String(source.view.month).padStart(2, "0")}-00`,
     })),
   );
-  const anyEditable = sources.some((s) => s.canEdit);
-  const anyReadOnly = sources.some((s) => !s.canEdit && s.view.schedule);
 
   const blocks: { severity: Severity; title: string }[] = [
     { severity: "error", title: "Errors" },
@@ -62,12 +67,6 @@ export function ValidationPanel({ sources }: { sources: ValidationSource[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      {anyReadOnly && (
-        <p className="text-sm text-muted-foreground">
-          Fix is available on the drafts you can edit: duplicate a published
-          version from the schedule page to get one.
-        </p>
-      )}
       {blocks.map(({ severity, title }) => {
         const items = rows
           .filter((r) => r.v.severity === severity)
@@ -119,7 +118,7 @@ export function ValidationPanel({ sources }: { sources: ValidationSource[] }) {
                         <TableHead>Location</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Description</TableHead>
-                        {anyEditable && <TableHead className="w-16" />}
+                        {canPlan && <TableHead className="w-16" />}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -143,11 +142,13 @@ export function ValidationPanel({ sources }: { sources: ValidationSource[] }) {
                             <TableCell className="whitespace-normal">
                               {v.message}
                             </TableCell>
-                            {anyEditable && (
+                            {canPlan && (
                               <TableCell className="text-right">
-                                {canEdit && view.schedule && (
+                                {view.schedule && (
                                   <FixDialog
                                     scheduleId={view.schedule.id}
+                                    scheduleStatus={view.schedule.status}
+                                    editable={canEdit}
                                     violation={violationIdentity(v)}
                                     message={v.message}
                                   />

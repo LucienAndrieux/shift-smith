@@ -57,6 +57,8 @@ export const suggestFixesSchema = z.object({
 
 export const applyFixSchema = z.object({
   scheduleId: uuid,
+  /** "current" edits the version itself; "new-draft" applies the fix to a copy. */
+  target: z.enum(["current", "new-draft"]).default("current"),
   changes: z
     .array(
       z.object({

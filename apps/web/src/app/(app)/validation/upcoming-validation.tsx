@@ -9,8 +9,11 @@ import type { ValidationTarget } from "@/server/queries/validation";
 
 export function UpcomingValidation({
   targets,
+  canPlan,
 }: {
   targets: ValidationTarget[];
+  /** Admin or demo manager: shows the Fix buttons. */
+  canPlan: boolean;
 }) {
   const sources = useMemo(
     () =>
@@ -40,7 +43,7 @@ export function UpcomingValidation({
           )
           .join(" · ")}
       </p>
-      <ValidationPanel sources={sources} />
+      <ValidationPanel sources={sources} canPlan={canPlan} />
     </div>
   );
 }

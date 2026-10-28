@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowRight, Loader2, Wand2 } from "lucide-react";
+import { ArrowRight, CopyPlus, Loader2, Send, Wand2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,19 +21,31 @@ import {
 } from "../../fix-actions";
 
 /**
- * "Fix" button next to an error: computes up to five local edits that remove the
- * error without creating new ones, and applies the chosen one.
+ * "Fix" button next to an error or a warning: computes up to five local edits that
+ * remove it without creating an error, and applies the chosen one. On an editable
+ * draft the fix goes straight in; otherwise the user chooses between a new draft
+ * holding the fix and (admins only) the published version itself.
  */
 export function FixDialog({
   scheduleId,
+  scheduleStatus,
+  editable,
   violation,
   message,
 }: {
   scheduleId: string;
-  /** violationIdentity() of the error. */
+  scheduleStatus: "draft" | "published" | "archived";
+  /** The version itself is editable by the user. */
+  editable: boolean;
+  /** violationIdentity() of the error or warning. */
   violation: string;
   message: string;
 }) {
+  const router = useRouter();
+  /** Suggestion waiting for the "where to apply" choice. */
+  const [choosing, setChoosing] = useState<number | null>(null);
+  const appliesDirectly = editable && scheduleStatus === "draft";
+  const canApplyToPublished = editable && scheduleStatus === "published";
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +54,41 @@ export function FixDialog({
   );
   const { pending, run } = useAction();
 
+  async function apply(
+    suggestion: FixSuggestionView,
+    target: "current" | "new-draft",
+  ) {
+    const result = await run(
+      () =>
+        applyScheduleFix({
+          scheduleId,
+          target,
+          changes: suggestion.changes.map(
+            ({ employeeId, date, before, after }) => ({
+              employeeId,
+              date,
+              before,
+              after,
+            }),
+          ),
+        }),
+      {
+        success:
+          target === "new-draft" ? "Draft created with the fix" : "Fix applied",
+      },
+    );
+    if (!result.ok) return;
+    setOpen(false);
+    // A page showing an explicit version follows the new draft.
+    const url = new URL(window.location.href);
+    if (result.data.createdDraft && url.searchParams.has("version")) {
+      url.searchParams.set("version", String(result.data.version));
+      router.push(`${url.pathname}?${url.searchParams}`);
+    }
+  }
+
   async function load() {
+    setChoosing(null);
     setLoading(true);
     setError(null);
     setSuggestions(null);
@@ -84,8 +131,8 @@ export function FixDialog({
         {suggestions?.length === 0 && (
           <p className="py-4 text-sm text-muted-foreground">
             No local fix found: every change of one or two cells around this
-            error would create another error. Adjust the grid by hand, or check
-            the rule and staffing settings.
+            problem would create an error. Adjust the grid by hand, or check the
+            rule and staffing settings.
           </p>
         )}
 
@@ -117,28 +164,44 @@ export function FixDialog({
                 <Button
                   size="sm"
                   disabled={pending}
-                  onClick={async () => {
-                    const result = await run(
-                      () =>
-                        applyScheduleFix({
-                          scheduleId,
-                          changes: s.changes.map(
-                            ({ employeeId, date, before, after }) => ({
-                              employeeId,
-                              date,
-                              before,
-                              after,
-                            }),
-                          ),
-                        }),
-                      { success: "Fix applied" },
-                    );
-                    if (result.ok) setOpen(false);
-                  }}
+                  onClick={() =>
+                    appliesDirectly ? apply(s, "current") : setChoosing(i)
+                  }
                 >
                   Apply
                 </Button>
               </div>
+              {choosing === i && (
+                <div className="flex flex-col gap-2 rounded-md bg-muted/50 p-3 text-sm">
+                  <p>
+                    This version is {scheduleStatus}. Where should the fix go?
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      disabled={pending}
+                      onClick={() => apply(s, "new-draft")}
+                    >
+                      <CopyPlus /> Create a draft with this fix
+                    </Button>
+                    {scheduleStatus === "published" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={pending || !canApplyToPublished}
+                        onClick={() => apply(s, "current")}
+                      >
+                        <Send /> Apply to the published schedule
+                      </Button>
+                    )}
+                  </div>
+                  {scheduleStatus === "published" && !canApplyToPublished && (
+                    <p className="text-xs text-muted-foreground">
+                      Only an administrator can change the published schedule.
+                    </p>
+                  )}
+                </div>
+              )}
               <ul className="flex flex-col gap-1 text-sm">
                 {s.changes.map((c) => (
                   <li
