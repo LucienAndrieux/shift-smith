@@ -26,7 +26,7 @@ export interface FixSuggestionView {
   newWarnings: number;
 }
 
-/** Up to five local edits that remove the given error without adding any. */
+/** Up to five local edits that remove the given error or warning without adding any error. */
 export const suggestScheduleFixes = plannerAction(
   suggestFixesSchema,
   async ({ scheduleId, violation }, user): Promise<FixSuggestionView[]> => {

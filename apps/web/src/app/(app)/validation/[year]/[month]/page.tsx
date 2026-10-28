@@ -35,7 +35,22 @@ export default async function ValidationPage({
       ? Number(version)
       : null;
 
-  const view = await getScheduleView(year, month, requested, { user });
+  let view = await getScheduleView(year, month, requested, { user });
+  // Without an explicit version, open the latest draft the user can fix.
+  const editableDraft =
+    requested === null
+      ? view.versions
+          .filter(
+            (v) =>
+              v.status === "draft" &&
+              (user.role === "admin" ||
+                (user.role === "demo" && v.createdBy === user.id)),
+          )
+          .at(-1)
+      : undefined;
+  if (editableDraft && editableDraft.version !== view.schedule?.version) {
+    view = await getScheduleView(year, month, editableDraft.version, { user });
+  }
   await connection();
   const schedule = view.schedule;
   const editable =

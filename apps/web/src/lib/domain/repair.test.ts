@@ -99,4 +99,44 @@ describe("suggestFixes", () => {
   it("returns nothing for an unknown violation", () => {
     expect(suggestFixes(november2026(), "nope")).toEqual([]);
   });
+
+  it("also repairs warnings without adding an error", () => {
+    const input = november2026();
+    // Amara Okafor rests Mon/Tue: move Monday's rest day to Wednesday.
+    for (const a of input.assignments) {
+      if (a.employeeId !== "Amara Okafor") continue;
+      if (a.date === "2026-11-09") {
+        a.dayCode = null;
+        a.shiftTypeId = "reception:D";
+      } else if (a.date === "2026-11-11") {
+        a.dayCode = "OF";
+        a.shiftTypeId = null;
+      }
+    }
+    const before = new Set(errorsOf(input).map(violationIdentity));
+    const target = validateSchedule(input).violations.find(
+      (v) =>
+        v.severity === "warning" &&
+        v.code === "fixed_days_off_mismatch" &&
+        v.employeeId === "Amara Okafor",
+    );
+    if (!target) throw new Error("warning not found");
+    const [best] = suggestFixes(input, violationIdentity(target));
+    expect(best).toBeDefined();
+    const changed = new Map(
+      best.changes.map((c) => [`${c.employeeId}|${c.date}`, c.after]),
+    );
+    const after = validateSchedule({
+      ...input,
+      assignments: input.assignments.map((a) => {
+        const value = changed.get(`${a.employeeId}|${a.date}`);
+        return value ? { ...a, ...value } : a;
+      }),
+    }).violations;
+    expect(after.map(violationIdentity)).not.toContain(
+      violationIdentity(target),
+    );
+    for (const v of after.filter((x) => x.severity === "error"))
+      expect(before.has(violationIdentity(v))).toBe(true);
+  });
 });

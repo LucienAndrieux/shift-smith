@@ -21,8 +21,8 @@ type Severity = "error" | "warning";
 
 /**
  * Violations of a version: one collapsible block for the errors, then one for the
- * warnings, each listing location, date and description (errors with a Fix button
- * when the version is editable).
+ * warnings, each listing location, date and description, with a Fix button on
+ * every line when the version is editable.
  */
 export function ValidationPanel({
   view,
@@ -43,6 +43,14 @@ export function ValidationPanel({
       return next;
     });
 
+  const readOnlyHint =
+    !canEdit && view.schedule ? (
+      <p className="text-sm text-muted-foreground">
+        To use Fix, open a draft you can edit (duplicate this version from the
+        schedule page if needed).
+      </p>
+    ) : null;
+
   const blocks: { severity: Severity; title: string }[] = [
     { severity: "error", title: "Errors" },
     { severity: "warning", title: "Warnings" },
@@ -50,12 +58,13 @@ export function ValidationPanel({
 
   return (
     <div className="flex flex-col gap-3">
+      {readOnlyHint}
       {blocks.map(({ severity, title }) => {
         const items = view.violations
           .filter((v) => v.severity === severity)
           .toSorted((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
         const expanded = open.has(severity);
-        const showFix = canEdit && severity === "error" && view.schedule;
+        const showFix = canEdit && view.schedule !== null;
         return (
           <section
             key={severity}

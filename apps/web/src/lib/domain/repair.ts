@@ -6,7 +6,7 @@ import {
   monthDates,
   weekday,
 } from "./calendar";
-import { BIRTHDAY_LEAVE, REST_DAY } from "./day-codes";
+import { BIRTHDAY_LEAVE, REST_DAY, TIME_OFF_IN_LIEU } from "./day-codes";
 import { computeShiftDuration } from "./durations";
 import { computeHourBank } from "./hour-bank";
 import type { Assignment, Employee, ScheduleInput } from "./types";
@@ -65,7 +65,7 @@ export function suggestFixes(
 ): FixSuggestion[] {
   const base = validateSchedule(input);
   const target = base.violations.find(
-    (v) => v.severity === "error" && violationIdentity(v) === targetIdentity,
+    (v) => violationIdentity(v) === targetIdentity,
   );
   if (!target) return [];
 
@@ -203,6 +203,8 @@ export function suggestFixes(
     ];
     if (target.code === "birthday_off")
       values.push({ shiftTypeId: null, dayCode: BIRTHDAY_LEAVE });
+    if (target.code === "monthly_tl_days")
+      values.push({ shiftTypeId: null, dayCode: TIME_OFF_IN_LIEU });
     if (target.code === "approved_leave_is_fixed" && target.date) {
       const absence = absenceOn(employee.id, target.date);
       if (absence) values.push({ shiftTypeId: null, dayCode: absence.dayCode });
@@ -354,7 +356,8 @@ export function suggestFixes(
 
     const result = validateSchedule({ ...input, assignments });
     const errorsAfter = identities(result.violations, "error");
-    if (errorsAfter.has(targetIdentity)) continue;
+    if (result.violations.some((v) => violationIdentity(v) === targetIdentity))
+      continue;
     if ([...errorsAfter].some((id) => !errorsBefore.has(id))) continue;
 
     const fixedErrors = [...errorsBefore].filter(
@@ -363,6 +366,9 @@ export function suggestFixes(
     const newWarnings = [...identities(result.violations, "warning")].filter(
       (id) => !warningsBefore.has(id),
     ).length;
+    // Errors fixed besides the target itself.
+    const extraFixed =
+      target.severity === "error" ? fixedErrors - 1 : fixedErrors;
     // Prefer fixes that keep each employee's hour balance where it was.
     let hourDrift = 0;
     for (const employeeId of new Set(changes.map((c) => c.employeeId))) {
@@ -382,10 +388,7 @@ export function suggestFixes(
       fixedErrors,
       newWarnings,
       score:
-        changes.length * 2 +
-        newWarnings * 3 -
-        (fixedErrors - 1) * 5 +
-        hourDrift / 120,
+        changes.length * 2 + newWarnings * 3 - extraFixed * 5 + hourDrift / 120,
     });
   }
 

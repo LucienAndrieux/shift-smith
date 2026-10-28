@@ -138,6 +138,7 @@ export async function getScheduleView(
       id: v.id,
       version: v.version,
       status: v.status,
+      createdBy: v.createdBy,
       source: v.source,
       title: v.title,
     })),
