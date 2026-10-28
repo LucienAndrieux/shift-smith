@@ -6,7 +6,6 @@ import { DemoBanner } from "@/components/demo/demo-banner";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
   SidebarContent,
@@ -28,16 +27,18 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
-        <SidebarHeader>
+        {/* Collapsed to icons, the logo and the toggle stack vertically. */}
+        <SidebarHeader className="flex-row items-center justify-between gap-2 group-data-[collapsible=icon]:flex-col">
           <Link
             href="/schedule"
-            className="flex items-center gap-2 px-2 py-1.5 font-semibold"
+            className="flex min-w-0 items-center gap-2 px-2 py-1.5 font-semibold"
           >
             <Logo />
             <span className="truncate group-data-[collapsible=icon]:hidden">
               ShiftSmith
             </span>
           </Link>
+          <SidebarTrigger className="hidden md:inline-flex" />
         </SidebarHeader>
         <SidebarContent>
           <Suspense fallback={<NavSkeleton />}>
@@ -53,8 +54,8 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
       </Sidebar>
       <SidebarInset className="min-w-0">
         <header className="sticky top-0 z-20 flex h-12 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur">
-          <SidebarTrigger />
-          <Separator orientation="vertical" className="h-5" />
+          {/* On phones the sidebar is a drawer: its toggle stays in this bar. */}
+          <SidebarTrigger className="md:hidden" />
           <div className="flex-1" />
           <ThemeToggle />
         </header>
