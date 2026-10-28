@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ClipboardList,
   Gauge,
+  ListChecks,
   type LucideIcon,
   MessageSquareText,
   PartyPopper,
@@ -34,6 +35,7 @@ interface NavItem {
 
 const MAIN: NavItem[] = [
   { href: "/schedule", label: "Schedule", icon: CalendarDays },
+  { href: "/validation", label: "Validation", icon: ListChecks },
   { href: "/employees", label: "Employees", icon: Users },
   { href: "/absences", label: "Absences", icon: Plane },
   { href: "/hour-bank", label: "Hour bank", icon: Timer },

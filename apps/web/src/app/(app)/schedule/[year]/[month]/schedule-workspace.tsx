@@ -1,6 +1,7 @@
 "use client";
 
-import { BookOpen } from "lucide-react";
+import { BookOpen, ListChecks } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,6 @@ import { MonthGrid } from "./month-grid";
 import { ScheduleToolbar } from "./schedule-toolbar";
 import { SectionPicker } from "./section-picker";
 import { indexView, type SchedulePermissions, type View } from "./types";
-import { ValidationPanel } from "./validation-panel";
 import { WeekView } from "./week-view";
 
 const ALL = "all";
@@ -78,6 +78,7 @@ export function ScheduleWorkspace({
               ]}
             />
             <div className="flex items-center gap-2">
+              <ValidationLink view={view} />
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -113,15 +114,31 @@ export function ScheduleWorkspace({
           ) : (
             <WeekView view={view} index={index} sectionId={sectionId} />
           )}
-          <ValidationPanel
-            view={view}
-            index={index}
-            sectionId={sectionId}
-            canEdit={canEdit}
-          />
         </>
       )}
     </div>
+  );
+}
+
+/** Error count of the displayed version, linking to its Validation page. */
+function ValidationLink({ view }: { view: View }) {
+  const errors = view.violations.filter((v) => v.severity === "error").length;
+  const query = view.schedule ? `?version=${view.schedule.version}` : "";
+  return (
+    <Button variant="outline" size="sm" asChild>
+      <Link href={`/validation/${view.year}/${view.month}${query}`}>
+        <ListChecks /> Validation
+        <span
+          className={
+            errors > 0
+              ? "rounded bg-destructive px-1.5 text-xs text-white"
+              : "rounded bg-muted px-1.5 text-xs text-muted-foreground"
+          }
+        >
+          {errors > 0 ? `${errors} error${errors > 1 ? "s" : ""}` : "OK"}
+        </span>
+      </Link>
+    </Button>
   );
 }
 
