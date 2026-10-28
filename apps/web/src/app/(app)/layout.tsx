@@ -49,15 +49,15 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           <Suspense>
             <SidebarUser />
           </Suspense>
+          {/* Bottom left of the app, also visible when the sidebar is collapsed. */}
+          <ThemeToggle align="start" />
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>
       <SidebarInset className="min-w-0">
-        <header className="sticky top-0 z-20 flex h-12 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur">
-          {/* On phones the sidebar is a drawer: its toggle stays in this bar. */}
-          <SidebarTrigger className="md:hidden" />
-          <div className="flex-1" />
-          <ThemeToggle />
+        {/* Phones only: the sidebar is a drawer, opened from this bar. */}
+        <header className="sticky top-0 z-20 flex h-12 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur md:hidden">
+          <SidebarTrigger />
         </header>
         <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 md:p-6">
           <Suspense fallback={null}>
