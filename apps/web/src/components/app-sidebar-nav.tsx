@@ -55,7 +55,44 @@ const ADMIN: NavItem[] = [
   { href: "/admin/users", label: "Users", icon: Shield },
 ];
 
-export function AppSidebarNav({ isAdmin }: { isAdmin: boolean }) {
+/** Red / orange counters, same colours as the Errors and Warnings blocks. */
+function ValidationCounts({
+  errors,
+  warnings,
+}: {
+  errors: number;
+  warnings: number;
+}) {
+  if (errors === 0 && warnings === 0) return null;
+  const dot =
+    "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-medium text-white tabular-nums";
+  return (
+    <span className="ml-auto flex items-center gap-1 group-data-[collapsible=icon]:hidden">
+      {errors > 0 && (
+        <span className={`${dot} bg-destructive`} title={`${errors} error(s)`}>
+          {errors}
+        </span>
+      )}
+      {warnings > 0 && (
+        <span
+          className={`${dot} bg-amber-500`}
+          title={`${warnings} warning(s)`}
+        >
+          {warnings}
+        </span>
+      )}
+    </span>
+  );
+}
+
+export function AppSidebarNav({
+  isAdmin,
+  validationCounts,
+}: {
+  isAdmin: boolean;
+  /** Errors and warnings of the Validation page (current and upcoming months). */
+  validationCounts: { errors: number; warnings: number };
+}) {
   const pathname = usePathname();
   const group = (label: string, items: NavItem[]) => (
     <SidebarGroup>
@@ -72,6 +109,9 @@ export function AppSidebarNav({ isAdmin }: { isAdmin: boolean }) {
                   <Link href={item.href}>
                     <item.icon />
                     <span>{item.label}</span>
+                    {item.href === "/validation" && (
+                      <ValidationCounts {...validationCounts} />
+                    )}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

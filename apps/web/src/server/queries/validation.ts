@@ -2,7 +2,10 @@ import "server-only";
 import { and, asc, eq, gt, gte, or } from "drizzle-orm";
 import { db } from "@/db";
 import { schedules } from "@/db/schema";
+import { validateSchedule } from "@/lib/domain/validator";
+import { loadScheduleInput } from "@/server/month-context";
 import { getScheduleView, type ScheduleView } from "@/server/queries/schedule";
+import { canSeeSchedule } from "@/server/schedules";
 import type { CurrentUser } from "@/server/session";
 
 export interface ValidationTarget {
@@ -66,4 +69,56 @@ export async function getUpcomingValidationTargets(
     months.map((m) => getValidationTarget(user, m.year, m.month, null)),
   );
   return targets.filter((t) => t.view.schedule !== null);
+}
+
+/**
+ * Error and warning counts of the Validation page (current and upcoming months,
+ * same version choice), computed without building the full schedule views.
+ */
+export async function getValidationCounts(
+  user: CurrentUser,
+  from: { year: number; month: number },
+) {
+  const rows = (
+    await db
+      .select()
+      .from(schedules)
+      .where(
+        or(
+          gt(schedules.year, from.year),
+          and(eq(schedules.year, from.year), gte(schedules.month, from.month)),
+        ),
+      )
+      .orderBy(asc(schedules.version))
+  ).filter((s) => canSeeSchedule(user, s));
+  const byMonth = new Map<string, typeof rows>();
+  for (const s of rows) {
+    const key = `${s.year}-${s.month}`;
+    byMonth.set(key, [...(byMonth.get(key) ?? []), s]);
+  }
+  let errors = 0;
+  let warnings = 0;
+  for (const versions of byMonth.values()) {
+    const editableDraft = versions
+      .filter(
+        (v) =>
+          v.status === "draft" &&
+          (user.role === "admin" ||
+            (user.role === "demo" && v.createdBy === user.id)),
+      )
+      .at(-1);
+    const schedule =
+      editableDraft ??
+      versions.find((v) => v.status === "published") ??
+      versions.at(-1);
+    if (!schedule) continue;
+    const { violations } = validateSchedule(
+      await loadScheduleInput(db, schedule),
+    );
+    for (const v of violations) {
+      if (v.severity === "error") errors++;
+      else warnings++;
+    }
+  }
+  return { errors, warnings };
 }

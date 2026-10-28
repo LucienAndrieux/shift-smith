@@ -17,6 +17,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { currentYearMonth } from "@/lib/dates";
+import { getValidationCounts } from "@/server/queries/validation";
 import { requireApprovedUser } from "@/server/session";
 
 // Every route below reads the session (authorization), so none can be part of a
@@ -78,7 +80,10 @@ async function GuestBanner() {
 
 async function SidebarNav() {
   const user = await requireApprovedUser();
-  return <AppSidebarNav isAdmin={user.role === "admin"} />;
+  const counts = await getValidationCounts(user, currentYearMonth());
+  return (
+    <AppSidebarNav isAdmin={user.role === "admin"} validationCounts={counts} />
+  );
 }
 
 async function SidebarUser() {
