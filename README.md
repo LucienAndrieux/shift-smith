@@ -40,11 +40,14 @@ With `DEMO_MODE=true`, the app becomes a public demo:
   guest account is created on the fly (Better Auth anonymous plugin), no sign-up;
 - a guest manager duplicates a version or generates a month to get **private
   drafts**, edits them, uses Fix, Generate, the PDF export and natural-language
-  constraints (approving one applies its absences and forced shifts to the
-  guest's own draft); reference data, publishing, the hour-bank close and user
-  management stay admin-only, checked server-side in every action;
+  constraints (approving one changes the guest's own drafts); Fix can also be
+  applied to a published schedule, which every visitor sees until the nightly
+  restore; reference data, publishing, the hour-bank close and user management
+  stay admin-only, checked server-side in every action;
 - quotas: drafts per guest, generations per hour (one at a time on the whole
   site) and LLM calls per guest and per day (`DEMO_*` variables);
+- every night at 03:00 the demo data is restored (guests and their work are
+  removed);
 - an hourly job removes guests older than 24 hours with their work, and when the
   current month has no published schedule it empties the data and imports the seed
   again with **rolling demo months** (the current month and the next two), each

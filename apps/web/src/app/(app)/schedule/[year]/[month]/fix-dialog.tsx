@@ -30,6 +30,7 @@ export function FixDialog({
   scheduleId,
   scheduleStatus,
   editable,
+  canApplyToPublished,
   violation,
   message,
 }: {
@@ -37,6 +38,8 @@ export function FixDialog({
   scheduleStatus: "draft" | "published" | "archived";
   /** The version itself is editable by the user. */
   editable: boolean;
+  /** The fix may go straight into this published version. */
+  canApplyToPublished: boolean;
   /** violationIdentity() of the error or warning. */
   violation: string;
   message: string;
@@ -45,7 +48,6 @@ export function FixDialog({
   /** Suggestion waiting for the "where to apply" choice. */
   const [choosing, setChoosing] = useState<number | null>(null);
   const appliesDirectly = editable && scheduleStatus === "draft";
-  const canApplyToPublished = editable && scheduleStatus === "published";
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -197,7 +199,8 @@ export function FixDialog({
                   </div>
                   {scheduleStatus === "published" && !canApplyToPublished && (
                     <p className="text-xs text-muted-foreground">
-                      Only an administrator can change the published schedule.
+                      The hour bank of this month is closed: the published
+                      schedule is read-only.
                     </p>
                   )}
                 </div>

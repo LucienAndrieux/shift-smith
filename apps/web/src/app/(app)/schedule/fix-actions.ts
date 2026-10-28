@@ -92,7 +92,9 @@ export const applyScheduleFix = plannerAction(
       scheduleId = copy.id;
       version = copy.version;
     } else {
-      version = (await loadEditableSchedule(sourceId, user)).version;
+      version = (
+        await loadEditableSchedule(sourceId, user, { allowPublished: true })
+      ).version;
     }
     await db.transaction(async (tx) => {
       for (const c of changes) {

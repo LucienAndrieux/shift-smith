@@ -1,8 +1,9 @@
-import { currentYearMonth } from "@/lib/dates";
+import { formatInTimeZone } from "date-fns-tz";
+import { APP_TIME_ZONE, currentYearMonth } from "@/lib/dates";
 import { env } from "@/lib/env";
 import { parseConstraint } from "@/server/constraints/parse";
 import { purgeExpiredGuests } from "@/server/demo/guests";
-import { ensureDemoMonth } from "@/server/demo/reset";
+import { ensureDemoMonth, resetDemoData } from "@/server/demo/reset";
 import { runSolver } from "@/server/solver/run";
 import {
   getBoss,
@@ -46,9 +47,17 @@ export async function startWorkers() {
   }
 }
 
-/** Removes expired guests and moves the demo data to the current month if needed. */
+/**
+ * Removes expired guests and moves the demo data to the current month if needed.
+ * Every night at 03:xx the demo data is restored, undoing the changes guests made
+ * to the published schedules.
+ */
 async function demoMaintenance() {
   try {
+    if (formatInTimeZone(new Date(), APP_TIME_ZONE, "H") === "3") {
+      await resetDemoData(currentYearMonth());
+      return;
+    }
     const purged = await purgeExpiredGuests();
     if (purged > 0) console.info(`[demo] ${purged} expired guest(s) removed`);
     await ensureDemoMonth(currentYearMonth());

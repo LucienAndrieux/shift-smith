@@ -149,6 +149,10 @@ export function ValidationPanel({
                                     scheduleId={view.schedule.id}
                                     scheduleStatus={view.schedule.status}
                                     editable={canEdit}
+                                    canApplyToPublished={
+                                      view.schedule.status === "published" &&
+                                      view.schedule.closedAt === null
+                                    }
                                     violation={violationIdentity(v)}
                                     message={v.message}
                                   />

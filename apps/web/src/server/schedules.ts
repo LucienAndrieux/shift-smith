@@ -22,11 +22,13 @@ export function canSeeSchedule(user: CurrentUser, schedule: Schedule): boolean {
 
 /**
  * A schedule the user may edit: not archived, hour bank not closed, and for demo
- * managers one of their own drafts.
+ * managers one of their own drafts (or the published version when
+ * `allowPublished`, used by Fix; the demo data is restored every night).
  */
 export async function loadEditableSchedule(
   scheduleId: string,
   user: CurrentUser,
+  { allowPublished = false }: { allowPublished?: boolean } = {},
 ) {
   const [schedule] = await db
     .select()
@@ -34,10 +36,10 @@ export async function loadEditableSchedule(
     .where(eq(schedules.id, scheduleId));
   if (!schedule || !canSeeSchedule(user, schedule))
     throw new ActionError("Schedule not found.");
-  if (
-    user.role !== "admin" &&
-    (schedule.status !== "draft" || schedule.createdBy !== user.id)
-  ) {
+  const ownDraft =
+    schedule.status === "draft" && schedule.createdBy === user.id;
+  const publishedFix = allowPublished && schedule.status === "published";
+  if (user.role !== "admin" && !ownDraft && !publishedFix) {
     throw new ActionError(
       "In the demo you edit your own drafts: duplicate this version first.",
     );
