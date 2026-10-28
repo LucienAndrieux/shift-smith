@@ -25,7 +25,8 @@ export function VersionHeader({
   basePath,
 }: {
   view: View;
-  title: string;
+  /** Omitted when the page's tables already show the dates (Validation). */
+  title?: string;
   /** e.g. "/validation": the version picker navigates within this page. */
   basePath: string;
 }) {
@@ -34,9 +35,11 @@ export function VersionHeader({
   const versionQuery = schedule ? `?version=${schedule.version}` : "";
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
-        {title} · {formatMonth(year, month)}
-      </h1>
+      {title && (
+        <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
+          {title} · {formatMonth(year, month)}
+        </h1>
+      )}
       {schedule && view.versions.length > 1 && (
         <Select
           value={String(schedule.version)}
@@ -56,7 +59,9 @@ export function VersionHeader({
           </SelectContent>
         </Select>
       )}
-      {schedule && <Badge variant="secondary">{schedule.status}</Badge>}
+      {title && schedule && (
+        <Badge variant="secondary">{schedule.status}</Badge>
+      )}
       <div className="flex-1" />
       <Button variant="outline" size="sm" asChild>
         <Link href={`/schedule/${year}/${month}${versionQuery}`}>

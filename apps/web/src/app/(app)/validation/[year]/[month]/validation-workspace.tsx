@@ -20,7 +20,7 @@ export function ValidationWorkspace({
   const index = useMemo(() => indexView(view), [view]);
   return (
     <div className="flex flex-col gap-4">
-      <VersionHeader view={view} title="Validation" basePath="/validation" />
+      <VersionHeader view={view} basePath="/validation" />
       {view.schedule ? (
         <ValidationPanel view={view} index={index} canEdit={canEdit} />
       ) : (
