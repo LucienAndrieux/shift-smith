@@ -107,8 +107,6 @@ export const approveConstraint = plannerAction(
             })
           : await applyOperationsToOwnDraft(tx, parsed.operations, {
               user,
-              year: row.targetYear,
-              month: row.targetMonth,
               constraintId: id,
             });
       await tx

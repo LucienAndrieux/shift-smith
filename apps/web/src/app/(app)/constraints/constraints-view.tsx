@@ -43,6 +43,8 @@ export interface ConstraintItem {
   reviewedBy: string | null;
   reviewedAt: string | null;
   summary: string | null;
+  /** The text names other months than the target month. */
+  monthWarning: string | null;
   operations: { type: keyof typeof OPERATION_LABELS; text: string }[];
 }
 
@@ -86,8 +88,9 @@ export function ConstraintsView({
     <div className="flex flex-col gap-4">
       {isDemo && (
         <p className="text-sm text-muted-foreground">
-          Demo: approving a constraint applies its absences and forced shifts to
-          your own draft of the target month; shared data is never changed.
+          Demo: approving a constraint changes your own drafts of the months its
+          dates fall in (absences, forced shifts, unavailabilities and shift
+          bans become locked cells); shared data is never changed.
         </p>
       )}
       {isAdmin && <NewConstraintForm defaultTarget={defaultTarget} />}
@@ -183,6 +186,11 @@ function ConstraintCard({
       {(item.summary || item.operations.length > 0 || item.parseError) && (
         <CardContent className="flex flex-col gap-3">
           {item.summary && <p className="text-sm">{item.summary}</p>}
+          {item.monthWarning && (
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              {item.monthWarning}
+            </p>
+          )}
           {item.operations.length > 0 && (
             <ul className="flex flex-col gap-1.5">
               {item.operations.map((op, i) => (

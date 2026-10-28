@@ -4,11 +4,13 @@ import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/db";
 import { naturalLanguageConstraints, user } from "@/db/schema";
+import { monthsOutsideTarget } from "@/lib/constraints/check";
 import {
   describeOperation,
   parsedConstraintSchema,
 } from "@/lib/constraints/operations";
 import { currentYearMonth, formatDateTime } from "@/lib/dates";
+import { formatMonth } from "@/lib/domain/calendar";
 import {
   getEmployees,
   getSections,
@@ -68,7 +70,17 @@ export default async function ConstraintsPage() {
         defaultTarget={defaultTarget}
         items={rows.map((r) => {
           const parsed = parsedConstraintSchema.safeParse(r.parsed);
+          const target = `${r.targetYear}-${String(r.targetMonth).padStart(2, "0")}`;
+          const outside = parsed.success
+            ? monthsOutsideTarget(parsed.data, target).map((m) =>
+                formatMonth(Number(m.slice(0, 4)), Number(m.slice(5))),
+              )
+            : [];
           return {
+            monthWarning:
+              outside.length > 0
+                ? `The dates fall in ${outside.join(", ")}, not in the target month (${formatMonth(r.targetYear, r.targetMonth)}).`
+                : null,
             id: r.id,
             rawText: r.rawText,
             target: `${r.targetYear}-${String(r.targetMonth).padStart(2, "0")}`,

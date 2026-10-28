@@ -26,7 +26,26 @@ function validTime(value: string): boolean {
 }
 
 /**
- * Problems that Structured Outputs cannot rule out: ids that are not in the lists
+ * Months (YYYY-MM) of the operations' dates that differ from the target month: the
+ * text named another month than the one picked in the form.
+ */
+export function monthsOutsideTarget(
+  parsed: ParsedConstraint,
+  target: string,
+): string[] {
+  const months = new Set(
+    parsed.operations.flatMap((op) =>
+      operationDates(op)
+        .filter((d) => DATE_RE.test(d))
+        .map((d) => d.slice(0, 7)),
+    ),
+  );
+  months.delete(target);
+  return [...months].sort();
+}
+
+/**
+ * Problems that structured outputs cannot rule out: ids that are not in the lists
  * given to the model, impossible dates, reversed ranges, wrong codes.
  * Returns one message per problem (empty = the result can be shown for approval).
  */
@@ -50,7 +69,7 @@ export function checkParsedConstraint(
     if (op.type === "staffing_override" && !refs.sectionIds.has(op.sectionId)) {
       add("unknown section");
     }
-    for (const value of dates(op)) {
+    for (const value of operationDates(op)) {
       if (!validDate(value)) add(`invalid date "${value}"`);
     }
     if ("startDate" in op && "endDate" in op && op.endDate < op.startDate) {
@@ -88,7 +107,8 @@ export function checkParsedConstraint(
   return problems;
 }
 
-function dates(op: ConstraintOperation): string[] {
+/** Dates written in an operation (range bounds or single date). */
+export function operationDates(op: ConstraintOperation): string[] {
   switch (op.type) {
     case "shift_force":
       return [op.date];

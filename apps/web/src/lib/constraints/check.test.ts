@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkParsedConstraint } from "./check";
+import { checkParsedConstraint, monthsOutsideTarget } from "./check";
 import { parsedConstraintSchema } from "./operations";
 
 const refs = {
@@ -80,5 +80,36 @@ describe("constraint operations", () => {
         "Operation 3 (staffing_override): maximum below minimum",
       ]),
     );
+  });
+
+  it("lists the months of the dates outside the target month", () => {
+    const parsed = parsedConstraintSchema.parse({
+      summary: "x",
+      operations: [
+        {
+          type: "shift_force",
+          employeeId: "priya",
+          shiftTypeId: "kitchen-a",
+          date: "2026-12-07",
+          reason: null,
+        },
+        {
+          type: "absence",
+          employeeId: "jonas",
+          dayCode: "SL",
+          startDate: "2026-11-30",
+          endDate: "2027-01-02",
+          note: null,
+        },
+      ],
+    });
+    expect(monthsOutsideTarget(parsed, "2026-11")).toEqual([
+      "2026-12",
+      "2027-01",
+    ]);
+    expect(monthsOutsideTarget(parsed, "2026-12")).toEqual([
+      "2026-11",
+      "2027-01",
+    ]);
   });
 });
