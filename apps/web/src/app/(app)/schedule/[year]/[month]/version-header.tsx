@@ -1,10 +1,7 @@
 "use client";
 
-import { CalendarDays } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -16,8 +13,8 @@ import { formatMonth } from "@/lib/domain/calendar";
 import type { View } from "./types";
 
 /**
- * Header of the pages built on one schedule version (Validation, Hours): the
- * month, the version picker and a link back to the schedule.
+ * Header of the pages built on one schedule version (Validation, Hours): an
+ * optional title with the month and status, and the version picker.
  */
 export function VersionHeader({
   view,
@@ -32,7 +29,8 @@ export function VersionHeader({
 }) {
   const router = useRouter();
   const { year, month, schedule } = view;
-  const versionQuery = schedule ? `?version=${schedule.version}` : "";
+  const hasPicker = schedule !== null && view.versions.length > 1;
+  if (!title && !hasPicker) return null;
   return (
     <div className="flex flex-wrap items-center gap-2">
       {title && (
@@ -40,7 +38,7 @@ export function VersionHeader({
           {title} · {formatMonth(year, month)}
         </h1>
       )}
-      {schedule && view.versions.length > 1 && (
+      {schedule && hasPicker && (
         <Select
           value={String(schedule.version)}
           onValueChange={(v) =>
@@ -62,12 +60,6 @@ export function VersionHeader({
       {title && schedule && (
         <Badge variant="secondary">{schedule.status}</Badge>
       )}
-      <div className="flex-1" />
-      <Button variant="outline" size="sm" asChild>
-        <Link href={`/schedule/${year}/${month}${versionQuery}`}>
-          <CalendarDays /> Open the schedule
-        </Link>
-      </Button>
     </div>
   );
 }
