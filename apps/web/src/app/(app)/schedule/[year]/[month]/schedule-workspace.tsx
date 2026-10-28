@@ -1,7 +1,6 @@
 "use client";
 
-import { BookOpen, Clock3, ListChecks } from "lucide-react";
-import Link from "next/link";
+import { BookOpen } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -78,16 +77,6 @@ export function ScheduleWorkspace({
               ]}
             />
             <div className="flex items-center gap-2">
-              <ValidationLink view={view} />
-              <Button variant="outline" size="sm" asChild>
-                <Link
-                  href={`/hours/${view.year}/${view.month}${
-                    view.schedule ? `?version=${view.schedule.version}` : ""
-                  }`}
-                >
-                  <Clock3 /> Hours
-                </Link>
-              </Button>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -126,28 +115,6 @@ export function ScheduleWorkspace({
         </>
       )}
     </div>
-  );
-}
-
-/** Error count of the displayed version, linking to its Validation page. */
-function ValidationLink({ view }: { view: View }) {
-  const errors = view.violations.filter((v) => v.severity === "error").length;
-  const query = view.schedule ? `?version=${view.schedule.version}` : "";
-  return (
-    <Button variant="outline" size="sm" asChild>
-      <Link href={`/validation/${view.year}/${view.month}${query}`}>
-        <ListChecks /> Validation
-        <span
-          className={
-            errors > 0
-              ? "rounded bg-destructive px-1.5 text-xs text-white"
-              : "rounded bg-muted px-1.5 text-xs text-muted-foreground"
-          }
-        >
-          {errors > 0 ? `${errors} error${errors > 1 ? "s" : ""}` : "OK"}
-        </span>
-      </Link>
-    </Button>
   );
 }
 
