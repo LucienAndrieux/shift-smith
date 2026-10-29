@@ -9,3 +9,15 @@ export function readableTextColor(hex: string): "#000000" | "#ffffff" {
   const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
   return luminance > 0.4 ? "#000000" : "#ffffff";
 }
+
+/**
+ * Soft rendering of a shift or day-code color: a light tint of it as background and
+ * a toned-down version as text, both mixed with the theme colors so they suit light
+ * and dark mode.
+ */
+export function softCodeStyle(color: string) {
+  return {
+    backgroundColor: `color-mix(in oklab, ${color} 30%, var(--background))`,
+    color: `color-mix(in oklab, ${color} 55%, var(--foreground))`,
+  };
+}

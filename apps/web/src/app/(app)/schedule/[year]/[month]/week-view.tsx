@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { readableTextColor } from "@/lib/colors";
+import { softCodeStyle } from "@/lib/colors";
 import {
   formatDayMonth,
   isoWeeksOfMonth,
@@ -159,10 +159,7 @@ export function WeekView({
                               {color && (
                                 <span
                                   className="inline-flex min-w-6 justify-center rounded px-1 text-xs font-bold"
-                                  style={{
-                                    backgroundColor: color,
-                                    color: readableTextColor(color),
-                                  }}
+                                  style={softCodeStyle(color)}
                                 >
                                   {shift?.code ?? dayCode?.code}
                                 </span>
@@ -277,14 +274,7 @@ function DayList({
                   >
                     <span
                       className="inline-flex min-w-8 shrink-0 justify-center rounded px-1 py-0.5 text-xs font-bold"
-                      style={
-                        color
-                          ? {
-                              backgroundColor: color,
-                              color: readableTextColor(color),
-                            }
-                          : undefined
-                      }
+                      style={color ? softCodeStyle(color) : undefined}
                     >
                       {shift?.code ?? dayCode?.code ?? "—"}
                     </span>

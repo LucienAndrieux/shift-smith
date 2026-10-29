@@ -10,7 +10,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { readableTextColor } from "@/lib/colors";
+import { softCodeStyle } from "@/lib/colors";
 import { MonthGrid } from "./month-grid";
 import { ScheduleToolbar } from "./schedule-toolbar";
 import { SectionPicker } from "./section-picker";
@@ -182,10 +182,7 @@ function LegendList({ title, items }: { title: string; items: LegendItem[] }) {
           <li key={item.key} className="flex items-center gap-2">
             <span
               className="inline-flex min-w-7 shrink-0 justify-center rounded px-1 font-bold"
-              style={{
-                backgroundColor: item.color,
-                color: readableTextColor(item.color),
-              }}
+              style={softCodeStyle(item.color)}
             >
               {item.code}
             </span>

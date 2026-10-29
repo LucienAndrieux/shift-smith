@@ -3,7 +3,7 @@
 import { Lock } from "lucide-react";
 import Link from "next/link";
 import { type ComponentProps, Fragment, useMemo, useState } from "react";
-import { readableTextColor } from "@/lib/colors";
+import { softCodeStyle } from "@/lib/colors";
 import { formatDayMonth } from "@/lib/domain/calendar";
 import { formatHoursMinutes } from "@/lib/domain/time";
 import { violationIdentity } from "@/lib/domain/validator";
@@ -366,11 +366,7 @@ function CellBox({
         errors && "ring-2 ring-red-500 ring-inset",
         !color && weekend && "bg-transparent",
       )}
-      style={
-        color
-          ? { backgroundColor: color, color: readableTextColor(color) }
-          : undefined
-      }
+      style={color ? softCodeStyle(color) : undefined}
       aria-label={title.replaceAll("\n", ", ")}
     >
       {label}
