@@ -27,14 +27,6 @@ export function MonthGrid({
     (s) => !sectionId || s.id === sectionId,
   );
 
-  const coverage = useMemo(() => {
-    const map = new Map<string, View["coverage"][number]>();
-    for (const c of view.coverage) {
-      map.set(`${c.date}|${c.sectionId}|${c.shiftTypeId ?? "any"}`, c);
-    }
-    return map;
-  }, [view.coverage]);
-
   const errorCells = useMemo(() => {
     const map = new Map<string, string[]>();
     for (const v of view.violations) {
@@ -88,16 +80,6 @@ export function MonthGrid({
             const employees = view.employees.filter(
               (e) => e.sectionId === section.id,
             );
-            const coverageKeys = [
-              ...view.shiftTypes
-                .filter((s) => s.sectionId === section.id && s.isActive)
-                .map((s) => s.id),
-              ...(view.coverage.some(
-                (c) => c.sectionId === section.id && c.shiftTypeId === null,
-              )
-                ? [null]
-                : []),
-            ];
             return (
               <Fragment key={section.id}>
                 <tr>
@@ -194,49 +176,6 @@ export function MonthGrid({
                           : ""}
                         {total?.unassignedDays ? "*" : ""}
                       </td>
-                    </tr>
-                  );
-                })}
-                {coverageKeys.map((shiftTypeId) => {
-                  const shift = shiftTypeId
-                    ? index.shiftById.get(shiftTypeId)
-                    : null;
-                  return (
-                    <tr
-                      key={`cov-${section.id}-${shiftTypeId}`}
-                      className="text-muted-foreground"
-                    >
-                      <td className="sticky left-0 z-[5] border-b bg-background px-2 py-0.5 text-right italic">
-                        <span className="hidden sm:inline">Coverage </span>
-                        {shift ? shift.code : "Any"}
-                      </td>
-                      {view.dates.map((d) => {
-                        const c = coverage.get(
-                          `${d.date}|${section.id}|${shiftTypeId ?? "any"}`,
-                        );
-                        const short =
-                          c && c.minStaff !== null && c.count < c.minStaff;
-                        const over =
-                          c && c.maxStaff !== null && c.count > c.maxStaff;
-                        return (
-                          <td
-                            key={d.date}
-                            title={
-                              c && (c.minStaff !== null || c.maxStaff !== null)
-                                ? `min ${c.minStaff ?? "—"} / max ${c.maxStaff ?? "—"}`
-                                : undefined
-                            }
-                            className={cn(
-                              "border-b border-l text-center font-mono",
-                              (short || over) &&
-                                "bg-red-500/15 font-semibold text-red-600 dark:text-red-400",
-                            )}
-                          >
-                            {c?.count ?? 0}
-                          </td>
-                        );
-                      })}
-                      <td className="border-b border-l" />
                     </tr>
                   );
                 })}
