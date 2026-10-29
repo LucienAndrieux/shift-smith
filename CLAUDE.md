@@ -120,9 +120,10 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
   the current month with `shiftSeedFile` + `generateDemoSchedule`); nightly
   restore at 03:xx.
 - The start page is also the developer's sales page (custom builds) with a public
-  contact form: `app/(auth)/start/actions.ts` → `server/email.ts` (nodemailer,
-  `SMTP_*`) to `CONTACT_EMAIL`; honeypot + in-memory per-address limit, no
-  session required. Display font Bricolage Grotesque on that page only.
+  contact form and a meeting request (30-minute `.ics` invitation built by
+  `lib/ics.ts`, visitor as organizer): `app/(auth)/start/actions.ts` →
+  `server/email.ts` (nodemailer, `SMTP_*`) to `CONTACT_EMAIL`; honeypot +
+  in-memory per-address limit, no session required. Display font Bricolage Grotesque on that page only.
 - Deployment: Docker Compose + Caddy (`infra/`), or natively on Windows Server
   (`infra/windows/`, NSSM services `ShiftSmithWeb` / `ShiftSmithSolver`) with
   `next start`; the Docker image builds the standalone output

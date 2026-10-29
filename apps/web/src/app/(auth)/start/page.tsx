@@ -1,5 +1,4 @@
 import {
-  Briefcase,
   CalendarCog,
   FolderGit2,
   type LucideIcon,
@@ -11,7 +10,11 @@ import type { Metadata } from "next";
 import { Bricolage_Grotesque } from "next/font/google";
 import { connection } from "next/server";
 import { type ComponentType, Suspense } from "react";
-import { GitHubIcon, LinkedInIcon } from "@/components/demo/brand-icons";
+import {
+  GitHubIcon,
+  LinkedInIcon,
+  MaltIcon,
+} from "@/components/demo/brand-icons";
 import { ContactForm } from "@/components/demo/contact-form";
 import { RoleChooser } from "@/components/demo/role-chooser";
 import { SchedulePreview } from "@/components/demo/schedule-preview";
@@ -110,7 +113,7 @@ const CONTACTS: {
     href: LINKS.malt,
     label: "Malt",
     handle: "lucienandrieux",
-    icon: Briefcase,
+    icon: MaltIcon,
   },
   {
     href: LINKS.github,

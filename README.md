@@ -56,9 +56,11 @@ published schedule it empties the data and imports the seed again with **rolling
 demo months** (the current month and the next two), each with a freshly generated
 published schedule; the current month contains the deliberate mistakes.
 
-The start page also presents the custom-build offer and a contact form: messages
-are emailed to `CONTACT_EMAIL` through SMTP (`SMTP_*`; printed to the console when
-`SMTP_HOST` is empty), with a honeypot field and a per-address rate limit.
+The start page also presents the custom-build offer, a contact form and a
+"Schedule a meeting" dialog: messages, and 30-minute calendar invitations (`.ics`,
+Paris time, weekdays 09:00–18:00) from the visitor's address, are emailed to
+`CONTACT_EMAIL` through SMTP (`SMTP_*`; printed to the console when `SMTP_HOST` is
+empty), with a honeypot field and a per-address rate limit.
 
 Quotas (`DEMO_*` variables) limit generations per hour (one at a time on the whole
 site) and LLM calls per visitor and per day.

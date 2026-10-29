@@ -8,6 +8,8 @@ export interface EmailMessage {
   text: string;
   /** Where a reply goes (the visitor who wrote through the contact form). */
   replyTo?: string;
+  /** Calendar invitation (iCalendar text, METHOD:REQUEST). */
+  icalEvent?: { method: "REQUEST"; content: string };
 }
 
 let transporter: Transporter | null | undefined;
@@ -34,7 +36,7 @@ export async function sendEmail(message: EmailMessage): Promise<boolean> {
   const transport = getTransporter();
   if (!transport) {
     console.info(
-      `\n[email:console] To: ${message.to}\n[email:console] Reply-To: ${message.replyTo ?? "-"}\n[email:console] Subject: ${message.subject}\n${message.text}\n`,
+      `\n[email:console] To: ${message.to}\n[email:console] Reply-To: ${message.replyTo ?? "-"}\n[email:console] Subject: ${message.subject}\n${message.text}\n${message.icalEvent?.content ?? ""}`,
     );
     return true;
   }
