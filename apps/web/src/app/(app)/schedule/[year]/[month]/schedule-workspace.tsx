@@ -108,6 +108,7 @@ export function ScheduleWorkspace({
               index={index}
               sectionId={sectionId}
               canEdit={canEdit}
+              canPlan={permissions.canPlan}
             />
           ) : (
             <WeekView view={view} index={index} sectionId={sectionId} />

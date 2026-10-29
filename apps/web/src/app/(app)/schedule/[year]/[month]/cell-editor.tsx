@@ -36,6 +36,8 @@ export function CellEditor({
   employee,
   date,
   cell,
+  open,
+  onOpenChange,
   children,
 }: {
   view: View;
@@ -43,12 +45,24 @@ export function CellEditor({
   employee: ViewEmployee;
   date: string;
   cell: ViewCell | undefined;
+  /** Controlled by the grid, which can also open it from the Fix dialog. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
   const [value, setValue] = useState(cell ? encodeCellValue(cell) : "");
   const [isLocked, setIsLocked] = useState(cell?.isLocked ?? false);
   const [note, setNote] = useState(cell?.note ?? "");
+  // Every opening starts from the current cell.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setValue(cell ? encodeCellValue(cell) : "");
+      setIsLocked(cell?.isLocked ?? false);
+      setNote(cell?.note ?? "");
+    }
+  }
   const { pending, run } = useAction();
 
   const eligible = view.shiftTypes.filter((s) =>
@@ -73,21 +87,11 @@ export function CellEditor({
         note,
       }),
     );
-    if (result.ok) setOpen(false);
+    if (result.ok) onOpenChange(false);
   }
 
   return (
-    <Popover
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (next) {
-          setValue(cell ? encodeCellValue(cell) : "");
-          setIsLocked(cell?.isLocked ?? false);
-          setNote(cell?.note ?? "");
-        }
-      }}
-    >
+    <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent className="w-72" align="center">
         <div className="flex flex-col gap-3">

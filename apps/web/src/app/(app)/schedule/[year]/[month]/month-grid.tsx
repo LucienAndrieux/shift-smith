@@ -2,11 +2,14 @@
 
 import { Lock } from "lucide-react";
 import Link from "next/link";
-import { type ComponentProps, Fragment, useMemo } from "react";
+import { type ComponentProps, Fragment, useMemo, useState } from "react";
 import { readableTextColor } from "@/lib/colors";
+import { formatDayMonth } from "@/lib/domain/calendar";
 import { formatHoursMinutes } from "@/lib/domain/time";
+import { violationIdentity } from "@/lib/domain/validator";
 import { cn } from "@/lib/utils";
 import { CellEditor } from "./cell-editor";
+import { CellFixDialog, type FixIssue } from "./fix-dialog";
 import type { View, ViewCell, ViewEmployee, ViewIndex } from "./types";
 
 const WEEKDAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
@@ -16,23 +19,31 @@ export function MonthGrid({
   index,
   sectionId,
   canEdit,
+  canPlan,
 }: {
   view: View;
   index: ViewIndex;
   /** null = all sections */
   sectionId: string | null;
   canEdit: boolean;
+  /** Admin or demo manager: cells outlined in red open the fix suggestions. */
+  canPlan: boolean;
 }) {
+  /** Cell (`employeeId|date`) whose editor or fix dialog is open. */
+  const [editing, setEditing] = useState<string | null>(null);
+  const [fixing, setFixing] = useState<string | null>(null);
+
   const sections = view.sections.filter(
     (s) => !sectionId || s.id === sectionId,
   );
 
   const errorCells = useMemo(() => {
-    const map = new Map<string, string[]>();
+    const map = new Map<string, FixIssue[]>();
     for (const v of view.violations) {
       if (v.severity !== "error" || !v.employeeId || !v.date) continue;
       const key = `${v.employeeId}|${v.date}`;
-      map.set(key, [...(map.get(key) ?? []), v.message]);
+      const issue = { violation: violationIdentity(v), message: v.message };
+      map.set(key, [...(map.get(key) ?? []), issue]);
     }
     return map;
   }, [view.violations]);
@@ -43,6 +54,20 @@ export function MonthGrid({
   );
 
   const colSpan = view.dates.length + 2;
+
+  const fixingCell = useMemo(() => {
+    if (!fixing) return null;
+    const [employeeId, date] = fixing.split("|");
+    const issues = errorCells.get(fixing);
+    // The cell is no longer in error (fix applied): nothing left to show.
+    if (!issues) return null;
+    return {
+      key: fixing,
+      date,
+      employee: view.employees.find((e) => e.id === employeeId),
+      issues,
+    };
+  }, [fixing, errorCells, view.employees]);
 
   return (
     // The grid grows with the page (no inner vertical scrollbar); it only scrolls
@@ -130,16 +155,22 @@ export function MonthGrid({
                       </td>
                       {view.dates.map((d) => {
                         const cell = view.cells[employee.id]?.[d.date];
-                        const errors = errorCells.get(
-                          `${employee.id}|${d.date}`,
-                        );
+                        const key = `${employee.id}|${d.date}`;
+                        const issues = errorCells.get(key);
+                        const fixable = canPlan && !!issues && !!view.schedule;
                         const box = (
                           <CellBox
                             cell={cell}
                             index={index}
-                            errors={errors}
+                            errors={issues?.map((x) => x.message)}
                             weekend={d.isWeekend}
-                            interactive={canEdit}
+                            interactive={canEdit || fixable}
+                            onClick={(event) => {
+                              if (!fixable) return;
+                              // Opens the fix suggestions instead of the editor.
+                              event.preventDefault();
+                              setFixing(key);
+                            }}
                           />
                         );
                         return (
@@ -159,6 +190,10 @@ export function MonthGrid({
                                 employee={employee as ViewEmployee}
                                 date={d.date}
                                 cell={cell}
+                                open={editing === key}
+                                onOpenChange={(open) =>
+                                  setEditing(open ? key : null)
+                                }
                               >
                                 {box}
                               </CellEditor>
@@ -192,6 +227,31 @@ export function MonthGrid({
           })}
         </tbody>
       </table>
+      {fixingCell && view.schedule && (
+        <CellFixDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setFixing(null);
+          }}
+          title={`${fixingCell.employee?.name ?? ""} · ${formatDayMonth(fixingCell.date)}`}
+          issues={fixingCell.issues}
+          scheduleId={view.schedule.id}
+          scheduleStatus={view.schedule.status}
+          editable={canEdit}
+          canApplyToPublished={
+            view.schedule.status === "published" &&
+            view.schedule.closedAt === null
+          }
+          onEditByHand={
+            canEdit
+              ? () => {
+                  setFixing(null);
+                  setEditing(fixingCell.key);
+                }
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }
