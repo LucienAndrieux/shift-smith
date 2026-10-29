@@ -45,9 +45,9 @@ export default function StartPage() {
     <div className="relative isolate flex min-h-dvh flex-col overflow-hidden">
       <Backdrop />
 
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
-        <div className="flex items-center gap-2 font-semibold">
-          <Logo className="size-6" />
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-6 sm:px-6 sm:py-8">
+        <div className="flex items-center gap-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+          <Logo animated className="size-10 sm:size-12" />
           ShiftSmith
         </div>
         <ThemeToggle />
