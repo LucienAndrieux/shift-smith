@@ -33,6 +33,8 @@ type Status = "pending" | "parsed" | "approved" | "rejected" | "failed";
 
 export interface ConstraintItem {
   id: string;
+  /** The user may retry, approve or reject it. */
+  canManage: boolean;
   rawText: string;
   target: string;
   status: Status;
@@ -98,7 +100,11 @@ export function ConstraintsView({
         <p className="text-sm text-muted-foreground">No constraints yet.</p>
       )}
       {items.map((item) => (
-        <ConstraintCard key={item.id} item={item} isAdmin={isAdmin} />
+        <ConstraintCard
+          key={item.id}
+          item={item}
+          isAdmin={isAdmin && item.canManage}
+        />
       ))}
     </div>
   );
@@ -174,7 +180,9 @@ function ConstraintCard({
         <CardDescription>
           Target {item.target} · {item.createdAt}
           {item.createdBy && ` · ${item.createdBy}`}
-          {item.model && ` · model ${item.model}`}
+          {item.model === "example"
+            ? " · example"
+            : item.model && ` · model ${item.model}`}
         </CardDescription>
         <CardAction>
           <Badge variant={style.variant}>

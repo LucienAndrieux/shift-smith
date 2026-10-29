@@ -614,5 +614,14 @@ export function shiftSeedFile(
       start: shiftDate(a.start, offset),
       end: shiftDate(a.end, offset),
     })),
+    // Every date of an example (text, summary, operations) and its target month.
+    example_constraints: rest.example_constraints?.map((c) => ({
+      ...(JSON.parse(
+        JSON.stringify(c).replace(/\d{4}-\d{2}-\d{2}/g, (d) =>
+          shiftDate(d, offset),
+        ),
+      ) as typeof c),
+      target: monthString(monthIndex(c.target) + offset),
+    })),
   };
 }

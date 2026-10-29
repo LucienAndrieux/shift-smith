@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { addDays, type IsoDate, toIsoDate, type Weekday } from "./calendar";
+import {
+  addDays,
+  type IsoDate,
+  MONTH_NAMES,
+  toIsoDate,
+  type Weekday,
+} from "./calendar";
 import { DEFAULT_DAY_CODES } from "./day-codes";
 import type { ShiftPeriod } from "./durations";
 import { HOLIDAY_COUNTRIES, publicHolidays } from "./holidays";
@@ -138,6 +144,31 @@ export const seedFileSchema = z.object({
       }),
     ),
   }),
+  /**
+   * Example natural-language constraints shown to every visitor. Operations use
+   * natural keys (employee name, section code, shift code in the employee's or the
+   * given section); `{YYYY-MM-DD}` in the text is rendered as "December 4".
+   */
+  example_constraints: z
+    .array(
+      z.object({
+        text: z.string(),
+        target: monthString,
+        status: z.enum(["parsed", "approved", "rejected"]),
+        summary: z.string(),
+        operations: z.array(
+          z
+            .object({
+              type: z.string(),
+              employee: z.string().optional(),
+              section: z.string().optional(),
+              shift: z.string().nullable().optional(),
+            })
+            .passthrough(),
+        ),
+      }),
+    )
+    .optional(),
   /** Written by scripts/generate-demo-schedule.ts. */
   reference_schedule: z
     .object({
@@ -240,6 +271,20 @@ export interface SeedPlan {
     note: string | null;
   }[];
   openingBalances: { employee: string; minutes: number; note: string }[];
+  exampleConstraints: {
+    rawText: string;
+    targetYear: number;
+    targetMonth: number;
+    status: "parsed" | "approved" | "rejected";
+    summary: string;
+    /** Natural keys: `employee` name, `section` code (always set with a shift). */
+    operations: ({
+      type: string;
+      employee?: string;
+      section?: string;
+      shift?: string | null;
+    } & Record<string, unknown>)[];
+  }[];
   /** Empty cells until the demo schedule has been generated. */
   referenceSchedule: {
     year: number;
@@ -291,6 +336,14 @@ export function openingBalanceDate(
 ): IsoDate {
   const { year, month } = plan.demoMonths[0];
   return addDays(toIsoDate(year, month, 1), -1);
+}
+
+/** `{2026-12-04}` → "December 4" (example constraint texts). */
+function renderDates(text: string): string {
+  return text.replace(
+    /\{\d{4}-(\d{2})-(\d{2})\}/g,
+    (_, m, d) => `${MONTH_NAMES[Number(m) - 1]} ${Number(d)}`,
+  );
 }
 
 function joinNotes(...notes: (string | undefined | null)[]): string | null {
@@ -481,6 +534,23 @@ export function buildSeedPlan(raw: unknown): SeedPlan {
         note: b.note ?? "Opening balance",
       };
     }),
+    exampleConstraints: (seed.example_constraints ?? []).map((c) => ({
+      rawText: renderDates(c.text),
+      targetYear: Number(c.target.slice(0, 4)),
+      targetMonth: Number(c.target.slice(5)),
+      status: c.status,
+      summary: renderDates(c.summary),
+      operations: c.operations.map((op) => {
+        const where = `Example constraint "${c.text.slice(0, 30)}…"`;
+        if (op.employee) requireEmployee(op.employee, where);
+        const section =
+          op.section ??
+          seed.employees.find((e) => e.name === op.employee)?.section;
+        if (op.shift && !sectionShiftCodes.get(section ?? "")?.has(op.shift))
+          errors.push(`${where}: unknown shift ${section}/${op.shift}`);
+        return op.shift === undefined ? op : { ...op, section };
+      }),
+    })),
     referenceSchedule: buildReferenceSchedule(
       seed,
       dayCodeSet,

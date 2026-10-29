@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, isNull, or } from "drizzle-orm";
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
@@ -28,10 +28,13 @@ export default async function ConstraintsPage() {
     db
       .select()
       .from(naturalLanguageConstraints)
-      // Demo guests only see their own constraints.
+      // Demo guests see their own constraints and the seeded examples.
       .where(
         me.isGuest
-          ? eq(naturalLanguageConstraints.createdBy, me.id)
+          ? or(
+              eq(naturalLanguageConstraints.createdBy, me.id),
+              isNull(naturalLanguageConstraints.createdBy),
+            )
           : undefined,
       )
       .orderBy(desc(naturalLanguageConstraints.createdAt))
@@ -82,6 +85,8 @@ export default async function ConstraintsPage() {
                 ? `The dates fall in ${outside.join(", ")}, not in the target month (${formatMonth(r.targetYear, r.targetMonth)}).`
                 : null,
             id: r.id,
+            // Demo managers only act on their own constraints.
+            canManage: me.role === "admin" || r.createdBy === me.id,
             rawText: r.rawText,
             target: `${r.targetYear}-${String(r.targetMonth).padStart(2, "0")}`,
             status: r.status,

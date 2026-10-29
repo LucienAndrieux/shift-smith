@@ -32,6 +32,10 @@ by an early one, a rest day worked, a couple without a shared rest day, a
 short-staffed restaurant, two colleagues off the same weekend, a shift outside an
 employee's skills) so the validator and the "Fix" button have something to show.
 
+The seed also holds five example natural-language constraints (approved, awaiting
+review and rejected) with their parsed operations, so the Constraints page is not
+empty; every visitor sees them, only admins can act on them.
+
 ## Public demo mode
 
 With `DEMO_MODE=true`, the app becomes a public demo:

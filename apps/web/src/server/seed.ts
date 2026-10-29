@@ -11,6 +11,7 @@ import {
   employees,
   holidays,
   hourBankEntries,
+  naturalLanguageConstraints,
   scheduleAssignments,
   schedules,
   schedulingRules,
@@ -19,6 +20,7 @@ import {
   shiftTypes,
   staffingRequirements,
 } from "@/db/schema";
+import { parsedConstraintSchema } from "@/lib/constraints/operations";
 import { formatMonth } from "@/lib/domain/calendar";
 import {
   openingBalanceDate,
@@ -296,6 +298,41 @@ export async function seedDatabase(plan: SeedPlan) {
         note: note?.note ?? "Opening balance (seed)",
       });
       inserted("hour_bank_entries", 1);
+    }
+
+    // Example constraints, matched on their text; natural keys become ids.
+    for (const c of plan.exampleConstraints) {
+      const existing = await tx
+        .select({ id: naturalLanguageConstraints.id })
+        .from(naturalLanguageConstraints)
+        .where(eq(naturalLanguageConstraints.rawText, c.rawText))
+        .limit(1);
+      if (existing.length > 0) continue;
+      const parsed = parsedConstraintSchema.parse({
+        summary: c.summary,
+        operations: c.operations.map(({ employee, section, shift, ...op }) => ({
+          ...op,
+          ...(employee !== undefined && {
+            employeeId: employeeIdOf(employee),
+          }),
+          ...(shift !== undefined && {
+            shiftTypeId: shift ? shiftIdOf(section ?? "", shift) : null,
+          }),
+          ...(op.type === "staffing_override" && {
+            sectionId: sectionIdOf(section ?? ""),
+          }),
+        })),
+      });
+      await tx.insert(naturalLanguageConstraints).values({
+        rawText: c.rawText,
+        targetYear: c.targetYear,
+        targetMonth: c.targetMonth,
+        status: c.status,
+        parsed,
+        model: "example",
+        reviewedAt: c.status === "parsed" ? null : new Date(),
+      });
+      inserted("natural_language_constraints", 1);
     }
 
     return seedReferenceSchedule(tx, plan, employeeIdOf, shiftIdOf, inserted);
