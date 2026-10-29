@@ -302,7 +302,7 @@ describe("validator — synthetic cases", () => {
       found
         .filter((x) => x.code === "different_weekend_off")
         .map((x) => x.date),
-    ).toEqual(["2026-11-07"]);
+    ).toEqual(["2026-11-14"]);
 
     // Ingrid Solberg rests again on her partner's rest day: the first one goes away.
     for (const a of input.assignments) {
@@ -335,6 +335,11 @@ describe("validator — November 2026 demo schedule", () => {
     ]);
     expect(at("shift_eligibility")).toEqual(["Tomasz Nowak 2026-11-05"]);
     expect(at("min_staff")).toContain("restaurant 2026-11-01");
+    // The extra night auditor and the extra evening receptionist exceed the maximums.
+    expect(at("max_staff")).toEqual([
+      "reception 2026-11-04",
+      "reception 2026-11-05",
+    ]);
     expect(summary.max_consecutive_work_days).toBeGreaterThan(0);
   });
 

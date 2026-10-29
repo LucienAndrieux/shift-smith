@@ -132,6 +132,7 @@ export const seedFileSchema = z.object({
         section: z.string(),
         shift: z.string(),
         min: z.number().int().nonnegative(),
+        max: z.number().int().positive().optional(),
         days: z.literal("all"),
         note: z.string().optional(),
       }),
@@ -234,6 +235,7 @@ export interface SeedPlan {
     shiftCode: string | null;
     weekday: Weekday | null;
     minStaff: number;
+    maxStaff: number | null;
     toConfirm: boolean;
     note: string | null;
   }[];
@@ -466,6 +468,7 @@ export function buildSeedPlan(raw: unknown): SeedPlan {
         shiftCode,
         weekday: null,
         minStaff: r.min,
+        maxStaff: r.max ?? null,
         toConfirm: seed.staffing_requirements.to_confirm ?? false,
         note: r.note ?? null,
       };
@@ -620,7 +623,7 @@ export function seedPlanToScheduleInput(
         : null,
       weekday: r.weekday,
       minStaff: r.minStaff,
-      maxStaff: null,
+      maxStaff: r.maxStaff,
       validFrom: null,
       validTo: null,
     })),

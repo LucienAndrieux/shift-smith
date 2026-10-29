@@ -196,8 +196,35 @@ export function generateDemoSchedule(
     ).length;
   }
 
+  // Staffing maximums per shift (key = shift id) and per section (key = section id).
+  const maxStaff = new Map<string, number>();
+  for (const r of base.staffingRequirements) {
+    if (r.maxStaff !== null && r.weekday === null) {
+      maxStaff.set(r.shiftTypeId ?? r.sectionId, r.maxStaff);
+    }
+  }
+
+  /** Assigning `shiftTypeId` to `e` on `date` keeps every staffing maximum. */
+  function hasRoom(e: Employee, date: IsoDate, shiftTypeId: string) {
+    const sectionId = shifts.get(shiftTypeId)?.sectionId ?? "";
+    let onShift = 0;
+    let inSection = 0;
+    for (const other of employees) {
+      if (other.id === e.id) continue;
+      const id = cellOf(other.id, date)?.shiftTypeId;
+      if (!id) continue;
+      if (id === shiftTypeId) onShift++;
+      if (shifts.get(id)?.sectionId === sectionId) inSection++;
+    }
+    return (
+      onShift < (maxStaff.get(shiftTypeId) ?? Infinity) &&
+      inSection < (maxStaff.get(sectionId) ?? Infinity)
+    );
+  }
+
   function allowed(e: Employee, date: IsoDate, el: ShiftEligibility) {
     if (!restOk(e.id, date, el.shiftTypeId)) return false;
+    if (!hasRoom(e, date, el.shiftTypeId)) return false;
     const count = weeklyCount(e.id, date, el.shiftTypeId);
     if (el.maxPerWeek !== null && count >= el.maxPerWeek) return false;
     if (el.exactPerWeek !== null && count >= el.exactPerWeek) return false;
@@ -375,16 +402,35 @@ export function generateDemoSchedule(
     const order = [...dates.slice(9), ...dates.slice(0, 9)];
     for (const d of order) {
       if (placed >= e.monthlyTlDays) break;
-      if (!cellOf(e.id, d)?.shiftTypeId || locked.has(key(e.id, d))) continue;
-      const ok = tryChanges(
-        [e.id],
-        () => {
-          setCell(e.id, d, code(TIME_OFF_IN_LIEU));
-          return true;
-        },
-        (before, after) =>
-          noNewError(before, after) &&
-          warningCount(after) < warningCount(before),
+      const vacated = cellOf(e.id, d)?.shiftTypeId;
+      if (!vacated || locked.has(key(e.id, d))) continue;
+      // Alone first; otherwise a colleague working that day takes over the shift
+      // (a capped shift may have no room for an extra person).
+      const relievers = [
+        null,
+        ...employees.filter(
+          (c) =>
+            c.id !== e.id &&
+            c.primarySectionId === e.primarySectionId &&
+            cellOf(c.id, d)?.shiftTypeId &&
+            !locked.has(key(c.id, d)),
+        ),
+      ];
+      const ok = relievers.some((c) =>
+        tryChanges(
+          c ? [e.id, c.id] : [e.id],
+          () => {
+            setCell(e.id, d, code(TIME_OFF_IN_LIEU));
+            if (!c) return true;
+            const el = c.eligibility.find((x) => x.shiftTypeId === vacated);
+            if (!el || !allowed(c, d, el)) return false;
+            setCell(c.id, d, work(vacated));
+            return true;
+          },
+          (before, after) =>
+            noNewError(before, after) &&
+            warningCount(after) < warningCount(before),
+        ),
       );
       if (ok) placed++;
     }

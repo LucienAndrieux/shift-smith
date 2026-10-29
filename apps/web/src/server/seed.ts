@@ -265,6 +265,7 @@ export async function seedDatabase(plan: SeedPlan) {
         shiftTypeId: shift,
         weekday: r.weekday,
         minStaff: r.minStaff,
+        maxStaff: r.maxStaff,
         toConfirm: r.toConfirm,
         note: r.note,
       });
