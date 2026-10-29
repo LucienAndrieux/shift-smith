@@ -71,42 +71,59 @@ export default async function ConstraintsPage() {
         isAdmin={canPlan(me)}
         isDemo={me.role === "demo"}
         defaultTarget={defaultTarget}
-        items={rows.map((r) => {
-          const parsed = parsedConstraintSchema.safeParse(r.parsed);
-          const target = `${r.targetYear}-${String(r.targetMonth).padStart(2, "0")}`;
-          const outside = parsed.success
-            ? monthsOutsideTarget(parsed.data, target).map((m) =>
-                formatMonth(Number(m.slice(0, 4)), Number(m.slice(5))),
-              )
-            : [];
-          return {
-            monthWarning:
-              outside.length > 0
-                ? `The dates fall in ${outside.join(", ")}, not in the target month (${formatMonth(r.targetYear, r.targetMonth)}).`
+        items={rows
+          // An example the guest reviewed is replaced by their own copy.
+          .filter(
+            (r) =>
+              r.createdBy !== null ||
+              !rows.some(
+                (o) => o.createdBy === me.id && o.rawText === r.rawText,
+              ),
+          )
+          .map((r) => {
+            const parsed = parsedConstraintSchema.safeParse(r.parsed);
+            const target = `${r.targetYear}-${String(r.targetMonth).padStart(2, "0")}`;
+            const outside = parsed.success
+              ? monthsOutsideTarget(parsed.data, target).map((m) =>
+                  formatMonth(Number(m.slice(0, 4)), Number(m.slice(5))),
+                )
+              : [];
+            return {
+              monthWarning:
+                outside.length > 0
+                  ? `The dates fall in ${outside.join(", ")}, not in the target month (${formatMonth(r.targetYear, r.targetMonth)}).`
+                  : null,
+              id: r.id,
+              // Demo managers act on their own constraints and review the
+              // examples through a private copy.
+              canManage:
+                me.role === "admin" ||
+                r.createdBy === me.id ||
+                (me.role === "demo" &&
+                  r.createdBy === null &&
+                  r.model === "example"),
+              rawText: r.rawText,
+              target: `${r.targetYear}-${String(r.targetMonth).padStart(2, "0")}`,
+              status: r.status,
+              model: r.model,
+              parseError: r.parseError,
+              createdAt: formatDateTime(r.createdAt),
+              createdBy: r.createdBy
+                ? (userName.get(r.createdBy) ?? null)
                 : null,
-            id: r.id,
-            // Demo managers only act on their own constraints.
-            canManage: me.role === "admin" || r.createdBy === me.id,
-            rawText: r.rawText,
-            target: `${r.targetYear}-${String(r.targetMonth).padStart(2, "0")}`,
-            status: r.status,
-            model: r.model,
-            parseError: r.parseError,
-            createdAt: formatDateTime(r.createdAt),
-            createdBy: r.createdBy ? (userName.get(r.createdBy) ?? null) : null,
-            reviewedBy: r.reviewedBy
-              ? (userName.get(r.reviewedBy) ?? null)
-              : null,
-            reviewedAt: r.reviewedAt ? formatDateTime(r.reviewedAt) : null,
-            summary: parsed.success ? parsed.data.summary : null,
-            operations: parsed.success
-              ? parsed.data.operations.map((op) => ({
-                  type: op.type,
-                  text: describeOperation(op, names),
-                }))
-              : [],
-          };
-        })}
+              reviewedBy: r.reviewedBy
+                ? (userName.get(r.reviewedBy) ?? null)
+                : null,
+              reviewedAt: r.reviewedAt ? formatDateTime(r.reviewedAt) : null,
+              summary: parsed.success ? parsed.data.summary : null,
+              operations: parsed.success
+                ? parsed.data.operations.map((op) => ({
+                    type: op.type,
+                    text: describeOperation(op, names),
+                  }))
+                : [],
+            };
+          })}
       />
     </>
   );

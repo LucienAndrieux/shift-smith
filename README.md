@@ -34,7 +34,9 @@ employee's skills) so the validator and the "Fix" button have something to show.
 
 The seed also holds five example natural-language constraints (approved, awaiting
 review and rejected) with their parsed operations, so the Constraints page is not
-empty; every visitor sees them, only admins can act on them.
+empty; every visitor sees them. A guest manager who approves or rejects one gets
+a private copy (applied to their own drafts); the example stays as it is for the
+others.
 
 ## Public demo mode
 
