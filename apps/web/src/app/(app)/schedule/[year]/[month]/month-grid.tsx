@@ -76,15 +76,23 @@ export function MonthGrid({
           </tr>
         </thead>
         <tbody>
-          {sections.map((section) => {
+          {sections.map((section, i) => {
             const employees = view.employees.filter(
               (e) => e.sectionId === section.id,
             );
             return (
               <Fragment key={section.id}>
+                {i > 0 && (
+                  // Breathing space between two sections.
+                  <tr aria-hidden>
+                    <td colSpan={colSpan} className="h-6 p-0" />
+                  </tr>
+                )}
                 <tr>
                   <td colSpan={colSpan} className="border-y bg-muted/60 p-0">
-                    <span className="sticky left-0 inline-block px-2 py-1 text-sm font-semibold">
+                    {/* Centered in the visible part of the grid, even while it
+                        scrolls sideways. */}
+                    <span className="sticky left-1/2 inline-block -translate-x-1/2 px-3 py-2 text-base font-semibold tracking-wide">
                       {section.name}
                     </span>
                   </td>
