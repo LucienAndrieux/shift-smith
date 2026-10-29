@@ -104,7 +104,7 @@ export function SchedulePreview() {
         <div className="flex flex-col gap-0.5">
           <span className="font-medium">Leila: only 7h30 rest after B</span>
           <span className="text-muted-foreground">
-            3 fixes found · swap with Chloé, no new error
+            3 fixes found, such as a swap with Chloé
           </span>
         </div>
       </div>

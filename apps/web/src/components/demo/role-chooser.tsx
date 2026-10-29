@@ -165,7 +165,7 @@ function RoleText({
       <span className="flex items-center gap-2 font-semibold">
         {title}
         {badge && (
-          <span className="rounded-full bg-[#E8590C]/10 px-2 py-0.5 text-[10px] font-medium tracking-wide text-[#E8590C] uppercase">
+          <span className="rounded-full bg-[#E8590C]/10 px-2 py-0.5 text-xs font-medium text-[#E8590C]">
             {badge}
           </span>
         )}

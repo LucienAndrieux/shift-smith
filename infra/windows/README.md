@@ -32,8 +32,8 @@ The script (safe to re-run):
 2. creates the `planner` role and a **UTF-8** `planner` database (asks for the
    `postgres` password, never stores it);
 3. writes the root `.env` (database URL, generated `BETTER_AUTH_SECRET`,
-   `BETTER_AUTH_URL`, `SOLVER_URL`); fill in `LLM_*`, `APP_TIMEZONE`, `HOTEL_NAME`
-   and the `DEMO_*` quotas yourself;
+   `BETTER_AUTH_URL`, `SOLVER_URL`); fill in `LLM_*`, `CONTACT_EMAIL`, `SMTP_*`
+   (contact form), `APP_TIMEZONE`, `HOTEL_NAME` and the `DEMO_*` quotas yourself;
 4. installs, builds, migrates and (with `-Seed`) imports the demo data;
 5. creates the solver venv (`services\solver\.venv`);
 6. registers two auto-start services with NSSM: `ShiftSmithSolver` and

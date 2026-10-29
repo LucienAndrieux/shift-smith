@@ -4,6 +4,19 @@ const serverEnvSchema = z.object({
   DATABASE_URL: z.url(),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.url(),
+  /**
+   * Contact form of the start page: messages go to CONTACT_EMAIL through SMTP.
+   * Without SMTP_HOST (development) they are printed to the console.
+   */
+  CONTACT_EMAIL: z
+    .union([z.email(), z.literal("")])
+    .optional()
+    .default(""),
+  SMTP_HOST: z.string().optional().default(""),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().optional().default(""),
+  SMTP_PASSWORD: z.string().optional().default(""),
+  SMTP_FROM: z.string().default("ShiftSmith <no-reply@localhost>"),
   /** Any OpenAI-compatible chat completions API (OpenAI, Groq, Mistral, Ollama…). */
   LLM_API_KEY: z.string().optional().default(""),
   /** Empty = OpenAI. */

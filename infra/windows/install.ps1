@@ -146,7 +146,7 @@ if ($envText -match '(?m)^BETTER_AUTH_SECRET=(change-me.*)?$') {
   $envText = Set-EnvValue $envText "BETTER_AUTH_SECRET" (New-Secret 32)
 }
 Write-Utf8NoBom $EnvFile $envText
-Write-Host ".env written. Fill in LLM_* in $EnvFile if not done yet."
+Write-Host ".env written. Fill in LLM_*, CONTACT_EMAIL and SMTP_* in $EnvFile if not done yet."
 
 # --------------------------------------------------------------------- web app
 Step "Installing dependencies and building the web app (several minutes)"
