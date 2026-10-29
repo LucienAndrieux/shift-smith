@@ -53,9 +53,9 @@ export function MonthGrid({
   const colSpan = view.dates.length + 2;
 
   return (
-    // The grid scrolls inside its own box (both axes) so the day header and the
-    // name column stay visible on small screens.
-    <div className="max-h-[calc(100dvh-12rem)] overflow-auto overscroll-contain rounded-md border">
+    // The grid grows with the page (no inner vertical scrollbar); it only scrolls
+    // sideways on narrow screens, keeping the name column visible.
+    <div className="overflow-x-auto rounded-md border">
       <table className="w-full border-collapse text-xs">
         <thead className="sticky top-0 z-10 bg-background">
           <tr>
