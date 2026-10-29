@@ -43,7 +43,7 @@ export function MeetingDialog() {
       }}
       action={requestMeeting}
       submitLabel="Send invitation"
-      successMessage="Invitation sent: you'll get my answer by email"
+      successMessage="Invitation sent: check your inbox for the confirmation"
     >
       {(form) => (
         <>

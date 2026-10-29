@@ -26,7 +26,8 @@ export function ContactForm() {
         <CheckCircle2 className="size-8 text-emerald-600 dark:text-emerald-400" />
         <p className="text-lg font-semibold">Message sent.</p>
         <p className="text-sm text-muted-foreground">
-          I&apos;ll reply to {sentTo}, usually within two working days.
+          A confirmation is on its way to {sentTo}. I usually reply within two
+          working days.
         </p>
         <Button variant="outline" size="sm" onClick={() => setSentTo(null)}>
           Write another message
