@@ -9,10 +9,20 @@ import { formatHoursMinutes } from "@/lib/domain/time";
 import { violationIdentity } from "@/lib/domain/validator";
 import { cn } from "@/lib/utils";
 import { CellEditor } from "./cell-editor";
+import { DayErrorsDialog } from "./day-errors-dialog";
 import { CellFixDialog, type FixIssue } from "./fix-dialog";
 import type { View, ViewCell, ViewEmployee, ViewIndex } from "./types";
 
 const WEEKDAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
+const WEEKDAY_NAMES = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
 
 export function MonthGrid({
   view,
@@ -32,6 +42,8 @@ export function MonthGrid({
   /** Cell (`employeeId|date`) whose editor or fix dialog is open. */
   const [editing, setEditing] = useState<string | null>(null);
   const [fixing, setFixing] = useState<string | null>(null);
+  /** Day whose error summary is open. */
+  const [openDay, setOpenDay] = useState<string | null>(null);
 
   const sections = view.sections.filter(
     (s) => !sectionId || s.id === sectionId,
@@ -47,6 +59,20 @@ export function MonthGrid({
     }
     return map;
   }, [view.violations]);
+
+  /** Errors per day, limited to the displayed section. */
+  const dayErrors = useMemo(() => {
+    const map = new Map<string, View["violations"]>();
+    for (const v of view.violations) {
+      if (v.severity !== "error" || !v.date) continue;
+      const vSection = v.employeeId
+        ? index.employeeById.get(v.employeeId)?.sectionId
+        : v.sectionId;
+      if (sectionId && vSection !== sectionId) continue;
+      map.set(v.date, [...(map.get(v.date) ?? []), v]);
+    }
+    return map;
+  }, [view.violations, index, sectionId]);
 
   const monthTotals = useMemo(
     () => new Map(view.totals.map((t) => [t.employeeId, t.month])),
@@ -79,22 +105,42 @@ export function MonthGrid({
             <th className="sticky left-0 z-20 w-28 min-w-28 border-b bg-background px-2 py-1 text-left font-medium sm:w-auto sm:min-w-40">
               Employee
             </th>
-            {view.dates.map((d) => (
-              <th
-                key={d.date}
-                title={d.holiday ?? undefined}
-                className={cn(
-                  "min-w-7 border-b border-l px-0.5 py-1 text-center font-medium sm:min-w-8",
-                  d.isWeekend && "bg-muted",
-                  d.holiday && "bg-amber-200/70 dark:bg-amber-900/50",
-                )}
-              >
-                <div className="text-[10px] text-muted-foreground">
-                  {WEEKDAY_LETTERS[d.weekday - 1]}
-                </div>
-                <div>{d.day}</div>
-              </th>
-            ))}
+            {view.dates.map((d) => {
+              const errors = dayErrors.get(d.date);
+              const label = (
+                <>
+                  <div className="text-[10px] text-muted-foreground">
+                    {WEEKDAY_LETTERS[d.weekday - 1]}
+                  </div>
+                  <div>{d.day}</div>
+                </>
+              );
+              return (
+                <th
+                  key={d.date}
+                  title={d.holiday ?? undefined}
+                  className={cn(
+                    "min-w-7 border-b border-l p-0 text-center font-medium sm:min-w-8",
+                    d.isWeekend && "bg-muted",
+                    d.holiday && "bg-amber-200/70 dark:bg-amber-900/50",
+                  )}
+                >
+                  {errors ? (
+                    // Outlined in red: opens the summary of the day's errors.
+                    <button
+                      type="button"
+                      onClick={() => setOpenDay(d.date)}
+                      title={`${errors.length} error(s): show them`}
+                      className="w-full cursor-pointer px-0.5 py-1 ring-2 ring-red-500 ring-inset outline-none hover:bg-red-500/10 focus-visible:bg-red-500/10"
+                    >
+                      {label}
+                    </button>
+                  ) : (
+                    <div className="px-0.5 py-1">{label}</div>
+                  )}
+                </th>
+              );
+            })}
             <th className="border-b border-l px-2 py-1 text-right font-medium">
               Δ
             </th>
@@ -227,6 +273,20 @@ export function MonthGrid({
           })}
         </tbody>
       </table>
+      {openDay && (
+        <DayErrorsDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setOpenDay(null);
+          }}
+          title={`${WEEKDAY_NAMES[(view.dates.find((d) => d.date === openDay)?.weekday ?? 1) - 1]} ${formatDayMonth(openDay)}`}
+          violations={dayErrors.get(openDay) ?? []}
+          view={view}
+          index={index}
+          canPlan={canPlan}
+          canEdit={canEdit}
+        />
+      )}
       {fixingCell && view.schedule && (
         <CellFixDialog
           open
