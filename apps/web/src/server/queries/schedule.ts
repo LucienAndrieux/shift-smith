@@ -39,9 +39,8 @@ function pickSchedule<T extends { version: number; status: string }>(
 
 /**
  * Everything the schedule screen needs, as plain serialisable data.
- * Only the versions the user may see are loaded (canSeeSchedule): admins see every
- * version, demo managers the published one and their own drafts, viewers the
- * published one or nothing.
+ * Only the versions the user may see are loaded (canSeeSchedule): managers see
+ * every version, employees and viewers the published one or nothing.
  */
 export async function getScheduleView(
   year: number,

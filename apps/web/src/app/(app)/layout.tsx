@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { AppSidebarNav } from "@/components/app-sidebar-nav";
-import { SignOutButton } from "@/components/auth/sign-out-button";
 import { DemoBanner } from "@/components/demo/demo-banner";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -19,7 +18,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { currentYearMonth } from "@/lib/dates";
 import { getValidationCounts } from "@/server/queries/validation";
-import { requireApprovedUser } from "@/server/session";
+import { type Role, requireUser } from "@/server/session";
 
 // Every route below reads the session (authorization), so none can be part of a
 // static shell: opt out of instant-navigation validation for this segment.
@@ -73,35 +72,43 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
 }
 
 async function GuestBanner() {
-  const user = await requireApprovedUser();
-  if (!user.isGuest) return null;
-  return <DemoBanner mode={user.role === "demo" ? "manager" : "viewer"} />;
+  return <DemoBanner user={await requireUser()} />;
 }
 
 async function SidebarNav() {
-  const user = await requireApprovedUser();
+  const user = await requireUser();
   const counts = await getValidationCounts(user, currentYearMonth());
   return (
-    <AppSidebarNav isAdmin={user.role === "admin"} validationCounts={counts} />
+    <AppSidebarNav
+      role={user.role}
+      employeeId={user.employeeId}
+      validationCounts={counts}
+    />
   );
 }
 
+const ROLE_LABELS: Record<Role, string> = {
+  manager: "manager",
+  employee: "employee",
+  viewer: "read-only",
+};
+
 async function SidebarUser() {
-  const user = await requireApprovedUser();
+  const user = await requireUser();
   return (
     <div className="flex flex-col gap-1 px-2 text-sm group-data-[collapsible=icon]:hidden">
       <div className="flex items-center gap-2">
         <span className="truncate font-medium">{user.name}</span>
-        <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-          {user.role === "demo" ? "manager (demo)" : user.role}
+        <Badge variant={user.role === "manager" ? "default" : "secondary"}>
+          {ROLE_LABELS[user.role]}
         </Badge>
       </div>
-      {!user.isGuest && (
-        <span className="truncate text-xs text-muted-foreground">
-          {user.email}
-        </span>
-      )}
-      <SignOutButton className="justify-start px-0" />
+      <Link
+        href="/start"
+        className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+      >
+        Change role
+      </Link>
     </div>
   );
 }

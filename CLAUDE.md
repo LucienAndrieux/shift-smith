@@ -16,8 +16,8 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
 - Domain logic lives in `apps/web/src/lib/domain/`: pure TypeScript, no framework or
   DB imports, covered by Vitest. The validator there also checks solver output.
 - Zod schemas are shared between server and client (`src/lib/schemas/`).
-- Every admin mutation: Server Action → `requireAdmin()` → DB write → `audit()`.
-  Reads go through `requireApprovedUser()`. Never rely on hidden buttons alone.
+- Every manager mutation: Server Action → `requireManager()` → DB write → `audit()`.
+  Reads go through `requireUser()`. Never rely on hidden buttons alone.
 - Never store the reason for a reduced schedule. Never store passwords in seeds.
   Never commit real personal data: the seed and every fixture stay fictional.
 - Fields marked `to_confirm` in seed data are imported with `to_confirm = true` and
@@ -45,7 +45,8 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
   boundaries). Next's bundled docs: `apps/web/node_modules/next/dist/docs/`.
 - `(app)/layout.tsx` sets `instant = false`: every route reads the session, so the
   dev "instant navigation" insights about uncached data are expected noise.
-- Server Actions: `adminAction(schema, handler)` in `src/server/action.ts` (auth +
+- Server Actions: `managerAction(schema, handler)` (or `userAction` when the
+  handler checks the role itself) in `src/server/action.ts` (auth +
   Zod + `refresh()`); forms use `useZodForm` / `FormDialog`, which send the raw
   schema *input* so the action re-validates the same shape.
 - TanStack Table is v9: use `DataTable` / `AppColumnDef` from
@@ -57,8 +58,6 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
 - Biome for lint + format (shadcn files in `src/components/ui` are not linted).
 - The single `.env` lives at the repo root; `next.config.ts` and
   `scripts/load-env.ts` load it.
-- `ADMIN_EMAIL` is a comma-separated list (env only): registering with one of those
-  emails creates an approved admin; all receive "new access request" emails.
 
 ## Layout
 
@@ -110,14 +109,16 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
   The worker registers its queues at server start: restart `pnpm dev` after
   adding a queue.
 - Solver contract and model notes: `services/solver/README.md`.
-- Demo mode (`DEMO_MODE=true`): guests via the Better Auth anonymous plugin
-  (`app/demo-actions.ts`), role `demo` = guest manager. `plannerAction` (admin or
-  demo) guards planning actions; `loadEditableSchedule` / `canSeeSchedule`
-  (`server/schedules.ts`) restrict demo managers to their own drafts. Quotas in
-  `server/demo/limits.ts`; hourly `demo-maintenance` job purges guests and calls
-  `ensureDemoMonth` (`server/demo/reset.ts`: truncate + seed shifted to the current
-  month with `shiftSeedFile` + `generateDemoSchedule`). Reference pages stay
-  admin-only (`role === "admin"`).
+- Showcase, no accounts: the start page (`/start`, `app/demo-actions.ts`) creates
+  a Better Auth anonymous guest with role `manager` (every right on the shared
+  data), `employee` (plays one employee via `user.employee_id`: published
+  schedules, own profile, "My requests") or `viewer` (read-only). DB roles `admin`
+  and `demo` from earlier versions read as `manager` (`server/session.ts`).
+  Managers see every version, others the published ones (`canSeeSchedule`).
+  Quotas in `server/demo/limits.ts`; hourly `demo-maintenance` job purges guests
+  and calls `ensureDemoMonth` (`server/demo/reset.ts`: truncate + seed shifted to
+  the current month with `shiftSeedFile` + `generateDemoSchedule`); nightly
+  restore at 03:xx.
 - Deployment: Docker Compose + Caddy (`infra/`), or natively on Windows Server
   (`infra/windows/`, NSSM services `ShiftSmithWeb` / `ShiftSmithSolver`) with
   `next start`; the Docker image builds the standalone output

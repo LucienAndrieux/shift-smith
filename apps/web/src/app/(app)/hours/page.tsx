@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { currentYearMonth } from "@/lib/dates";
-import { requireApprovedUser } from "@/server/session";
+import { requireUser } from "@/server/session";
 
 export default async function HoursIndex() {
-  await requireApprovedUser();
+  await requireUser();
   await connection();
   const { year, month } = currentYearMonth();
   redirect(`/hours/${year}/${month}`);

@@ -1,83 +1,46 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { type Database, db } from "@/db";
+import { db } from "@/db";
 import { naturalLanguageConstraints } from "@/db/schema";
 import { parsedConstraintSchema } from "@/lib/constraints/operations";
 import { constraintFormSchema } from "@/lib/schemas/constraints";
 import { idSchema } from "@/lib/schemas/reference";
-import { ActionError, plannerAction } from "@/server/action";
+import { ActionError, managerAction, userAction } from "@/server/action";
 import { audit } from "@/server/audit";
 import { applyOperations } from "@/server/constraints/apply";
-import { applyOperationsToOwnDraft } from "@/server/demo/constraints";
 import { assertLlmAllowed } from "@/server/demo/limits";
 import { enqueueConstraintParse } from "@/server/jobs/boss";
 import type { CurrentUser } from "@/server/session";
 
-type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
-type ConstraintRow = typeof naturalLanguageConstraints.$inferSelect;
-
-/** Seeded example shown to every visitor (no author). */
-const isExample = (row: ConstraintRow) =>
-  row.createdBy === null && row.model === "example";
-
 /**
- * Demo managers only handle the constraints they wrote, plus the seeded examples
- * when `allowExample` (they review a private copy, see `reviewedCopyId`).
+ * Managers handle every constraint; an employee only the requests they wrote
+ * (retry); read-only visitors none.
  */
-async function loadOwnConstraint(
-  id: string,
-  user: CurrentUser,
-  { allowExample = false } = {},
-) {
+async function loadConstraintFor(id: string, user: CurrentUser) {
   const [row] = await db
     .select()
     .from(naturalLanguageConstraints)
     .where(eq(naturalLanguageConstraints.id, id));
-  if (
-    !row ||
-    (user.role !== "admin" &&
-      row.createdBy !== user.id &&
-      !(allowExample && isExample(row)))
-  )
+  if (!row || (user.role !== "manager" && row.createdBy !== user.id))
     throw new ActionError("Constraint not found.");
   return row;
 }
 
-/**
- * The constraint a review applies to: the row itself, or for a demo manager
- * reviewing a shared example, a private copy of it (the example stays untouched
- * for the other visitors and the copy goes away with the guest).
- */
-async function reviewedCopyId(tx: Tx, row: ConstraintRow, user: CurrentUser) {
-  if (user.role === "admin" || !isExample(row)) return row.id;
-  if (row.status !== "parsed") {
-    throw new ActionError("Only constraints ready for review can be reviewed.");
-  }
-  const [copy] = await tx
-    .insert(naturalLanguageConstraints)
-    .values({
-      rawText: row.rawText,
-      targetYear: row.targetYear,
-      targetMonth: row.targetMonth,
-      status: row.status,
-      parsed: row.parsed,
-      model: row.model,
-      createdBy: user.id,
-    })
-    .returning({ id: naturalLanguageConstraints.id });
-  return copy.id;
-}
-
-export const submitConstraint = plannerAction(
+/** Managers write constraints, employees send requests for the managers. */
+export const submitConstraint = userAction(
   constraintFormSchema,
   async ({ rawText, target }, user) => {
+    if (user.role === "viewer")
+      throw new ActionError("Read-only visitors cannot send constraints.");
     await assertLlmAllowed(user);
     const [targetYear, targetMonth] = target.split("-").map(Number);
     const [row] = await db
       .insert(naturalLanguageConstraints)
       .values({
-        rawText,
+        // An employee writes in the first person: the name tells the model who.
+        rawText:
+          user.role === "employee" ? `${user.name}: ${rawText}` : rawText,
         targetYear,
         targetMonth,
         status: "pending",
@@ -107,8 +70,8 @@ export const submitConstraint = plannerAction(
   },
 );
 
-export const retryConstraint = plannerAction(idSchema, async ({ id }, user) => {
-  await loadOwnConstraint(id, user);
+export const retryConstraint = userAction(idSchema, async ({ id }, user) => {
+  await loadConstraintFor(id, user);
   await assertLlmAllowed(user);
   const [row] = await db
     .update(naturalLanguageConstraints)
@@ -125,14 +88,11 @@ export const retryConstraint = plannerAction(idSchema, async ({ id }, user) => {
   await enqueueConstraintParse(id);
 });
 
-export const approveConstraint = plannerAction(
+export const approveConstraint = managerAction(
   idSchema,
-  async ({ id: requestedId }, user) => {
-    const source = await loadOwnConstraint(requestedId, user, {
-      allowExample: true,
-    });
+  async ({ id }, user) => {
+    await loadConstraintFor(id, user);
     await db.transaction(async (tx) => {
-      const id = await reviewedCopyId(tx, source, user);
       const [row] = await tx
         .select()
         .from(naturalLanguageConstraints)
@@ -145,17 +105,11 @@ export const approveConstraint = plannerAction(
         );
       }
       const parsed = parsedConstraintSchema.parse(row.parsed);
-      const applied =
-        user.role === "admin"
-          ? await applyOperations(tx, parsed.operations, {
-              constraintId: id,
-              userId: user.id,
-              rawText: row.rawText,
-            })
-          : await applyOperationsToOwnDraft(tx, parsed.operations, {
-              user,
-              constraintId: id,
-            });
+      const applied = await applyOperations(tx, parsed.operations, {
+        constraintId: id,
+        userId: user.id,
+        rawText: row.rawText,
+      });
       await tx
         .update(naturalLanguageConstraints)
         .set({
@@ -175,16 +129,13 @@ export const approveConstraint = plannerAction(
   },
 );
 
-export const rejectConstraint = plannerAction(
+export const rejectConstraint = managerAction(
   idSchema,
-  async ({ id: requestedId }, user) => {
-    const row = await loadOwnConstraint(requestedId, user, {
-      allowExample: true,
-    });
+  async ({ id }, user) => {
+    const row = await loadConstraintFor(id, user);
     if (row.status === "approved")
       throw new ActionError("This constraint was already applied.");
     await db.transaction(async (tx) => {
-      const id = await reviewedCopyId(tx, row, user);
       await tx
         .update(naturalLanguageConstraints)
         .set({

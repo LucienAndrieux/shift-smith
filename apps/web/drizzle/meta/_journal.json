@@ -15,6 +15,13 @@
       "when": 1793125874442,
       "tag": "0001_demo_guests",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793298516555,
+      "tag": "0002_visitor_roles",
+      "breakpoints": true
     }
   ]
 }

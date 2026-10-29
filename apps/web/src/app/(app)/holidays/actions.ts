@@ -4,23 +4,26 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { holidays } from "@/db/schema";
 import { holidaySchema, idSchema } from "@/lib/schemas/reference";
-import { ActionError, adminAction } from "@/server/action";
+import { ActionError, managerAction } from "@/server/action";
 import { audit, changes } from "@/server/audit";
 
-export const createHoliday = adminAction(holidaySchema, async (input, user) => {
-  await db.transaction(async (tx) => {
-    const [row] = await tx.insert(holidays).values(input).returning();
-    await audit(tx, {
-      userId: user.id,
-      action: "create",
-      entity: "holiday",
-      entityId: row.id,
-      diff: row,
+export const createHoliday = managerAction(
+  holidaySchema,
+  async (input, user) => {
+    await db.transaction(async (tx) => {
+      const [row] = await tx.insert(holidays).values(input).returning();
+      await audit(tx, {
+        userId: user.id,
+        action: "create",
+        entity: "holiday",
+        entityId: row.id,
+        diff: row,
+      });
     });
-  });
-});
+  },
+);
 
-export const updateHoliday = adminAction(
+export const updateHoliday = managerAction(
   holidaySchema.extend(idSchema.shape),
   async ({ id, ...input }, user) => {
     await db.transaction(async (tx) => {
@@ -41,7 +44,7 @@ export const updateHoliday = adminAction(
   },
 );
 
-export const deleteHoliday = adminAction(idSchema, async ({ id }, user) => {
+export const deleteHoliday = managerAction(idSchema, async ({ id }, user) => {
   await db.transaction(async (tx) => {
     const [row] = await tx
       .delete(holidays)

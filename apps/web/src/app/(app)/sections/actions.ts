@@ -10,10 +10,10 @@ import {
   sectionSchema,
   shiftTypeSchema,
 } from "@/lib/schemas/reference";
-import { ActionError, adminAction } from "@/server/action";
+import { ActionError, managerAction } from "@/server/action";
 import { audit, changes } from "@/server/audit";
 
-export const updateSection = adminAction(
+export const updateSection = managerAction(
   sectionSchema.extend(idSchema.shape),
   async ({ id, ...values }, user) => {
     await db.transaction(async (tx) => {
@@ -47,7 +47,7 @@ function toPeriods(input: z.output<typeof shiftTypeSchema>) {
   return periods;
 }
 
-export const createShiftType = adminAction(
+export const createShiftType = managerAction(
   shiftTypeSchema,
   async (input, user) => {
     const periods = toPeriods(input);
@@ -72,7 +72,7 @@ export const createShiftType = adminAction(
   },
 );
 
-export const updateShiftType = adminAction(
+export const updateShiftType = managerAction(
   shiftTypeSchema.extend(idSchema.shape),
   async ({ id, ...input }, user) => {
     const periods = toPeriods(input);
@@ -119,7 +119,7 @@ export const updateShiftType = adminAction(
   },
 );
 
-export const deleteShiftType = adminAction(idSchema, async ({ id }, user) => {
+export const deleteShiftType = managerAction(idSchema, async ({ id }, user) => {
   await db.transaction(async (tx) => {
     const [row] = await tx
       .delete(shiftTypes)

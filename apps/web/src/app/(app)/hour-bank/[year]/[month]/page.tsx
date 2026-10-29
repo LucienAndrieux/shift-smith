@@ -23,7 +23,7 @@ import {
   getClosePreview,
   getPublishedSchedule,
 } from "@/server/queries/hour-bank";
-import { requireApprovedUser } from "@/server/session";
+import { requireUser } from "@/server/session";
 import { CloseMonthButton, ReopenMonthButton } from "./close-buttons";
 
 export const metadata: Metadata = { title: "Hour bank" };
@@ -31,7 +31,7 @@ export const metadata: Metadata = { title: "Hour bank" };
 export default async function HourBankMonthPage({
   params,
 }: PageProps<"/hour-bank/[year]/[month]">) {
-  const user = await requireApprovedUser();
+  const user = await requireUser();
   const { year: y, month: m } = await params;
   const year = Number(y);
   const month = Number(m);
@@ -43,7 +43,7 @@ export default async function HourBankMonthPage({
   ) {
     notFound();
   }
-  const isAdmin = user.role === "admin";
+  const canManage = user.role === "manager";
   const schedule = await getPublishedSchedule(year, month);
   const label = formatMonth(year, month);
 
@@ -82,7 +82,7 @@ export default async function HourBankMonthPage({
           </>
         }
         actions={
-          isAdmin &&
+          canManage &&
           (closed ? (
             <ReopenMonthButton scheduleId={schedule.id} label={label} />
           ) : (
@@ -106,7 +106,7 @@ export default async function HourBankMonthPage({
       ) : (
         <Alert>
           <AlertDescription>
-            Preview only: nothing is written until an admin closes the month.
+            Preview only: nothing is written until a manager closes the month.
             {excluded.length > 0 &&
               ` ${excluded.length} employee(s) with empty days are excluded: complete their rows first.`}
           </AlertDescription>

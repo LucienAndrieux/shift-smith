@@ -8,10 +8,10 @@ import {
   staffingOverrideSchema,
   staffingRequirementSchema,
 } from "@/lib/schemas/reference";
-import { ActionError, adminAction } from "@/server/action";
+import { ActionError, managerAction } from "@/server/action";
 import { audit, changes } from "@/server/audit";
 
-export const createRequirement = adminAction(
+export const createRequirement = managerAction(
   staffingRequirementSchema,
   async (input, user) => {
     await db.transaction(async (tx) => {
@@ -30,7 +30,7 @@ export const createRequirement = adminAction(
   },
 );
 
-export const updateRequirement = adminAction(
+export const updateRequirement = managerAction(
   staffingRequirementSchema.and(idSchema),
   async ({ id, ...input }, user) => {
     await db.transaction(async (tx) => {
@@ -54,24 +54,27 @@ export const updateRequirement = adminAction(
   },
 );
 
-export const deleteRequirement = adminAction(idSchema, async ({ id }, user) => {
-  await db.transaction(async (tx) => {
-    const [row] = await tx
-      .delete(staffingRequirements)
-      .where(eq(staffingRequirements.id, id))
-      .returning();
-    if (!row) throw new ActionError("Requirement not found.");
-    await audit(tx, {
-      userId: user.id,
-      action: "delete",
-      entity: "staffing_requirement",
-      entityId: id,
-      diff: row,
+export const deleteRequirement = managerAction(
+  idSchema,
+  async ({ id }, user) => {
+    await db.transaction(async (tx) => {
+      const [row] = await tx
+        .delete(staffingRequirements)
+        .where(eq(staffingRequirements.id, id))
+        .returning();
+      if (!row) throw new ActionError("Requirement not found.");
+      await audit(tx, {
+        userId: user.id,
+        action: "delete",
+        entity: "staffing_requirement",
+        entityId: id,
+        diff: row,
+      });
     });
-  });
-});
+  },
+);
 
-export const createOverride = adminAction(
+export const createOverride = managerAction(
   staffingOverrideSchema,
   async (input, user) => {
     await db.transaction(async (tx) => {
@@ -90,7 +93,7 @@ export const createOverride = adminAction(
   },
 );
 
-export const updateOverride = adminAction(
+export const updateOverride = managerAction(
   staffingOverrideSchema.and(idSchema),
   async ({ id, ...input }, user) => {
     await db.transaction(async (tx) => {
@@ -114,7 +117,7 @@ export const updateOverride = adminAction(
   },
 );
 
-export const deleteOverride = adminAction(idSchema, async ({ id }, user) => {
+export const deleteOverride = managerAction(idSchema, async ({ id }, user) => {
   await db.transaction(async (tx) => {
     const [row] = await tx
       .delete(staffingOverrides)

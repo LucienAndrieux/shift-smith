@@ -108,9 +108,7 @@ export function ScheduleToolbar({
                 {view.versions.map((v) => (
                   <SelectItem key={v.id} value={String(v.version)}>
                     v{v.version} · {v.status}
-                    {permissions.isDemo && v.status === "draft"
-                      ? " · yours"
-                      : ` · ${v.source}`}
+                    {` · ${v.source}`}
                   </SelectItem>
                 ))}
               </SelectContent>

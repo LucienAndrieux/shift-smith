@@ -37,7 +37,7 @@ export function ValidationPanel({
   canPlan,
 }: {
   sources: ValidationSource[];
-  /** Admin or demo manager: every line gets a Fix button. */
+  /** Manager: every line gets a Fix button. */
   canPlan: boolean;
 }) {
   const [open, setOpen] = useState<Set<Severity>>(new Set(["error"]));

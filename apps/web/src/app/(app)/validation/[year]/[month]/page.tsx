@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { formatMonth } from "@/lib/domain/calendar";
 import { getValidationTarget } from "@/server/queries/validation";
-import { canPlan, requireApprovedUser } from "@/server/session";
+import { isManager, requireUser } from "@/server/session";
 import { ValidationWorkspace } from "./validation-workspace";
 
 export async function generateMetadata({
@@ -23,7 +23,7 @@ export default async function ValidationPage({
   params,
   searchParams,
 }: PageProps<"/validation/[year]/[month]">) {
-  const user = await requireApprovedUser();
+  const user = await requireUser();
   const { year: yearParam, month: monthParam } = await params;
   const { version } = await searchParams;
   const year = Number(yearParam);
@@ -46,7 +46,7 @@ export default async function ValidationPage({
     <ValidationWorkspace
       view={view}
       canEdit={canEdit}
-      canPlan={canPlan(user)}
+      canPlan={isManager(user)}
     />
   );
 }

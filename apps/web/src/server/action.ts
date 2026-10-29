@@ -1,7 +1,7 @@
 import "server-only";
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { type CurrentUser, requireAdmin, requirePlanner } from "./session";
+import { type CurrentUser, requireManager, requireUser } from "./session";
 
 export type ActionResult<T = undefined> =
   | { ok: true; data: T; message?: string }
@@ -11,39 +11,40 @@ export type ActionResult<T = undefined> =
 export class ActionError extends Error {}
 
 /**
- * Wraps an admin mutation: checks the session server-side, validates the input with
- * the shared Zod schema, runs the handler, refreshes the client router and turns
- * errors into a typed result. Handlers are responsible for writing the audit log.
+ * Wraps a manager mutation: checks the session server-side, validates the input
+ * with the shared Zod schema, runs the handler, refreshes the client router and
+ * turns errors into a typed result. Handlers are responsible for writing the audit
+ * log.
  */
-export function adminAction<S extends z.ZodType, T = undefined>(
+export function managerAction<S extends z.ZodType, T = undefined>(
   schema: S,
   handler: (input: z.infer<S>, user: CurrentUser) => Promise<T>,
   /** Read-only actions (polling, previews) skip the router refresh. */
   options: { refreshOnSuccess?: boolean } = {},
 ) {
-  return guardedAction(requireAdmin, schema, handler, options);
+  return guardedAction(requireManager, schema, handler, options);
 }
 
 /**
- * Same as adminAction for planning actions open to demo managers too. Handlers must
- * restrict demo managers to their own drafts (loadEditableSchedule does).
+ * Same as managerAction for actions open to every visitor; the handler checks what
+ * the role allows (employees submitting their requests, read-only previews).
  */
-export function plannerAction<S extends z.ZodType, T = undefined>(
+export function userAction<S extends z.ZodType, T = undefined>(
   schema: S,
   handler: (input: z.infer<S>, user: CurrentUser) => Promise<T>,
   options: { refreshOnSuccess?: boolean } = {},
 ) {
-  return guardedAction(requirePlanner, schema, handler, options);
+  return guardedAction(requireUser, schema, handler, options);
 }
 
 function guardedAction<S extends z.ZodType, T>(
-  requireUser: () => Promise<CurrentUser>,
+  requireRole: () => Promise<CurrentUser>,
   schema: S,
   handler: (input: z.infer<S>, user: CurrentUser) => Promise<T>,
   options: { refreshOnSuccess?: boolean },
 ) {
   return async (input: z.input<S>): Promise<ActionResult<T>> => {
-    const user = await requireUser();
+    const user = await requireRole();
     const parsed = schema.safeParse(input);
     if (!parsed.success) {
       return {

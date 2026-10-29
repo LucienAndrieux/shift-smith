@@ -33,8 +33,8 @@ type Status = "pending" | "parsed" | "approved" | "rejected" | "failed";
 
 export interface ConstraintItem {
   id: string;
-  /** The user may retry, approve or reject it. */
-  canManage: boolean;
+  /** The user may parse it again (managers, or the employee who wrote it). */
+  canRetry: boolean;
   rawText: string;
   target: string;
   status: Status;
@@ -66,14 +66,18 @@ const STATUS_STYLE: Record<
 
 export function ConstraintsView({
   items,
-  isAdmin,
-  isDemo,
+  canReview,
+  canSubmit,
+  asEmployee,
   defaultTarget,
 }: {
   items: ConstraintItem[];
-  /** May submit and review constraints (admin or demo manager). */
-  isAdmin: boolean;
-  isDemo: boolean;
+  /** Approve and reject (managers). */
+  canReview: boolean;
+  /** Write constraints (managers) or requests (employees). */
+  canSubmit: boolean;
+  /** Employee guest: the form sends a request about themselves. */
+  asEmployee: boolean;
   defaultTarget: string;
 }) {
   const router = useRouter();
@@ -88,29 +92,29 @@ export function ConstraintsView({
 
   return (
     <div className="flex flex-col gap-4">
-      {isDemo && (
-        <p className="text-sm text-muted-foreground">
-          Demo: approving a constraint changes your own drafts of the months its
-          dates fall in (absences, forced shifts, unavailabilities and shift
-          bans become locked cells); shared data is never changed.
-        </p>
+      {canSubmit && (
+        <NewConstraintForm
+          defaultTarget={defaultTarget}
+          asEmployee={asEmployee}
+        />
       )}
-      {isAdmin && <NewConstraintForm defaultTarget={defaultTarget} />}
       {items.length === 0 && (
         <p className="text-sm text-muted-foreground">No constraints yet.</p>
       )}
       {items.map((item) => (
-        <ConstraintCard
-          key={item.id}
-          item={item}
-          isAdmin={isAdmin && item.canManage}
-        />
+        <ConstraintCard key={item.id} item={item} canReview={canReview} />
       ))}
     </div>
   );
 }
 
-function NewConstraintForm({ defaultTarget }: { defaultTarget: string }) {
+function NewConstraintForm({
+  defaultTarget,
+  asEmployee,
+}: {
+  defaultTarget: string;
+  asEmployee: boolean;
+}) {
   const form = useZodForm(constraintFormSchema, {
     rawText: "",
     target: defaultTarget,
@@ -119,10 +123,13 @@ function NewConstraintForm({ defaultTarget }: { defaultTarget: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">New constraint</CardTitle>
+        <CardTitle className="text-base">
+          {asEmployee ? "New request" : "New constraint"}
+        </CardTitle>
         <CardDescription>
-          For example: “Priya can&apos;t work mornings the week of Dec 7” or
-          “Jonas is on sick leave until Dec 18”.
+          {asEmployee
+            ? "Written in your name and sent to the managers, for example: “I can't work mornings the week of Dec 7” or “I would like Dec 18 off”."
+            : "For example: “Priya can't work mornings the week of Dec 7” or “Jonas is on sick leave until Dec 18”."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -164,10 +171,10 @@ function NewConstraintForm({ defaultTarget }: { defaultTarget: string }) {
 
 function ConstraintCard({
   item,
-  isAdmin,
+  canReview,
 }: {
   item: ConstraintItem;
-  isAdmin: boolean;
+  canReview: boolean;
 }) {
   const { pending, run } = useAction();
   const style = STATUS_STYLE[item.status];
@@ -224,7 +231,7 @@ function ConstraintCard({
           )}
         </CardContent>
       )}
-      {(isAdmin &&
+      {((canReview || item.canRetry) &&
         (item.status === "parsed" ||
           item.status === "failed" ||
           item.status === "pending")) ||
@@ -234,37 +241,39 @@ function ConstraintCard({
             {item.reviewedBy &&
               `Reviewed by ${item.reviewedBy} on ${item.reviewedAt}`}
           </span>
-          {isAdmin && (
+          {(canReview || item.canRetry) && (
             <div className="flex gap-2">
-              {(item.status === "failed" || item.status === "pending") && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={pending}
-                  onClick={() =>
-                    run(() => retryConstraint({ id: item.id }), {
-                      success: "Parsing again",
-                    })
-                  }
-                >
-                  <RotateCw /> Retry
-                </Button>
-              )}
-              {(item.status === "parsed" || item.status === "failed") && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={pending}
-                  onClick={() =>
-                    run(() => rejectConstraint({ id: item.id }), {
-                      success: "Rejected",
-                    })
-                  }
-                >
-                  <X /> Reject
-                </Button>
-              )}
-              {item.status === "parsed" && (
+              {item.canRetry &&
+                (item.status === "failed" || item.status === "pending") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pending}
+                    onClick={() =>
+                      run(() => retryConstraint({ id: item.id }), {
+                        success: "Parsing again",
+                      })
+                    }
+                  >
+                    <RotateCw /> Retry
+                  </Button>
+                )}
+              {canReview &&
+                (item.status === "parsed" || item.status === "failed") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={pending}
+                    onClick={() =>
+                      run(() => rejectConstraint({ id: item.id }), {
+                        success: "Rejected",
+                      })
+                    }
+                  >
+                    <X /> Reject
+                  </Button>
+                )}
+              {canReview && item.status === "parsed" && (
                 <ConfirmButton
                   title="Apply these operations?"
                   description="Each operation is written to its table (absences, unavailabilities, staffing overrides, fixed days off or a locked draft cell) with source “constraint”."

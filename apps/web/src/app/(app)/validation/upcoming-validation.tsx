@@ -12,7 +12,7 @@ export function UpcomingValidation({
   canPlan,
 }: {
   targets: ValidationTarget[];
-  /** Admin or demo manager: shows the Fix buttons. */
+  /** Manager: shows the Fix buttons. */
   canPlan: boolean;
 }) {
   const sources = useMemo(

@@ -27,7 +27,12 @@ export function ScheduleWorkspace({
   permissions: SchedulePermissions;
 }) {
   const index = useMemo(() => indexView(view), [view]);
-  const [section, setSection] = useState<string>(ALL);
+  // An employee guest starts on their own section.
+  const [section, setSection] = useState<string>(
+    () =>
+      view.employees.find((e) => e.id === permissions.ownEmployeeId)
+        ?.sectionId ?? ALL,
+  );
   const [mode, setMode] = useState<"month" | "week">("month");
   const sectionId = section === ALL ? null : section;
   const canEdit =
@@ -109,6 +114,7 @@ export function ScheduleWorkspace({
               sectionId={sectionId}
               canEdit={canEdit}
               canPlan={permissions.canPlan}
+              ownEmployeeId={permissions.ownEmployeeId}
             />
           ) : (
             <WeekView view={view} index={index} sectionId={sectionId} />

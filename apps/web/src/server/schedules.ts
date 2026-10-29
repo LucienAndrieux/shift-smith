@@ -10,25 +10,18 @@ import type { CurrentUser } from "./session";
 
 type Schedule = typeof schedules.$inferSelect;
 
-/**
- * Versions a user may see: admins see everything, demo managers the published
- * versions and their own drafts, viewers the published versions only.
- */
+/** Managers see every version; employees and viewers the published ones. */
 export function canSeeSchedule(user: CurrentUser, schedule: Schedule): boolean {
-  if (user.role === "admin") return true;
-  if (schedule.status === "published") return true;
-  return user.role === "demo" && schedule.createdBy === user.id;
+  return user.role === "manager" || schedule.status === "published";
 }
 
 /**
- * A schedule the user may edit: not archived, hour bank not closed, and for demo
- * managers one of their own drafts (or the published version when
- * `allowPublished`, used by Fix; the demo data is restored every night).
+ * A schedule a manager may edit: not archived and the month's hour bank not
+ * closed (drafts and the published version alike).
  */
 export async function loadEditableSchedule(
   scheduleId: string,
   user: CurrentUser,
-  { allowPublished = false }: { allowPublished?: boolean } = {},
 ) {
   const [schedule] = await db
     .select()
@@ -36,14 +29,6 @@ export async function loadEditableSchedule(
     .where(eq(schedules.id, scheduleId));
   if (!schedule || !canSeeSchedule(user, schedule))
     throw new ActionError("Schedule not found.");
-  const ownDraft =
-    schedule.status === "draft" && schedule.createdBy === user.id;
-  const publishedFix = allowPublished && schedule.status === "published";
-  if (user.role !== "admin" && !ownDraft && !publishedFix) {
-    throw new ActionError(
-      "In the demo you edit your own drafts: duplicate this version first.",
-    );
-  }
   if (schedule.status === "archived") {
     throw new ActionError(
       "Archived versions are read-only. Duplicate it into a new draft.",

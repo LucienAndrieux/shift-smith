@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   // These use Node APIs; keep them out of the server bundle.
-  serverExternalPackages: ["pg-boss", "postgres", "nodemailer", "pdfkit"],
+  serverExternalPackages: ["pg-boss", "postgres", "pdfkit"],
   turbopack: {
     root: path.resolve(import.meta.dirname, "../.."),
     rules: {

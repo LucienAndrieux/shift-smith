@@ -146,7 +146,7 @@ if ($envText -match '(?m)^BETTER_AUTH_SECRET=(change-me.*)?$') {
   $envText = Set-EnvValue $envText "BETTER_AUTH_SECRET" (New-Secret 32)
 }
 Write-Utf8NoBom $EnvFile $envText
-Write-Host ".env written. Fill in SMTP_* and LLM_* in $EnvFile if not done yet."
+Write-Host ".env written. Fill in LLM_* in $EnvFile if not done yet."
 
 # --------------------------------------------------------------------- web app
 Step "Installing dependencies and building the web app (several minutes)"
@@ -200,7 +200,7 @@ try {
   Write-Host "Solver: $($health.status)"
 } catch { Write-Host "Solver not answering yet: see $Logs\ShiftSmithSolver.log" -ForegroundColor Yellow }
 try {
-  $page = Invoke-WebRequest "http://127.0.0.1:$AppPort/sign-in" -UseBasicParsing -TimeoutSec 60
+  $page = Invoke-WebRequest "http://127.0.0.1:$AppPort/start" -UseBasicParsing -TimeoutSec 60
   Write-Host "Web app: HTTP $($page.StatusCode)"
 } catch { Write-Host "Web app not answering yet: see $Logs\ShiftSmithWeb.log" -ForegroundColor Yellow }
 

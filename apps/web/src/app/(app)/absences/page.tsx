@@ -4,13 +4,13 @@ import { PageHeader } from "@/components/page-header";
 import { db } from "@/db";
 import { absences } from "@/db/schema";
 import { getDayCodes, getEmployees } from "@/server/queries/reference";
-import { requireApprovedUser } from "@/server/session";
+import { requireUser } from "@/server/session";
 import { AbsencesView } from "./absences-view";
 
 export const metadata: Metadata = { title: "Absences" };
 
 export default async function AbsencesPage() {
-  const user = await requireApprovedUser();
+  const user = await requireUser();
   const [rows, employees, dayCodes] = await Promise.all([
     db.select().from(absences).orderBy(desc(absences.startDate)),
     getEmployees(),
@@ -25,7 +25,7 @@ export default async function AbsencesPage() {
         description="Annual leave, sick leave, birthdays, time off in lieu and other approved absences."
       />
       <AbsencesView
-        isAdmin={user.role === "admin"}
+        canManage={user.role === "manager"}
         employees={employees.map((e) => ({
           value: e.id,
           label: e.displayName,

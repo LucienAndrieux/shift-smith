@@ -14,7 +14,7 @@ import { db } from "@/db";
 import { schedulingRules } from "@/db/schema";
 import { isRuleCode, RULE_CODES, RULE_DESCRIPTIONS } from "@/lib/domain/rules";
 import { getEmployees, getSections } from "@/server/queries/reference";
-import { requireApprovedUser } from "@/server/session";
+import { requireUser } from "@/server/session";
 import { DeleteRuleButton, RuleDialog } from "./rule-dialogs";
 
 export const metadata: Metadata = { title: "Rules" };
@@ -22,8 +22,8 @@ export const metadata: Metadata = { title: "Rules" };
 const SCOPE_ORDER = { global: 0, section: 1, employee: 2 } as const;
 
 export default async function RulesPage() {
-  const user = await requireApprovedUser();
-  const isAdmin = user.role === "admin";
+  const user = await requireUser();
+  const canManage = user.role === "manager";
   const [rules, sections, employees] = await Promise.all([
     db.select().from(schedulingRules),
     getSections(),
@@ -50,7 +50,7 @@ export default async function RulesPage() {
         title="Rules"
         description="Scheduling rules are data: the validator (and the future solver) read them from here."
         actions={
-          isAdmin && (
+          canManage && (
             <RuleDialog sections={sectionOptions} employees={employeeOptions} />
           )
         }
@@ -65,7 +65,7 @@ export default async function RulesPage() {
                 <TableHead>Value</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Description</TableHead>
-                {isAdmin && <TableHead />}
+                {canManage && <TableHead />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -103,7 +103,7 @@ export default async function RulesPage() {
                   <TableCell className="max-w-xs whitespace-normal text-muted-foreground">
                     {r.description}
                   </TableCell>
-                  {isAdmin && (
+                  {canManage && (
                     <TableCell>
                       <span className="flex justify-end">
                         <RuleDialog

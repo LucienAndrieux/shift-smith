@@ -8,17 +8,14 @@ import {
   generateScheduleSchema,
   solverRunIdSchema,
 } from "@/lib/schemas/schedule";
-import { ActionError, plannerAction } from "@/server/action";
+import { ActionError, managerAction } from "@/server/action";
 import { audit } from "@/server/audit";
-import {
-  assertDraftQuota,
-  assertGenerationAllowed,
-} from "@/server/demo/limits";
+import { assertGenerationAllowed } from "@/server/demo/limits";
 import { enqueueSolveSchedule } from "@/server/jobs/boss";
 import { buildSolveRequest } from "@/server/solver/run";
 
 /** Queues a full-month generation with the OR-Tools solver (future months only). */
-export const startScheduleGeneration = plannerAction(
+export const startScheduleGeneration = managerAction(
   generateScheduleSchema,
   async ({ year, month, timeLimitSeconds }, user) => {
     const now = currentYearMonth();
@@ -27,7 +24,6 @@ export const startScheduleGeneration = plannerAction(
         "Generation is only available for months after the current one.",
       );
     }
-    await assertDraftQuota(user);
     await assertGenerationAllowed(user);
     const [run] = await db
       .insert(solverRuns)
@@ -60,7 +56,7 @@ export const startScheduleGeneration = plannerAction(
   },
 );
 
-export const getScheduleGeneration = plannerAction(
+export const getScheduleGeneration = managerAction(
   solverRunIdSchema,
   async ({ runId }, user) => {
     const [run] = await db
@@ -74,7 +70,7 @@ export const getScheduleGeneration = plannerAction(
       .from(solverRuns)
       .leftJoin(schedules, eq(schedules.id, solverRuns.scheduleId))
       .where(eq(solverRuns.id, runId));
-    if (!run || (user.role !== "admin" && run.createdBy !== user.id))
+    if (!run || (user.role !== "manager" && run.createdBy !== user.id))
       throw new ActionError("Generation not found.");
     const output = run.output as {
       status?: string;

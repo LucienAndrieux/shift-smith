@@ -15,7 +15,7 @@ export function ValidationWorkspace({
   canPlan,
 }: {
   view: View;
-  /** Admin or demo manager: shows the Fix buttons. */
+  /** Manager: shows the Fix buttons. */
   canPlan: boolean;
   /** The displayed version is editable by this user: shows the Fix buttons. */
   canEdit: boolean;

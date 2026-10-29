@@ -51,7 +51,7 @@ import {
   getSections,
   getShiftTypes,
 } from "@/server/queries/reference";
-import { requireApprovedUser } from "@/server/session";
+import { requireUser } from "@/server/session";
 import { AbsenceDialog } from "../../absences/absence-dialog";
 import { DeleteAbsenceButton } from "../../absences/delete-absence-button";
 import { EmployeeFormDialog } from "../employee-form";
@@ -76,7 +76,7 @@ const RELATION_LABELS = {
 export default async function EmployeePage({
   params,
 }: PageProps<"/employees/[id]">) {
-  const user = await requireApprovedUser();
+  const user = await requireUser();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const [employee] = await db
@@ -131,7 +131,7 @@ export default async function EmployeePage({
       .orderBy(asc(hourBankEntries.entryDate)),
   ]);
 
-  const isAdmin = user.role === "admin";
+  const canManage = user.role === "manager";
   const today = todayInAppZone();
   const self = allEmployees.find((e) => e.id === id);
   const fixed = self?.fixedDaysOff ?? [];
@@ -175,7 +175,7 @@ export default async function EmployeePage({
         }
         description={`${self?.sectionName ?? ""} · ${employee.weeklyContractMinutes / 60}h/week · hour bank ${formatHoursMinutes(balance, true)}`}
         actions={
-          isAdmin && (
+          canManage && (
             <EmployeeFormDialog employee={employee} sections={sectionOptions} />
           )
         }
@@ -243,7 +243,7 @@ export default async function EmployeePage({
           <Section
             title="Fixed days off"
             action={
-              isAdmin && (
+              canManage && (
                 <FixedDaysOffDialog
                   employeeId={id}
                   weekdays={fixed.map((f) => f.weekday)}
@@ -275,7 +275,7 @@ export default async function EmployeePage({
           <Section
             title="Shift eligibility"
             action={
-              isAdmin && (
+              canManage && (
                 <EligibilityDialog
                   employeeId={id}
                   shiftOptions={shiftOptions.filter(
@@ -320,7 +320,7 @@ export default async function EmployeePage({
                         ? `max ${e.maxPerWeek}`
                         : "—",
                     e.note ?? "",
-                    isAdmin ? (
+                    canManage ? (
                       <span key="a" className="flex justify-end gap-1">
                         <EligibilityDialog
                           employeeId={id}
@@ -345,7 +345,7 @@ export default async function EmployeePage({
           <Section
             title="Relations"
             action={
-              isAdmin && (
+              canManage && (
                 <RelationDialog
                   employeeId={id}
                   others={employeeOptions.filter((o) => o.value !== id)}
@@ -371,7 +371,9 @@ export default async function EmployeePage({
                       {nameOf.get(other)}
                     </Link>,
                     r.note ?? "",
-                    isAdmin ? <DeleteRelationButton key="d" id={r.id} /> : null,
+                    canManage ? (
+                      <DeleteRelationButton key="d" id={r.id} />
+                    ) : null,
                   ],
                 };
               })}
@@ -383,7 +385,7 @@ export default async function EmployeePage({
           <Section
             title="Absences"
             action={
-              isAdmin && (
+              canManage && (
                 <AbsenceDialog
                   trigger={
                     <Button variant="outline" size="sm">
@@ -418,7 +420,7 @@ export default async function EmployeePage({
                   a.status,
                   a.source,
                   a.note ?? "",
-                  isAdmin ? (
+                  canManage ? (
                     <span key="a" className="flex justify-end gap-1">
                       <AbsenceDialog
                         trigger={
@@ -447,7 +449,7 @@ export default async function EmployeePage({
         <TabsContent value="unavailabilities">
           <Section
             title="Unavailabilities"
-            action={isAdmin && <UnavailabilityDialog employeeId={id} />}
+            action={canManage && <UnavailabilityDialog employeeId={id} />}
           >
             <SimpleTable
               headers={["Date", "Time", "Reason", "Source", ""]}
@@ -461,7 +463,7 @@ export default async function EmployeePage({
                     : `${formatTimeOfDay(u.startMinute)}–${formatTimeOfDay(u.endMinute)}`,
                   u.reason ?? "",
                   u.source,
-                  isAdmin ? (
+                  canManage ? (
                     <DeleteUnavailabilityButton key="d" id={u.id} />
                   ) : null,
                 ],
@@ -474,7 +476,7 @@ export default async function EmployeePage({
           <Section
             title={`Hour bank ledger — balance ${formatHoursMinutes(balance, true)}`}
             action={
-              isAdmin && (
+              canManage && (
                 <HourBankAdjustmentDialog employeeId={id} today={today} />
               )
             }

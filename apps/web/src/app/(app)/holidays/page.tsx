@@ -14,14 +14,14 @@ import {
 import { db } from "@/db";
 import { holidays } from "@/db/schema";
 import { type Weekday, weekday, weekdayShort } from "@/lib/domain/calendar";
-import { requireApprovedUser } from "@/server/session";
+import { requireUser } from "@/server/session";
 import { DeleteHolidayButton, HolidayDialog } from "./holiday-dialogs";
 
 export const metadata: Metadata = { title: "Holidays" };
 
 export default async function HolidaysPage() {
-  const user = await requireApprovedUser();
-  const isAdmin = user.role === "admin";
+  const user = await requireUser();
+  const canManage = user.role === "manager";
   const rows = await db.select().from(holidays).orderBy(asc(holidays.date));
 
   return (
@@ -29,7 +29,7 @@ export default async function HolidaysPage() {
       <PageHeader
         title="Holidays"
         description="Public holidays are highlighted on the schedule; staff off on a holiday are coded PH."
-        actions={isAdmin && <HolidayDialog />}
+        actions={canManage && <HolidayDialog />}
       />
       <Card>
         <CardContent className="overflow-x-auto">
@@ -40,7 +40,7 @@ export default async function HolidaysPage() {
                 <TableHead>Day</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
-                {isAdmin && <TableHead />}
+                {canManage && <TableHead />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -54,7 +54,7 @@ export default async function HolidaysPage() {
                   <TableCell>
                     <Badge variant="secondary">{h.type}</Badge>
                   </TableCell>
-                  {isAdmin && (
+                  {canManage && (
                     <TableCell>
                       <span className="flex justify-end">
                         <HolidayDialog initial={h} />

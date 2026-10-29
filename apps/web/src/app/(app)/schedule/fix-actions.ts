@@ -6,9 +6,8 @@ import { scheduleAssignments } from "@/db/schema";
 import { formatDayMonth } from "@/lib/domain/calendar";
 import { suggestFixes } from "@/lib/domain/repair";
 import { applyFixSchema, suggestFixesSchema } from "@/lib/schemas/schedule";
-import { ActionError, plannerAction } from "@/server/action";
+import { ActionError, managerAction } from "@/server/action";
 import { audit } from "@/server/audit";
-import { assertDraftQuota } from "@/server/demo/limits";
 import { loadScheduleInput } from "@/server/month-context";
 import {
   createDraftCopy,
@@ -32,7 +31,7 @@ export interface FixSuggestionView {
 }
 
 /** Up to five local edits that remove the given error or warning without adding any error. */
-export const suggestScheduleFixes = plannerAction(
+export const suggestScheduleFixes = managerAction(
   suggestFixesSchema,
   async ({ scheduleId, violation }, user): Promise<FixSuggestionView[]> => {
     // Suggestions only read the version: any visible one, even if read-only.
@@ -80,21 +79,18 @@ export const suggestScheduleFixes = plannerAction(
  * to the version itself, or to a new draft copied from it. Returns the version
  * that received the fix.
  */
-export const applyScheduleFix = plannerAction(
+export const applyScheduleFix = managerAction(
   applyFixSchema,
   async ({ scheduleId: sourceId, target, changes }, user) => {
     let scheduleId = sourceId;
     let version: number;
     if (target === "new-draft") {
       const source = await loadVisibleSchedule(sourceId, user);
-      await assertDraftQuota(user);
       const copy = await createDraftCopy(source, user);
       scheduleId = copy.id;
       version = copy.version;
     } else {
-      version = (
-        await loadEditableSchedule(sourceId, user, { allowPublished: true })
-      ).version;
+      version = (await loadEditableSchedule(sourceId, user)).version;
     }
     await db.transaction(async (tx) => {
       for (const c of changes) {

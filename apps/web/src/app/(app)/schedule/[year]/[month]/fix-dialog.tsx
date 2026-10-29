@@ -50,7 +50,7 @@ export interface FixIssue {
  * "Fix" button next to an error or a warning: computes up to five local edits that
  * remove it without creating an error, and applies the chosen one. On an editable
  * draft the fix goes straight in; otherwise the user chooses between a new draft
- * holding the fix and (admins only) the published version itself.
+ * holding the fix and the published version itself.
  */
 export function FixDialog({
   violation,

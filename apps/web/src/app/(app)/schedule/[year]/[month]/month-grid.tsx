@@ -30,14 +30,17 @@ export function MonthGrid({
   sectionId,
   canEdit,
   canPlan,
+  ownEmployeeId = null,
 }: {
   view: View;
   index: ViewIndex;
   /** null = all sections */
   sectionId: string | null;
   canEdit: boolean;
-  /** Admin or demo manager: cells outlined in red open the fix suggestions. */
+  /** Manager: cells outlined in red open the fix suggestions. */
   canPlan: boolean;
+  /** Employee guest: their row is highlighted. */
+  ownEmployeeId?: string | null;
 }) {
   /** Cell (`employeeId|date`) whose editor or fix dialog is open. */
   const [editing, setEditing] = useState<string | null>(null);
@@ -180,9 +183,21 @@ export function MonthGrid({
                 )}
                 {employees.map((employee) => {
                   const total = monthTotals.get(employee.id);
+                  const own = employee.id === ownEmployeeId;
                   return (
-                    <tr key={employee.id} className="hover:bg-muted/30">
-                      <td className="sticky left-0 z-[5] border-b bg-background px-2 py-0.5 whitespace-nowrap">
+                    <tr
+                      key={employee.id}
+                      className={cn(
+                        "hover:bg-muted/30",
+                        own && "bg-sky-500/10 font-semibold",
+                      )}
+                    >
+                      <td
+                        className={cn(
+                          "sticky left-0 z-[5] border-b px-2 py-0.5 whitespace-nowrap",
+                          own ? "bg-sky-100 dark:bg-sky-950" : "bg-background",
+                        )}
+                      >
                         <div className="flex max-w-28 items-center gap-1.5 sm:max-w-none">
                           <Link
                             href={`/employees/${employee.id}`}

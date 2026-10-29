@@ -17,12 +17,12 @@ import { db } from "@/db";
 import { schedules } from "@/db/schema";
 import { formatDateTime } from "@/lib/dates";
 import { formatMonth } from "@/lib/domain/calendar";
-import { requireApprovedUser } from "@/server/session";
+import { requireUser } from "@/server/session";
 
 export const metadata: Metadata = { title: "Hour bank" };
 
 export default async function HourBankPage() {
-  await requireApprovedUser();
+  await requireUser();
   const published = await db
     .select()
     .from(schedules)

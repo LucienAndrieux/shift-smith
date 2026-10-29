@@ -11,7 +11,7 @@ export interface AuditEntry {
   diff?: unknown;
 }
 
-/** Records an admin mutation. Pass the transaction to keep it atomic with the change. */
+/** Records a manager mutation. Pass the transaction to keep it atomic with the change. */
 export async function audit(executor: Executor, entry: AuditEntry) {
   await executor.insert(auditLog).values({
     userId: entry.userId,

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { formatMonth } from "@/lib/domain/calendar";
 import { getScheduleView } from "@/server/queries/schedule";
-import { requireApprovedUser } from "@/server/session";
+import { requireUser } from "@/server/session";
 import { HoursWorkspace } from "./hours-workspace";
 
 export async function generateMetadata({
@@ -22,7 +22,7 @@ export default async function HoursPage({
   params,
   searchParams,
 }: PageProps<"/hours/[year]/[month]">) {
-  const user = await requireApprovedUser();
+  const user = await requireUser();
   const { year: yearParam, month: monthParam } = await params;
   const { version } = await searchParams;
   const year = Number(yearParam);

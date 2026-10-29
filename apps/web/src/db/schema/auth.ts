@@ -15,8 +15,17 @@ import {
  * fields declared as `user.additionalFields` in `src/lib/auth.ts`.
  */
 
-/** `demo`: guest manager of the public demo (edits its own drafts only). */
-export const userRole = pgEnum("user_role", ["admin", "demo", "viewer"]);
+/**
+ * `manager`, `employee` and `viewer` (read-only) are the visitor roles; `admin` and
+ * `demo` come from earlier versions and are read as `manager`.
+ */
+export const userRole = pgEnum("user_role", [
+  "admin",
+  "demo",
+  "viewer",
+  "manager",
+  "employee",
+]);
 export const accessStatus = pgEnum("access_status", [
   "pending",
   "approved",
@@ -39,6 +48,11 @@ export const user = pgTable(
     }),
     /** Guest of the public demo (Better Auth anonymous plugin). */
     isAnonymous: boolean().notNull().default(false),
+    /**
+     * The fictional employee an `employee` guest plays. No foreign key: the demo
+     * restore re-creates the employees (and removes the guests).
+     */
+    employeeId: uuid(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true })
       .notNull()

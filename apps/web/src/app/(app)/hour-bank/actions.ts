@@ -6,15 +6,15 @@ import { hourBankEntries, schedules } from "@/db/schema";
 import { formatMonth } from "@/lib/domain/calendar";
 import { formatHoursMinutes } from "@/lib/domain/time";
 import { scheduleIdSchema } from "@/lib/schemas/schedule";
-import { ActionError, adminAction } from "@/server/action";
+import { ActionError, managerAction } from "@/server/action";
 import { audit } from "@/server/audit";
 import { getClosePreview } from "@/server/queries/hour-bank";
 
 /**
  * Writes one monthly_close entry per employee with a complete month, computed again
- * on the server (the preview shown to the admin is never trusted).
+ * on the server (the preview shown to the manager is never trusted).
  */
-export const closeMonth = adminAction(
+export const closeMonth = managerAction(
   scheduleIdSchema,
   async ({ scheduleId }, user) => {
     const [schedule] = await db
@@ -85,7 +85,7 @@ export const closeMonth = adminAction(
 );
 
 /** Deletes the closing entries of a month so it can be corrected and closed again. */
-export const reopenMonth = adminAction(
+export const reopenMonth = managerAction(
   scheduleIdSchema,
   async ({ scheduleId }, user) => {
     const [schedule] = await db

@@ -1,26 +1,34 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { user } from "@/db/schema";
+import { employees, user } from "@/db/schema";
 import { auth } from "@/lib/auth";
-import { env } from "@/lib/env";
-import { deleteGuestWork } from "@/server/demo/guests";
-import { getCurrentUser } from "@/server/session";
-
-export type DemoMode = "manager" | "viewer";
+import { getCurrentUser, type Role } from "@/server/session";
 
 /**
- * Enters the public demo without an account: creates an anonymous guest (or reuses
- * the current one) as a demo manager or a read-only viewer.
+ * Enters the demo (or changes role): creates an anonymous guest, or reuses the
+ * current one, as a manager, an employee (playing `employeeId`) or read-only.
+ * The caller then reloads the app: a redirect rendered in this same request
+ * would still read the previous (possibly deleted) guest's session cookie.
  */
-export async function enterDemo(mode: DemoMode) {
-  if (!env().DEMO_MODE) throw new Error("The demo is not enabled.");
-  const current = await getCurrentUser();
-  if (current && !current.isGuest) redirect("/schedule");
+export async function enterDemo(role: Role, employeeId?: string) {
+  let played: { id: string; name: string } | null = null;
+  if (role === "employee") {
+    const [row] = employeeId
+      ? await db
+          .select({ id: employees.id, name: employees.displayName })
+          .from(employees)
+          .where(
+            and(eq(employees.id, employeeId), eq(employees.status, "active")),
+          )
+      : [];
+    if (!row) throw new Error("Choose an employee to play.");
+    played = row;
+  }
 
+  const current = await getCurrentUser();
   let id = current?.id;
   if (!id) {
     const result = await auth.api.signInAnonymous({
@@ -31,19 +39,15 @@ export async function enterDemo(mode: DemoMode) {
   if (!id) throw new Error("Could not start the demo.");
   await db
     .update(user)
-    .set(
-      mode === "manager"
-        ? { role: "demo", name: "Guest manager" }
-        : { role: "viewer", name: "Guest viewer" },
-    )
+    .set({
+      role,
+      employeeId: played?.id ?? null,
+      name:
+        role === "manager"
+          ? "Guest manager"
+          : role === "employee"
+            ? (played?.name ?? "Guest employee")
+            : "Guest viewer",
+    })
     .where(eq(user.id, id));
-  redirect("/schedule");
-}
-
-/** Deletes the current guest's drafts, generations and constraints. */
-export async function resetMyDemo() {
-  const current = await getCurrentUser();
-  if (!current?.isGuest) throw new Error("Only demo guests can reset.");
-  await deleteGuestWork([current.id]);
-  redirect("/schedule");
 }

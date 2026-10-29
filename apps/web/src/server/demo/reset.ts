@@ -25,7 +25,7 @@ import { readSeedFile, seedDatabase } from "@/server/seed";
  * removed, and the seed is imported again with its months and absences moved to the
  * current month. Every demo month gets a published schedule: the first one with the
  * deliberate mistakes, the next ones generated cleanly from the previous month's
- * last week. Accounts of real users (the admins) are kept.
+ * last week. Every guest is removed.
  */
 export async function ensureDemoMonth(target: { year: number; month: number }) {
   const [published] = await db
@@ -63,7 +63,7 @@ export async function resetDemoData(target: { year: number; month: number }) {
   await db.delete(user).where(eq(user.isAnonymous, true));
   await seedDatabase(plan);
   // The following demo months get a clean published schedule too, so visitors can
-  // browse several months (and still generate their own drafts for them).
+  // browse several months.
   let previous = demo;
   for (const month of plan.demoMonths.slice(1)) {
     previous = await publishGeneratedMonth(plan, month, previous);

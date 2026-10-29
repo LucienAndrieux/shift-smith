@@ -20,15 +20,15 @@ import {
 } from "@/components/ui/table";
 import { formatHoursMinutes, formatTimeOfDay } from "@/lib/domain/time";
 import { getSections, getShiftTypes } from "@/server/queries/reference";
-import { requireApprovedUser } from "@/server/session";
+import { requireUser } from "@/server/session";
 import { SectionDialog } from "./section-dialog";
 import { DeleteShiftTypeButton, ShiftTypeDialog } from "./shift-type-dialog";
 
 export const metadata: Metadata = { title: "Sections & shifts" };
 
 export default async function SectionsPage() {
-  const user = await requireApprovedUser();
-  const isAdmin = user.role === "admin";
+  const user = await requireUser();
+  const canManage = user.role === "manager";
   const [sections, shiftTypes] = await Promise.all([
     getSections(),
     getShiftTypes(),
@@ -50,7 +50,7 @@ export default async function SectionsPage() {
                 {section.coverageNote && (
                   <CardDescription>{section.coverageNote}</CardDescription>
                 )}
-                {isAdmin && (
+                {canManage && (
                   <CardAction className="flex gap-1">
                     <SectionDialog section={section} />
                   </CardAction>
@@ -64,7 +64,7 @@ export default async function SectionsPage() {
                         <TableHead>Code</TableHead>
                         <TableHead>Periods</TableHead>
                         <TableHead className="text-right">Paid</TableHead>
-                        {isAdmin && <TableHead />}
+                        {canManage && <TableHead />}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -109,7 +109,7 @@ export default async function SectionsPage() {
                           <TableCell className="text-right font-mono">
                             {formatHoursMinutes(s.paidMinutes)}
                           </TableCell>
-                          {isAdmin && (
+                          {canManage && (
                             <TableCell className="text-right">
                               <span className="flex justify-end">
                                 <ShiftTypeDialog
@@ -128,7 +128,7 @@ export default async function SectionsPage() {
                     </TableBody>
                   </Table>
                 </div>
-                {isAdmin && (
+                {canManage && (
                   <div>
                     <ShiftTypeDialog sectionId={section.id} />
                   </div>

@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { absences, dayCodes } from "@/db/schema";
 import { absenceSchema, idSchema } from "@/lib/schemas/reference";
-import { ActionError, adminAction } from "@/server/action";
+import { ActionError, managerAction } from "@/server/action";
 import { audit, changes } from "@/server/audit";
 
 async function assertAbsenceCode(code: string) {
@@ -14,25 +14,28 @@ async function assertAbsenceCode(code: string) {
   }
 }
 
-export const createAbsence = adminAction(absenceSchema, async (input, user) => {
-  await assertAbsenceCode(input.dayCode);
-  return db.transaction(async (tx) => {
-    const [row] = await tx
-      .insert(absences)
-      .values({ ...input, source: "manual", createdBy: user.id })
-      .returning();
-    await audit(tx, {
-      userId: user.id,
-      action: "create",
-      entity: "absence",
-      entityId: row.id,
-      diff: row,
+export const createAbsence = managerAction(
+  absenceSchema,
+  async (input, user) => {
+    await assertAbsenceCode(input.dayCode);
+    return db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(absences)
+        .values({ ...input, source: "manual", createdBy: user.id })
+        .returning();
+      await audit(tx, {
+        userId: user.id,
+        action: "create",
+        entity: "absence",
+        entityId: row.id,
+        diff: row,
+      });
+      return { id: row.id };
     });
-    return { id: row.id };
-  });
-});
+  },
+);
 
-export const updateAbsence = adminAction(
+export const updateAbsence = managerAction(
   absenceSchema.and(idSchema),
   async ({ id, ...input }, user) => {
     await assertAbsenceCode(input.dayCode);
@@ -54,7 +57,7 @@ export const updateAbsence = adminAction(
   },
 );
 
-export const deleteAbsence = adminAction(idSchema, async ({ id }, user) => {
+export const deleteAbsence = managerAction(idSchema, async ({ id }, user) => {
   await db.transaction(async (tx) => {
     const [row] = await tx
       .delete(absences)

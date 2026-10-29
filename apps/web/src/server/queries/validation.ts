@@ -16,7 +16,7 @@ export interface ValidationTarget {
 
 /**
  * The version of a month to validate: the requested one, otherwise the latest
- * draft the user can edit, otherwise the published one.
+ * draft for a manager, otherwise the published one.
  */
 export async function getValidationTarget(
   user: CurrentUser,
@@ -27,12 +27,7 @@ export async function getValidationTarget(
   let view = await getScheduleView(year, month, requested, { user });
   if (requested === null) {
     const draft = view.versions
-      .filter(
-        (v) =>
-          v.status === "draft" &&
-          (user.role === "admin" ||
-            (user.role === "demo" && v.createdBy === user.id)),
-      )
+      .filter((v) => v.status === "draft" && user.role === "manager")
       .at(-1);
     if (draft && draft.version !== view.schedule?.version) {
       view = await getScheduleView(year, month, draft.version, { user });
@@ -43,10 +38,7 @@ export async function getValidationTarget(
     schedule !== null &&
     schedule.status !== "archived" &&
     schedule.closedAt === null &&
-    (user.role === "admin" ||
-      (user.role === "demo" &&
-        schedule.status === "draft" &&
-        schedule.createdBy === user.id));
+    user.role === "manager";
   return { view, canEdit };
 }
 
@@ -100,12 +92,7 @@ export async function getValidationCounts(
   let warnings = 0;
   for (const versions of byMonth.values()) {
     const editableDraft = versions
-      .filter(
-        (v) =>
-          v.status === "draft" &&
-          (user.role === "admin" ||
-            (user.role === "demo" && v.createdBy === user.id)),
-      )
+      .filter((v) => v.status === "draft" && user.role === "manager")
       .at(-1);
     const schedule =
       editableDraft ??

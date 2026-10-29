@@ -1,37 +1,20 @@
 import "server-only";
 import { and, count, eq, gte, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { naturalLanguageConstraints, schedules, solverRuns } from "@/db/schema";
+import { naturalLanguageConstraints, solverRuns } from "@/db/schema";
 import { env } from "@/lib/env";
 import { ActionError } from "@/server/action";
 import type { CurrentUser } from "@/server/session";
 
 /**
- * Quotas of the public demo. They protect the server (one OR-Tools run at a time)
- * and the LLM provider's free tier. Admins are never limited.
+ * Quotas of the showcase, for every visitor. They protect the server (one OR-Tools
+ * run at a time) and the LLM provider's free tier.
  */
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
-export async function assertDraftQuota(user: CurrentUser) {
-  if (user.role !== "demo") return;
-  const [row] = await db
-    .select({ n: count() })
-    .from(schedules)
-    .where(
-      and(eq(schedules.createdBy, user.id), eq(schedules.status, "draft")),
-    );
-  const max = env().DEMO_MAX_DRAFTS;
-  if ((row?.n ?? 0) >= max) {
-    throw new ActionError(
-      `The demo allows ${max} drafts per visitor: delete one first.`,
-    );
-  }
-}
-
 export async function assertGenerationAllowed(user: CurrentUser) {
-  if (!env().DEMO_MODE || user.role === "admin") return;
   const [busy] = await db
     .select({ n: count() })
     .from(solverRuns)
@@ -57,7 +40,6 @@ export async function assertGenerationAllowed(user: CurrentUser) {
 }
 
 export async function assertLlmAllowed(user: CurrentUser) {
-  if (!env().DEMO_MODE || user.role === "admin") return;
   const since = new Date(Date.now() - DAY);
   const [mine, all] = await Promise.all([
     db

@@ -15,7 +15,7 @@ export async function GET(
   { params }: RouteContext<"/schedule/[year]/[month]/pdf">,
 ) {
   const user = await getCurrentUser();
-  if (user?.accessStatus !== "approved") {
+  if (!user) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const { year: y, month: m } = await params;

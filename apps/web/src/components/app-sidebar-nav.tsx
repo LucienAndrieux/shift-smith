@@ -11,8 +11,8 @@ import {
   PartyPopper,
   Plane,
   Scale,
-  Shield,
   Timer,
+  UserRound,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -25,6 +25,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import type { Role } from "@/server/session";
 
 interface NavItem {
   href: string;
@@ -51,8 +52,12 @@ const SETUP: NavItem[] = [
   { href: "/holidays", label: "Holidays", icon: PartyPopper },
 ];
 
-const ADMIN: NavItem[] = [
-  { href: "/admin/users", label: "Users", icon: Shield },
+/** An employee guest: their own pages first, then the shared schedule views. */
+const employeeNav = (employeeId: string): NavItem[] => [
+  { href: "/schedule", label: "Schedule", icon: CalendarDays },
+  { href: `/employees/${employeeId}`, label: "My profile", icon: UserRound },
+  { href: "/hours", label: "Hours", icon: Clock3 },
+  { href: "/constraints", label: "My requests", icon: MessageSquareText },
 ];
 
 /** Red / orange counters, same colours as the Errors and Warnings blocks. */
@@ -86,10 +91,12 @@ function ValidationCounts({
 }
 
 export function AppSidebarNav({
-  isAdmin,
+  role,
+  employeeId,
   validationCounts,
 }: {
-  isAdmin: boolean;
+  role: Role;
+  employeeId: string | null;
   /** Errors and warnings of the Validation page (current and upcoming months). */
   validationCounts: { errors: number; warnings: number };
 }) {
@@ -124,9 +131,14 @@ export function AppSidebarNav({
 
   return (
     <>
-      {group("Planning", MAIN)}
-      {group("Setup", SETUP)}
-      {isAdmin && group("Administration", ADMIN)}
+      {role === "employee" && employeeId ? (
+        group("Planning", employeeNav(employeeId))
+      ) : (
+        <>
+          {group("Planning", MAIN)}
+          {group("Setup", SETUP)}
+        </>
+      )}
     </>
   );
 }

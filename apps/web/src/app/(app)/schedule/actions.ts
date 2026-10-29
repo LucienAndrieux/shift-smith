@@ -16,9 +16,8 @@ import {
   scheduleIdSchema,
   setCellSchema,
 } from "@/lib/schemas/schedule";
-import { ActionError, adminAction, plannerAction } from "@/server/action";
+import { ActionError, managerAction } from "@/server/action";
 import { audit } from "@/server/audit";
-import { assertDraftQuota } from "@/server/demo/limits";
 import { loadMonthContext } from "@/server/month-context";
 import {
   canSeeSchedule,
@@ -34,7 +33,7 @@ async function nextVersion(year: number, month: number) {
   return (row?.version ?? 0) + 1;
 }
 
-export const setCell = plannerAction(setCellSchema, async (input, user) => {
+export const setCell = managerAction(setCellSchema, async (input, user) => {
   const schedule = await loadEditableSchedule(input.scheduleId, user);
   const { shiftTypeId, dayCode } = decodeCellValue(input.value);
   if (
@@ -119,10 +118,9 @@ export const setCell = plannerAction(setCellSchema, async (input, user) => {
   });
 });
 
-export const createDraft = plannerAction(
+export const createDraft = managerAction(
   newDraftSchema,
   async ({ year, month, prefill }, user) => {
-    await assertDraftQuota(user);
     const version = await nextVersion(year, month);
     const cells = prefill
       ? prefillAssignments(await loadMonthContext(db, year, month))
@@ -157,7 +155,7 @@ export const createDraft = plannerAction(
   },
 );
 
-export const duplicateSchedule = plannerAction(
+export const duplicateSchedule = managerAction(
   scheduleIdSchema,
   async ({ scheduleId }, user) => {
     const [source] = await db
@@ -166,13 +164,12 @@ export const duplicateSchedule = plannerAction(
       .where(eq(schedules.id, scheduleId));
     if (!source || !canSeeSchedule(user, source))
       throw new ActionError("Schedule not found.");
-    await assertDraftQuota(user);
     const copy = await createDraftCopy(source, user);
     return { id: copy.id, version: copy.version };
   },
 );
 
-export const publishSchedule = adminAction(
+export const publishSchedule = managerAction(
   scheduleIdSchema,
   async ({ scheduleId }, user) => {
     const [schedule] = await db
@@ -230,7 +227,7 @@ export const publishSchedule = adminAction(
   },
 );
 
-export const deleteDraft = plannerAction(
+export const deleteDraft = managerAction(
   scheduleIdSchema,
   async ({ scheduleId }, user) => {
     const [schedule] = await db

@@ -1,4 +1,4 @@
-import { desc, eq, isNull, or } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/page-header";
@@ -16,25 +16,22 @@ import {
   getSections,
   getShiftTypes,
 } from "@/server/queries/reference";
-import { canPlan, requireApprovedUser } from "@/server/session";
+import { isManager, requireUser } from "@/server/session";
 import { ConstraintsView } from "./constraints-view";
 
 export const metadata: Metadata = { title: "Constraints" };
 
 export default async function ConstraintsPage() {
-  const me = await requireApprovedUser();
+  const me = await requireUser();
   await connection();
   const [rows, employees, sections, shifts, users] = await Promise.all([
     db
       .select()
       .from(naturalLanguageConstraints)
-      // Demo guests see their own constraints and the seeded examples.
+      // An employee sees the requests they sent; others see everything.
       .where(
-        me.isGuest
-          ? or(
-              eq(naturalLanguageConstraints.createdBy, me.id),
-              isNull(naturalLanguageConstraints.createdBy),
-            )
+        me.role === "employee"
+          ? eq(naturalLanguageConstraints.createdBy, me.id)
           : undefined,
       )
       .orderBy(desc(naturalLanguageConstraints.createdAt))
@@ -64,66 +61,53 @@ export default async function ConstraintsPage() {
   return (
     <>
       <PageHeader
-        title="Constraints"
-        description="Write a constraint in plain language. It is parsed by the AI model into typed operations; nothing is applied until an admin approves it."
+        title={me.role === "employee" ? "My requests" : "Constraints"}
+        description={
+          me.role === "employee"
+            ? "Ask for a day off, a shift or a time you cannot work, in plain language. The AI model turns it into operations that a manager approves or rejects."
+            : "Write a constraint in plain language. It is parsed by the AI model into typed operations; nothing is applied until a manager approves it."
+        }
       />
       <ConstraintsView
-        isAdmin={canPlan(me)}
-        isDemo={me.role === "demo"}
+        canReview={isManager(me)}
+        canSubmit={me.role !== "viewer"}
+        asEmployee={me.role === "employee"}
         defaultTarget={defaultTarget}
-        items={rows
-          // An example the guest reviewed is replaced by their own copy.
-          .filter(
-            (r) =>
-              r.createdBy !== null ||
-              !rows.some(
-                (o) => o.createdBy === me.id && o.rawText === r.rawText,
-              ),
-          )
-          .map((r) => {
-            const parsed = parsedConstraintSchema.safeParse(r.parsed);
-            const target = `${r.targetYear}-${String(r.targetMonth).padStart(2, "0")}`;
-            const outside = parsed.success
-              ? monthsOutsideTarget(parsed.data, target).map((m) =>
-                  formatMonth(Number(m.slice(0, 4)), Number(m.slice(5))),
-                )
-              : [];
-            return {
-              monthWarning:
-                outside.length > 0
-                  ? `The dates fall in ${outside.join(", ")}, not in the target month (${formatMonth(r.targetYear, r.targetMonth)}).`
-                  : null,
-              id: r.id,
-              // Demo managers act on their own constraints and review the
-              // examples through a private copy.
-              canManage:
-                me.role === "admin" ||
-                r.createdBy === me.id ||
-                (me.role === "demo" &&
-                  r.createdBy === null &&
-                  r.model === "example"),
-              rawText: r.rawText,
-              target: `${r.targetYear}-${String(r.targetMonth).padStart(2, "0")}`,
-              status: r.status,
-              model: r.model,
-              parseError: r.parseError,
-              createdAt: formatDateTime(r.createdAt),
-              createdBy: r.createdBy
-                ? (userName.get(r.createdBy) ?? null)
+        items={rows.map((r) => {
+          const parsed = parsedConstraintSchema.safeParse(r.parsed);
+          const target = `${r.targetYear}-${String(r.targetMonth).padStart(2, "0")}`;
+          const outside = parsed.success
+            ? monthsOutsideTarget(parsed.data, target).map((m) =>
+                formatMonth(Number(m.slice(0, 4)), Number(m.slice(5))),
+              )
+            : [];
+          return {
+            monthWarning:
+              outside.length > 0
+                ? `The dates fall in ${outside.join(", ")}, not in the target month (${formatMonth(r.targetYear, r.targetMonth)}).`
                 : null,
-              reviewedBy: r.reviewedBy
-                ? (userName.get(r.reviewedBy) ?? null)
-                : null,
-              reviewedAt: r.reviewedAt ? formatDateTime(r.reviewedAt) : null,
-              summary: parsed.success ? parsed.data.summary : null,
-              operations: parsed.success
-                ? parsed.data.operations.map((op) => ({
-                    type: op.type,
-                    text: describeOperation(op, names),
-                  }))
-                : [],
-            };
-          })}
+            id: r.id,
+            canRetry: me.role === "manager" || r.createdBy === me.id,
+            rawText: r.rawText,
+            target: `${r.targetYear}-${String(r.targetMonth).padStart(2, "0")}`,
+            status: r.status,
+            model: r.model,
+            parseError: r.parseError,
+            createdAt: formatDateTime(r.createdAt),
+            createdBy: r.createdBy ? (userName.get(r.createdBy) ?? null) : null,
+            reviewedBy: r.reviewedBy
+              ? (userName.get(r.reviewedBy) ?? null)
+              : null,
+            reviewedAt: r.reviewedAt ? formatDateTime(r.reviewedAt) : null,
+            summary: parsed.success ? parsed.data.summary : null,
+            operations: parsed.success
+              ? parsed.data.operations.map((op) => ({
+                  type: op.type,
+                  text: describeOperation(op, names),
+                }))
+              : [],
+          };
+        })}
       />
     </>
   );

@@ -39,12 +39,12 @@ export function AbsencesView({
   rows,
   employees,
   codes,
-  isAdmin,
+  canManage,
 }: {
   rows: AbsenceListRow[];
   employees: Option[];
   codes: Option[];
-  isAdmin: boolean;
+  canManage: boolean;
 }) {
   const [employee, setEmployee] = useState(ALL);
   const [code, setCode] = useState(ALL);
@@ -116,7 +116,7 @@ export function AbsencesView({
       },
       { accessorKey: "source", header: "Source" },
       { accessorKey: "note", header: "Note", enableSorting: false },
-      ...(isAdmin
+      ...(canManage
         ? [
             {
               id: "actions",
@@ -142,7 +142,7 @@ export function AbsencesView({
           ]
         : []),
     ],
-    [isAdmin, employees, codes],
+    [canManage, employees, codes],
   );
 
   const hasFilters = employee !== ALL || code !== ALL || from || to;
@@ -198,7 +198,7 @@ export function AbsencesView({
             </Button>
           )}
           <div className="flex-1" />
-          {isAdmin && (
+          {canManage && (
             <AbsenceDialog
               trigger={
                 <Button size="sm">

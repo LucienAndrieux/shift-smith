@@ -20,7 +20,7 @@ import {
   relationSchema,
   unavailabilitySchema,
 } from "@/lib/schemas/reference";
-import { ActionError, adminAction } from "@/server/action";
+import { ActionError, managerAction } from "@/server/action";
 import { audit, changes } from "@/server/audit";
 
 function toEmployeeRow(v: z.output<typeof employeeSchema>) {
@@ -31,7 +31,7 @@ function toEmployeeRow(v: z.output<typeof employeeSchema>) {
   };
 }
 
-export const createEmployee = adminAction(
+export const createEmployee = managerAction(
   employeeSchema,
   async (input, user) => {
     return db.transaction(async (tx) => {
@@ -51,7 +51,7 @@ export const createEmployee = adminAction(
   },
 );
 
-export const updateEmployee = adminAction(
+export const updateEmployee = managerAction(
   employeeSchema.and(idSchema),
   async ({ id, ...input }, user) => {
     await db.transaction(async (tx) => {
@@ -73,7 +73,7 @@ export const updateEmployee = adminAction(
   },
 );
 
-export const setFixedDaysOff = adminAction(
+export const setFixedDaysOff = managerAction(
   fixedDaysOffSchema,
   async ({ employeeId, first, second }, user) => {
     await db.transaction(async (tx) => {
@@ -102,7 +102,7 @@ export const setFixedDaysOff = adminAction(
   },
 );
 
-export const upsertEligibility = adminAction(
+export const upsertEligibility = managerAction(
   eligibilitySchema,
   async (input, user) => {
     await db.transaction(async (tx) => {
@@ -128,7 +128,7 @@ export const upsertEligibility = adminAction(
   },
 );
 
-export const deleteEligibility = adminAction(
+export const deleteEligibility = managerAction(
   z.object({ employeeId: z.uuid(), shiftTypeId: z.uuid() }),
   async ({ employeeId, shiftTypeId }, user) => {
     await db.transaction(async (tx) => {
@@ -150,7 +150,7 @@ export const deleteEligibility = adminAction(
   },
 );
 
-export const createRelation = adminAction(
+export const createRelation = managerAction(
   relationSchema,
   async (input, user) => {
     await db.transaction(async (tx) => {
@@ -169,7 +169,7 @@ export const createRelation = adminAction(
   },
 );
 
-export const deleteRelation = adminAction(idSchema, async ({ id }, user) => {
+export const deleteRelation = managerAction(idSchema, async ({ id }, user) => {
   await db.transaction(async (tx) => {
     const [row] = await tx
       .delete(employeeRelations)
@@ -186,7 +186,7 @@ export const deleteRelation = adminAction(idSchema, async ({ id }, user) => {
   });
 });
 
-export const createUnavailability = adminAction(
+export const createUnavailability = managerAction(
   unavailabilitySchema,
   async ({ startTime, endTime, ...input }, user) => {
     await db.transaction(async (tx) => {
@@ -210,7 +210,7 @@ export const createUnavailability = adminAction(
   },
 );
 
-export const deleteUnavailability = adminAction(
+export const deleteUnavailability = managerAction(
   idSchema,
   async ({ id }, user) => {
     await db.transaction(async (tx) => {
@@ -230,7 +230,7 @@ export const deleteUnavailability = adminAction(
   },
 );
 
-export const addHourBankAdjustment = adminAction(
+export const addHourBankAdjustment = managerAction(
   hourBankAdjustmentSchema,
   async ({ employeeId, entryDate, hours, note }, user) => {
     await db.transaction(async (tx) => {

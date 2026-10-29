@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { schedulingRules } from "@/db/schema";
 import { ruleValueSchemas } from "@/lib/domain/rules";
 import { idSchema, ruleSchema } from "@/lib/schemas/reference";
-import { ActionError, adminAction } from "@/server/action";
+import { ActionError, managerAction } from "@/server/action";
 import { audit, changes } from "@/server/audit";
 
 /** Parses and validates the JSON value against the rule's own schema. */
@@ -35,7 +35,7 @@ function toRow(input: z.output<typeof ruleSchema>) {
   };
 }
 
-export const createRule = adminAction(ruleSchema, async (input, user) => {
+export const createRule = managerAction(ruleSchema, async (input, user) => {
   const values = toRow(input);
   await db.transaction(async (tx) => {
     const [row] = await tx.insert(schedulingRules).values(values).returning();
@@ -49,7 +49,7 @@ export const createRule = adminAction(ruleSchema, async (input, user) => {
   });
 });
 
-export const updateRule = adminAction(
+export const updateRule = managerAction(
   ruleSchema.and(idSchema),
   async ({ id, ...input }, user) => {
     const values = toRow(input);
@@ -74,7 +74,7 @@ export const updateRule = adminAction(
   },
 );
 
-export const deleteRule = adminAction(idSchema, async ({ id }, user) => {
+export const deleteRule = managerAction(idSchema, async ({ id }, user) => {
   await db.transaction(async (tx) => {
     const [row] = await tx
       .delete(schedulingRules)

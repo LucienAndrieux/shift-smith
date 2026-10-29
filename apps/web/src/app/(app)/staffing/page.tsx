@@ -25,7 +25,7 @@ import {
   weekdayShort,
 } from "@/lib/domain/calendar";
 import { getSections, getShiftTypes } from "@/server/queries/reference";
-import { requireApprovedUser } from "@/server/session";
+import { requireUser } from "@/server/session";
 import {
   DeleteOverrideButton,
   DeleteRequirementButton,
@@ -36,8 +36,8 @@ import {
 export const metadata: Metadata = { title: "Staffing" };
 
 export default async function StaffingPage() {
-  const user = await requireApprovedUser();
-  const isAdmin = user.role === "admin";
+  const user = await requireUser();
+  const canManage = user.role === "manager";
   const [sections, shiftTypes, requirements, overrides] = await Promise.all([
     getSections(),
     getShiftTypes(),
@@ -70,7 +70,7 @@ export default async function StaffingPage() {
       <Card>
         <CardHeader>
           <CardTitle>Requirements</CardTitle>
-          {isAdmin && (
+          {canManage && (
             <CardAction>
               <RequirementDialog
                 sections={sectionOptions}
@@ -90,7 +90,7 @@ export default async function StaffingPage() {
                 <TableHead>Max</TableHead>
                 <TableHead>Validity</TableHead>
                 <TableHead>Note</TableHead>
-                {isAdmin && <TableHead />}
+                {canManage && <TableHead />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -116,7 +116,7 @@ export default async function StaffingPage() {
                       <ToConfirmBadge show={r.toConfirm} />
                     </span>
                   </TableCell>
-                  {isAdmin && (
+                  {canManage && (
                     <TableCell>
                       <span className="flex justify-end">
                         <RequirementDialog
@@ -138,7 +138,7 @@ export default async function StaffingPage() {
       <Card>
         <CardHeader>
           <CardTitle>Date overrides</CardTitle>
-          {isAdmin && (
+          {canManage && (
             <CardAction>
               <OverrideDialog sections={sectionOptions} shifts={shiftOptions} />
             </CardAction>
@@ -157,7 +157,7 @@ export default async function StaffingPage() {
                   <TableHead>Min</TableHead>
                   <TableHead>Max</TableHead>
                   <TableHead>Reason</TableHead>
-                  {isAdmin && <TableHead />}
+                  {canManage && <TableHead />}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -171,7 +171,7 @@ export default async function StaffingPage() {
                     <TableCell className="font-medium">{o.minStaff}</TableCell>
                     <TableCell>{o.maxStaff ?? "—"}</TableCell>
                     <TableCell>{o.reason}</TableCell>
-                    {isAdmin && (
+                    {canManage && (
                       <TableCell>
                         <span className="flex justify-end">
                           <OverrideDialog

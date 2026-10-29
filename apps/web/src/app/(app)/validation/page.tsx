@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { currentYearMonth } from "@/lib/dates";
 import { getUpcomingValidationTargets } from "@/server/queries/validation";
-import { canPlan, requireApprovedUser } from "@/server/session";
+import { isManager, requireUser } from "@/server/session";
 import { UpcomingValidation } from "./upcoming-validation";
 
 export const metadata: Metadata = { title: "Validation" };
@@ -12,8 +12,8 @@ export const metadata: Metadata = { title: "Validation" };
  * checked on the user's latest editable draft, otherwise its published version.
  */
 export default async function ValidationIndex() {
-  const user = await requireApprovedUser();
+  const user = await requireUser();
   await connection();
   const targets = await getUpcomingValidationTargets(user, currentYearMonth());
-  return <UpcomingValidation targets={targets} canPlan={canPlan(user)} />;
+  return <UpcomingValidation targets={targets} canPlan={isManager(user)} />;
 }

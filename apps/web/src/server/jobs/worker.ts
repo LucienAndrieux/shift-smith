@@ -1,6 +1,5 @@
 import { formatInTimeZone } from "date-fns-tz";
 import { APP_TIME_ZONE, currentYearMonth } from "@/lib/dates";
-import { env } from "@/lib/env";
 import { parseConstraint } from "@/server/constraints/parse";
 import { purgeExpiredGuests } from "@/server/demo/guests";
 import { ensureDemoMonth, resetDemoData } from "@/server/demo/reset";
@@ -33,13 +32,11 @@ export async function startWorkers() {
         await runSolver(job.data.runId);
       }
     });
-    if (env().DEMO_MODE) {
-      await boss.work(QUEUES.demoMaintenance, async () => {
-        await demoMaintenance();
-      });
-      await boss.schedule(QUEUES.demoMaintenance, "5 * * * *");
-      void demoMaintenance();
-    }
+    await boss.work(QUEUES.demoMaintenance, async () => {
+      await demoMaintenance();
+    });
+    await boss.schedule(QUEUES.demoMaintenance, "5 * * * *");
+    void demoMaintenance();
     console.info("[jobs] worker started");
   } catch (error) {
     globalForWorker.workersStarted = false;

@@ -4,14 +4,14 @@ export type View = ScheduleView;
 
 /** What the current user may do on the schedule screen (computed server-side). */
 export interface SchedulePermissions {
-  /** Create, duplicate and generate drafts (admin or demo manager). */
+  /** Create, duplicate and generate drafts (managers). */
   canPlan: boolean;
   canPublish: boolean;
   /** The displayed version is editable by this user. */
   canEditCurrent: boolean;
   canGenerate: boolean;
-  /** Demo manager: works on private drafts only. */
-  isDemo: boolean;
+  /** Employee guest: their row is highlighted and their section shown first. */
+  ownEmployeeId: string | null;
 }
 export type ViewShift = View["shiftTypes"][number];
 export type ViewDayCode = View["dayCodes"][number];

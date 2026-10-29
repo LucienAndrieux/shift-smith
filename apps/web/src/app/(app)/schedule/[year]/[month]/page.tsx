@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { currentYearMonth } from "@/lib/dates";
 import { formatMonth } from "@/lib/domain/calendar";
 import { getScheduleView } from "@/server/queries/schedule";
-import { canPlan, requireApprovedUser } from "@/server/session";
+import { isManager, requireUser } from "@/server/session";
 import { ScheduleWorkspace } from "./schedule-workspace";
 
 export async function generateMetadata({
@@ -20,7 +20,7 @@ export default async function SchedulePage({
   params,
   searchParams,
 }: PageProps<"/schedule/[year]/[month]">) {
-  const user = await requireApprovedUser();
+  const user = await requireUser();
   const { year: yearParam, month: monthParam } = await params;
   const { version } = await searchParams;
   const year = Number(yearParam);
@@ -35,21 +35,17 @@ export default async function SchedulePage({
   const view = await getScheduleView(year, month, requested, { user });
   await connection();
   const now = currentYearMonth();
-  const planner = canPlan(user);
-  const schedule = view.schedule;
-  const ownDraft =
-    schedule?.status === "draft" && schedule.createdBy === user.id;
+  const manager = isManager(user);
   return (
     <ScheduleWorkspace
       view={view}
       permissions={{
-        canPlan: planner,
-        canPublish: user.role === "admin",
-        canEditCurrent:
-          user.role === "admin" || (user.role === "demo" && ownDraft),
+        canPlan: manager,
+        canPublish: manager,
+        canEditCurrent: manager,
         // The solver generates months after the current one only.
-        canGenerate: planner && year * 12 + month > now.year * 12 + now.month,
-        isDemo: user.role === "demo",
+        canGenerate: manager && year * 12 + month > now.year * 12 + now.month,
+        ownEmployeeId: user.role === "employee" ? user.employeeId : null,
       }}
     />
   );

@@ -72,7 +72,7 @@ if (-not (Test-Path $pnpm)) { throw "pnpm not found (run infra\windows\install.p
 $appPort = 3100
 $parameters = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\ShiftSmithWeb\Parameters" -ErrorAction SilentlyContinue).AppParameters
 if ($parameters -match '-p (\d+)') { $appPort = [int]$Matches[1] }
-$healthUrl = "http://127.0.0.1:$appPort/sign-in"
+$healthUrl = "http://127.0.0.1:$appPort/start"
 
 Step "Fetching $Ref"
 Invoke-Git @("fetch", "--quiet", "origin") | Out-Null

@@ -3,7 +3,8 @@
 Self-hosted web app for the monthly staff schedules of a small hotel (about 25–30
 employees in six sections): month and week views, scheduling rules and validation,
 an hour bank, one-click repairs, full-month generation with OR-Tools,
-natural-language constraints and admin approval of accounts.
+natural-language constraints and three visitor roles (manager, employee,
+read-only).
 
 **Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 + shadcn/ui ·
 PostgreSQL 18 · Drizzle ORM · Better Auth · pg-boss · any OpenAI-compatible LLM · Python FastAPI +
@@ -34,32 +35,29 @@ employee's skills) so the validator and the "Fix" button have something to show.
 
 The seed also holds five example natural-language constraints (approved, awaiting
 review and rejected) with their parsed operations, so the Constraints page is not
-empty; every visitor sees them. A guest manager who approves or rejects one gets
-a private copy (applied to their own drafts); the example stays as it is for the
-others.
+empty; every visitor sees them and managers can approve or reject them.
 
-## Public demo mode
+## Visitor roles
 
-With `DEMO_MODE=true`, the app becomes a public demo:
+There are no accounts: the start page creates an anonymous session (Better Auth
+anonymous plugin) with the role the visitor picks.
 
-- the sign-in page offers **Explore as a manager** and **Explore read-only**: a
-  guest account is created on the fly (Better Auth anonymous plugin), no sign-up;
-- a guest manager duplicates a version or generates a month to get **private
-  drafts**, edits them, uses Fix, Generate, the PDF export and natural-language
-  constraints (approving one changes the guest's own drafts); Fix can also be
-  applied to a published schedule, which every visitor sees until the nightly
-  restore; reference data, publishing, the hour-bank close and user management
-  stay admin-only, checked server-side in every action;
-- quotas: drafts per guest, generations per hour (one at a time on the whole
-  site) and LLM calls per guest and per day (`DEMO_*` variables);
-- every night at 03:00 the demo data is restored (guests and their work are
-  removed);
-- an hourly job removes guests older than 24 hours with their work, and when the
-  current month has no published schedule it empties the data and imports the seed
-  again with **rolling demo months** (the current month and the next two), each
-  with a freshly generated published schedule; the current month contains the
-  deliberate mistakes;
-- only `ADMIN_EMAIL` addresses can register (for the site owner).
+- **Manager**: every right on the shared demo data: plan, generate, fix, publish,
+  edit the reference data and approve or reject constraints. Other visitors see
+  the changes.
+- **Employee**: plays one fictional employee: the published schedules with their
+  row highlighted, their profile (hours, absences) and **My requests**, natural-
+  language requests that the managers approve or reject.
+- **Read-only**: browses the published schedules and the reference data.
+
+Every night at 03:00 the demo data is restored and the guests are removed. An
+hourly job removes guests older than 24 hours, and when the current month has no
+published schedule it empties the data and imports the seed again with **rolling
+demo months** (the current month and the next two), each with a freshly generated
+published schedule; the current month contains the deliberate mistakes.
+
+Quotas (`DEMO_*` variables) limit generations per hour (one at a time on the whole
+site) and LLM calls per visitor and per day.
 
 ## Development
 
@@ -69,8 +67,7 @@ Prerequisites: **Node.js 24+**, **pnpm** (`npm i -g pnpm`), **Docker Desktop**.
 cp .env.example .env
 ```
 
-Edit `.env`: set `BETTER_AUTH_SECRET` (`openssl rand -base64 32`), `ADMIN_EMAIL`
-and, to parse natural-language constraints, `LLM_API_KEY` / `LLM_BASE_URL` /
+Edit `.env`: set `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and, to parse natural-language constraints, `LLM_API_KEY` / `LLM_BASE_URL` /
 `LLM_MODEL` (OpenAI, Groq or any OpenAI-compatible API with structured outputs).
 
 ```bash
@@ -81,10 +78,7 @@ pnpm db:seed
 pnpm dev
 ```
 
-Open <http://localhost:3000> and register with an address listed in `ADMIN_EMAIL`:
-that account is created as an approved admin. Any other registration is a pending
-viewer; the access-request email is printed in the `pnpm dev` console when
-`SMTP_HOST` is empty.
+Open <http://localhost:3000> and pick a role on the start page.
 
 | Command | Description |
 |---|---|
@@ -129,8 +123,7 @@ cp .env.example .env
 ```
 
 In `.env`, set at least `APP_DOMAIN` (e.g. `planning.example.com`),
-`POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `ADMIN_EMAIL`, the `SMTP_*` values, the
-`LLM_*` variables, `APP_TIMEZONE` and `HOTEL_NAME`. `DATABASE_URL` and
+`POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, the `LLM_*` variables, `APP_TIMEZONE` and `HOTEL_NAME`. `DATABASE_URL` and
 `BETTER_AUTH_URL` are derived by the compose file.
 
 ```bash
@@ -174,9 +167,9 @@ docker compose -f infra/docker-compose.prod.yml --env-file .env start web
 
 ## Key behaviours
 
-- **Access:** registration → pending viewer + email to `ADMIN_EMAIL`; admins approve
-  or reject in `/admin/users`. Viewers are read-only and only see published
-  versions; every mutation is checked server-side and written to `audit_log`.
+- **Access:** no accounts; every page and Server Action checks the visitor's role
+  server-side (`requireUser()` / `requireManager()`), and every mutation is written
+  to `audit_log`.
 - **Validation:** `lib/domain/validator.ts` checks every hard rule (rest time across
   midnight, consecutive days, two rest days per ISO week, monthly weekend off,
   birthday, couples, approved leave, eligibility, unavailability, staffing) and
@@ -192,7 +185,7 @@ docker compose -f infra/docker-compose.prod.yml --env-file .env start web
   solver for a complete schedule (hard rules enforced, staffing and preferences
   optimised) and saves it as a new draft to review and publish.
 - **Constraints:** free text → pg-boss job → LLM with JSON-schema structured outputs → review card →
-  admin approval materialises the operations (`source = constraint`).
+  manager approval materialises the operations (`source = constraint`).
 - **Printable monthly sheet:** PDF export of a version, per section or for the
   whole hotel.
 

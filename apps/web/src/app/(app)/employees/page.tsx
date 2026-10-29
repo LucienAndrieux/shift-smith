@@ -4,14 +4,14 @@ import { PageHeader } from "@/components/page-header";
 import { db } from "@/db";
 import { hourBankEntries } from "@/db/schema";
 import { getEmployees, getSections } from "@/server/queries/reference";
-import { requireApprovedUser } from "@/server/session";
+import { requireUser } from "@/server/session";
 import { EmployeeFormDialog } from "./employee-form";
 import { EmployeesTable } from "./employees-table";
 
 export const metadata: Metadata = { title: "Employees" };
 
 export default async function EmployeesPage() {
-  const user = await requireApprovedUser();
+  const user = await requireUser();
   const [employees, sections, balances] = await Promise.all([
     getEmployees(),
     getSections(),
@@ -32,7 +32,7 @@ export default async function EmployeesPage() {
         title="Employees"
         description={`${employees.filter((e) => e.status === "active").length} active employees`}
         actions={
-          user.role === "admin" && (
+          user.role === "manager" && (
             <EmployeeFormDialog sections={sectionOptions} />
           )
         }
