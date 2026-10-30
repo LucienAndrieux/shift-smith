@@ -100,12 +100,13 @@ export function MonthGrid({
 
   return (
     // The grid grows with the page (no inner vertical scrollbar); it only scrolls
-    // sideways on narrow screens, keeping the name column visible.
-    <div className="overflow-x-auto rounded-md border">
-      <table className="w-full border-collapse text-xs">
-        <thead className="sticky top-0 z-10 bg-background">
+    // sideways on narrow screens, keeping the name column visible. Same look as
+    // the start page's preview: separate rounded cells, no gridlines.
+    <div className="overflow-x-auto rounded-2xl border bg-card p-2 shadow-sm">
+      <table className="w-full border-separate border-spacing-0.5 text-xs">
+        <thead className="sticky top-0 z-10 bg-card">
           <tr>
-            <th className="sticky left-0 z-20 w-28 min-w-28 border-b bg-background px-2 py-1 text-left font-medium sm:w-auto sm:min-w-40">
+            <th className="sticky left-0 z-20 w-28 min-w-28 bg-card px-2 py-1 text-left font-medium sm:w-auto sm:min-w-40">
               Employee
             </th>
             {view.dates.map((d) => {
@@ -123,7 +124,7 @@ export function MonthGrid({
                   key={d.date}
                   title={d.holiday ?? undefined}
                   className={cn(
-                    "min-w-7 border-b border-l p-0 text-center font-medium sm:min-w-8",
+                    "min-w-7 rounded-md p-0 text-center font-medium sm:min-w-8",
                     d.isWeekend && "bg-muted",
                     d.holiday && "bg-amber-200/70 dark:bg-amber-900/50",
                   )}
@@ -134,7 +135,7 @@ export function MonthGrid({
                       type="button"
                       onClick={() => setOpenDay(d.date)}
                       title={`${errors.length} error(s): show them`}
-                      className="w-full cursor-pointer px-0.5 py-1 ring-2 ring-red-500 ring-inset outline-none hover:bg-red-500/10 focus-visible:bg-red-500/10"
+                      className="w-full cursor-pointer rounded-md px-0.5 py-1 ring-2 ring-red-500 ring-inset outline-none hover:bg-red-500/10 focus-visible:bg-red-500/10"
                     >
                       {label}
                     </button>
@@ -144,9 +145,7 @@ export function MonthGrid({
                 </th>
               );
             })}
-            <th className="border-b border-l px-2 py-1 text-right font-medium">
-              Δ
-            </th>
+            <th className="px-2 py-1 text-right font-medium">Δ</th>
           </tr>
         </thead>
         <tbody>
@@ -163,7 +162,7 @@ export function MonthGrid({
                   </tr>
                 )}
                 <tr>
-                  <td colSpan={colSpan} className="border-y bg-muted/60 p-0">
+                  <td colSpan={colSpan} className="rounded-md bg-muted/60 p-0">
                     {/* Centered in the visible part of the grid, even while it
                         scrolls sideways. */}
                     <span className="sticky left-1/2 inline-block -translate-x-1/2 px-3 py-2 text-base font-semibold tracking-wide">
@@ -194,8 +193,8 @@ export function MonthGrid({
                     >
                       <td
                         className={cn(
-                          "sticky left-0 z-[5] border-b px-2 py-0.5 whitespace-nowrap",
-                          own ? "bg-sky-100 dark:bg-sky-950" : "bg-background",
+                          "sticky left-0 z-[5] rounded-md px-2 py-0.5 whitespace-nowrap",
+                          own ? "bg-sky-100 dark:bg-sky-950" : "bg-card",
                         )}
                       >
                         <div className="flex max-w-28 items-center gap-1.5 sm:max-w-none">
@@ -224,7 +223,6 @@ export function MonthGrid({
                             cell={cell}
                             index={index}
                             errors={issues?.map((x) => x.message)}
-                            weekend={d.isWeekend}
                             interactive={canEdit || fixable}
                             onClick={(event) => {
                               if (!fixable) return;
@@ -238,7 +236,7 @@ export function MonthGrid({
                           <td
                             key={d.date}
                             className={cn(
-                              "border-b border-l p-0",
+                              "rounded-md p-0",
                               d.isWeekend && "bg-muted/50",
                               d.holiday &&
                                 "bg-amber-100/60 dark:bg-amber-900/30",
@@ -266,7 +264,7 @@ export function MonthGrid({
                       })}
                       <td
                         className={cn(
-                          "border-b border-l px-2 text-right font-mono whitespace-nowrap",
+                          "px-2 text-right font-mono whitespace-nowrap",
                           total && total.deltaMinutes < 0 && "text-destructive",
                         )}
                         title={
@@ -336,14 +334,12 @@ function CellBox({
   cell,
   index,
   errors,
-  weekend,
   interactive,
   ...buttonProps
 }: {
   cell: ViewCell | undefined;
   index: ViewIndex;
   errors?: string[];
-  weekend: boolean;
   interactive: boolean;
 } & ComponentProps<"button">) {
   const shift = cell?.shiftTypeId
@@ -374,12 +370,13 @@ function CellBox({
       disabled={!interactive}
       title={title}
       className={cn(
-        "relative flex h-7 w-full min-w-7 items-center sm:min-w-8 justify-center font-semibold outline-none",
+        "relative flex h-7 w-full min-w-7 items-center sm:min-w-8 justify-center rounded-md font-semibold outline-none",
         interactive &&
           "cursor-pointer hover:brightness-95 focus-visible:ring-2 focus-visible:ring-ring",
         !interactive && "cursor-default",
         errors && "ring-2 ring-red-500 ring-inset",
-        !color && weekend && "bg-transparent",
+        // Empty days keep a faint tile so the grid stays readable without lines.
+        !color && "bg-muted/60",
       )}
       style={color ? softCodeStyle(color) : undefined}
       aria-label={title.replaceAll("\n", ", ")}
