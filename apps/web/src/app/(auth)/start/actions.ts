@@ -1,16 +1,23 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { fromZonedTime } from "date-fns-tz";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { APP_TIME_ZONE, today } from "@/lib/dates";
 import { addDays, formatDayMonth, weekday } from "@/lib/domain/calendar";
 import { env } from "@/lib/env";
 import { buildInvitation } from "@/lib/ics";
+import {
+  type DaySlots,
+  freeSlots,
+  isBusy,
+  meetingDays,
+  slotInterval,
+} from "@/lib/meeting-slots";
 import { contactFormSchema, meetingRequestSchema } from "@/lib/schemas/contact";
 import type { ActionResult } from "@/server/action";
 import { sendEmail } from "@/server/email";
+import { busyIntervals } from "@/server/google-calendar";
 
 const WINDOW_MS = 15 * 60 * 1000;
 const PER_ADDRESS = 3;
@@ -19,6 +26,8 @@ const PER_DAY = 40;
 const COPIES_PER_RECIPIENT = 3;
 /** How far ahead a meeting can be booked. */
 const MAX_DAYS_AHEAD = 60;
+/** Weekdays listed per page of the meeting picker ("See more dates"). */
+const DAYS_PER_PAGE = 7;
 /** Sends per client address in the last WINDOW_MS, and all sends of the day. */
 const recent = new Map<string, number[]>();
 let sentToday = { day: "", count: 0 };
@@ -61,6 +70,39 @@ export async function sendContactMessage(
   );
 }
 
+/**
+ * Free 30-minute slots of the next weekdays (from tomorrow), after the given day
+ * for the following pages. Days without any free slot are left out.
+ */
+export async function getMeetingAvailability(input: {
+  after?: string;
+}): Promise<ActionResult<{ days: DaySlots[]; more: boolean }>> {
+  const parsed = z.object({ after: z.iso.date().optional() }).safeParse(input);
+  if (!parsed.success) return invalid(parsed.error);
+  const first = addDays(today(), 1);
+  const last = addDays(today(), MAX_DAYS_AHEAD);
+  const after = parsed.data.after;
+  const from = after && after >= first ? addDays(after, 1) : first;
+  const days = meetingDays(from, DAYS_PER_PAGE, last);
+  const lastDay = days.at(-1);
+  if (!lastDay) return { ok: true, data: { days: [], more: false } };
+
+  const busy =
+    (await busyIntervals(
+      slotInterval(days[0], "00:00", APP_TIME_ZONE).start,
+      slotInterval(lastDay, "23:30", APP_TIME_ZONE).end,
+    )) ?? [];
+  return {
+    ok: true,
+    data: {
+      days: freeSlots(days, busy, APP_TIME_ZONE).filter(
+        (d) => d.slots.length > 0,
+      ),
+      more: meetingDays(addDays(lastDay, 1), 1, last).length > 0,
+    },
+  };
+}
+
 export async function requestMeeting(
   input: z.input<typeof meetingRequestSchema>,
 ): Promise<ActionResult> {
@@ -80,7 +122,16 @@ export async function requestMeeting(
     return fieldError("date", "Choose a weekday (Monday to Friday).");
   }
 
-  const start = fromZonedTime(`${date}T${time}:00`, APP_TIME_ZONE);
+  // The slot may have been taken since the picker was loaded.
+  const slot = slotInterval(date, time, APP_TIME_ZONE);
+  const busy = await busyIntervals(slot.start, slot.end);
+  if (busy && isBusy(slot, busy)) {
+    return fieldError(
+      "time",
+      "This time is no longer free: choose another one.",
+    );
+  }
+  const start = slot.start;
   const when = `${formatDayMonth(date)} ${date.slice(0, 4)}, ${time} (${APP_TIME_ZONE} time)`;
   return send(
     async (to) =>
@@ -163,7 +214,7 @@ async function send(
   return { ok: true, data: undefined };
 }
 
-function invalid(error: z.ZodError): ActionResult {
+function invalid(error: z.ZodError): ActionResult<never> {
   return {
     ok: false,
     error: "Some fields are invalid.",
@@ -171,6 +222,6 @@ function invalid(error: z.ZodError): ActionResult {
   };
 }
 
-function fieldError(field: string, message: string): ActionResult {
+function fieldError(field: string, message: string): ActionResult<never> {
   return { ok: false, error: message, fieldErrors: { [field]: [message] } };
 }

@@ -12,6 +12,14 @@ const serverEnvSchema = z.object({
     .union([z.email(), z.literal("")])
     .optional()
     .default(""),
+  /**
+   * "Schedule a meeting" hides the slots that are busy in this Google Calendar,
+   * read through the free/busy API with a service account (see .env.example).
+   * Empty = every offered slot is shown.
+   */
+  GOOGLE_CALENDAR_ID: z.string().optional().default(""),
+  GOOGLE_SERVICE_ACCOUNT_EMAIL: z.string().optional().default(""),
+  GOOGLE_SERVICE_ACCOUNT_KEY: z.string().optional().default(""),
   SMTP_HOST: z.string().optional().default(""),
   SMTP_PORT: z.coerce.number().int().positive().default(587),
   SMTP_USER: z.string().optional().default(""),

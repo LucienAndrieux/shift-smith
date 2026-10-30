@@ -16,11 +16,27 @@ export const contactFormSchema = z.object({
 
 export type ContactFormInput = z.input<typeof contactFormSchema>;
 
-/** Start times offered for a 30-minute call (developer's time zone), 09:00–17:30. */
-export const MEETING_SLOTS = Array.from({ length: 18 }, (_, i) => {
-  const minutes = 9 * 60 + i * 30;
-  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
-});
+/** Start times between two "HH:MM" bounds (both included), every 30 minutes. */
+function startTimes(from: string, to: string): string[] {
+  const minutes = (t: string) =>
+    Number(t.slice(0, 2)) * 60 + Number(t.slice(3));
+  const out: string[] = [];
+  for (let m = minutes(from); m <= minutes(to); m += 30) {
+    out.push(
+      `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`,
+    );
+  }
+  return out;
+}
+
+/**
+ * Start times offered for a 30-minute call, in the developer's time zone: the
+ * morning and early afternoon, then the early evening (busy from 15:00 to 17:00).
+ */
+export const MEETING_SLOTS = [
+  ...startTimes("09:00", "14:30"),
+  ...startTimes("17:00", "18:30"),
+];
 
 /** "Schedule a meeting": the visitor sends a 30-minute invitation. */
 export const meetingRequestSchema = z.object({
