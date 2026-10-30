@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import { Bricolage_Grotesque } from "next/font/google";
+import Image from "next/image";
 import { connection } from "next/server";
 import { type ComponentType, Suspense } from "react";
 import {
@@ -246,6 +247,21 @@ export default function StartPage() {
           className="grid scroll-mt-6 grid-cols-1 gap-12 border-t py-20 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
         >
           <div className="flex flex-col gap-5">
+            <div className="flex items-center gap-4">
+              <Image
+                src="/lucien-andrieux.webp"
+                alt="Lucien Andrieux"
+                width={96}
+                height={96}
+                className="size-20 shrink-0 rounded-full object-cover ring-4 ring-[#E8590C]/15 sm:size-24"
+              />
+              <div className="flex flex-col">
+                <span className="text-lg font-semibold">Lucien Andrieux</span>
+                <span className="text-sm text-muted-foreground">
+                  Freelance developer, scheduling and internal tools
+                </span>
+              </div>
+            </div>
             <h2
               className={cn(
                 HEADING,
@@ -255,9 +271,9 @@ export default function StartPage() {
               Let&apos;s build yours
             </h2>
             <p className="max-w-lg text-lg leading-relaxed text-pretty text-muted-foreground">
-              I&apos;m Lucien Andrieux, a freelance developer. I build planning
-              tools like this one for hotels, restaurants, clinics, shops and
-              any team that works in shifts, shaped around how you already work.
+              I build planning tools like this one for hotels, restaurants,
+              clinics, shops and any team that works in shifts, shaped around
+              how you already work.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <Button

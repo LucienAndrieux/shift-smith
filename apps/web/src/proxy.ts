@@ -14,7 +14,9 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Static files of public/ (any path with an extension, e.g. the start page's
+  // portrait) are served to visitors who have no session yet.
   matcher: [
-    "/((?!api/auth|start|_next/static|_next/image|favicon.ico|icon.svg).*)",
+    "/((?!api/auth|start|_next/static|_next/image|favicon.ico|icon.svg|.*\\..*).*)",
   ],
 };
