@@ -34,7 +34,7 @@ export function VersionHeader({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {title && (
-        <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
+        <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
           {title} · {formatMonth(year, month)}
         </h1>
       )}

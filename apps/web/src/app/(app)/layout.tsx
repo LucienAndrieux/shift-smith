@@ -34,7 +34,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             href="/schedule"
             className="flex min-w-0 items-center gap-2 px-2 py-1.5 font-semibold"
           >
-            <Logo />
+            <Logo className="size-6" />
             <span className="truncate group-data-[collapsible=icon]:hidden">
               ShiftSmith
             </span>
@@ -60,7 +60,8 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         <header className="sticky top-0 z-20 flex h-12 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur md:hidden">
           <SidebarTrigger />
         </header>
-        <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 md:p-6">
+        <div className="relative isolate flex min-w-0 flex-1 flex-col gap-4 p-4 md:p-6">
+          <Backdrop />
           <Suspense fallback={null}>
             <GuestBanner />
           </Suspense>
@@ -68,6 +69,22 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         </div>
       </SidebarInset>
     </SidebarProvider>
+  );
+}
+
+/**
+ * The start page's dot texture and ember glow, as a band behind the top of every
+ * page: brand presence in the chrome, gone before the data starts.
+ */
+function Backdrop() {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 overflow-hidden"
+    >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,var(--color-border)_1px,transparent_0)] [mask-image:linear-gradient(to_bottom,black,transparent)] [background-size:22px_22px]" />
+      <div className="absolute -top-40 right-0 h-72 w-[min(720px,90%)] rounded-full bg-brand/10 blur-3xl dark:bg-brand/5" />
+    </div>
   );
 }
 

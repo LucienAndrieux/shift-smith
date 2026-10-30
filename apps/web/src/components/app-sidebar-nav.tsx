@@ -112,7 +112,12 @@ export function AppSidebarNav({
               pathname === prefix || pathname.startsWith(`${prefix}/`);
             return (
               <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton asChild isActive={active}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={active}
+                  // The active page wears the logo's ember: tinted row, orange icon.
+                  className="data-[active=true]:bg-brand/10 data-[active=true]:text-foreground [&[data-active=true]>svg]:text-brand"
+                >
                   <Link href={item.href}>
                     <item.icon />
                     <span>{item.label}</span>

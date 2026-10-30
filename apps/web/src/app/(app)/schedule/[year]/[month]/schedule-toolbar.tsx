@@ -83,7 +83,7 @@ export function ScheduleToolbar({
             <ChevronLeft />
           </Link>
         </Button>
-        <h1 className="flex-1 text-center text-lg font-semibold tracking-tight sm:min-w-44 sm:flex-none sm:text-xl">
+        <h1 className="flex-1 text-center font-display text-xl font-bold tracking-tight sm:min-w-48 sm:flex-none sm:text-2xl">
           {formatMonth(year, month)}
         </h1>
         <Button variant="outline" size="icon" asChild aria-label="Next month">

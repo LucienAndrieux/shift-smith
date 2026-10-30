@@ -6,8 +6,10 @@ import type { CurrentUser } from "@/server/session";
 /** What the current role can do, and a way back to the start page. */
 export function DemoBanner({ user }: { user: CurrentUser }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2 text-sm">
-      <span className="flex-1">
+    // Same pill as the start page's "Live demo" line: frosted card, status dot.
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card/70 px-4 py-2.5 text-sm shadow-xs backdrop-blur">
+      <span className="size-2 shrink-0 rounded-full bg-emerald-500" />
+      <span className="flex-1 text-muted-foreground">
         {user.role === "manager"
           ? "Demo as a manager: every right on the shared demo data. Other visitors see your changes; everything is restored every night at 03:00."
           : user.role === "employee"

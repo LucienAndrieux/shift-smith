@@ -7,7 +7,6 @@ import {
   Wand2,
 } from "lucide-react";
 import type { Metadata } from "next";
-import { Bricolage_Grotesque } from "next/font/google";
 import Image from "next/image";
 import { connection } from "next/server";
 import { type ComponentType, Suspense } from "react";
@@ -33,11 +32,6 @@ export const metadata: Metadata = {
   description:
     "Live demo of a staff scheduling app by Lucien Andrieux, freelance developer. Try it, then have your own built with your rules and branding.",
 };
-
-const display = Bricolage_Grotesque({
-  subsets: ["latin"],
-  variable: "--font-display",
-});
 
 const LINKS = {
   linkedin: "https://www.linkedin.com/in/lucienandrieux/",
@@ -130,16 +124,11 @@ const CONTACTS: {
   },
 ];
 
-const HEADING = "font-[family-name:var(--font-display)] tracking-tight";
+const HEADING = "font-display tracking-tight";
 
 export default function StartPage() {
   return (
-    <div
-      className={cn(
-        display.variable,
-        "relative isolate flex min-h-dvh flex-col overflow-hidden scroll-smooth",
-      )}
-    >
+    <div className="relative isolate flex min-h-dvh flex-col overflow-hidden scroll-smooth">
       <Backdrop />
 
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-6 sm:px-6 sm:py-8">
