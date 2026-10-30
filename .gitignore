@@ -23,3 +23,7 @@ __pycache__/
 # OS and editor files
 .DS_Store
 Thumbs.db
+
+# Service account keys (Google Cloud): never commit
+google-calendar-key.json
+*-key.json
