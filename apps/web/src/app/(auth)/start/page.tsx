@@ -184,20 +184,21 @@ export default function StartPage() {
                   "text-5xl leading-[0.98] font-bold text-balance sm:text-6xl",
                 )}
               >
-                Staff schedules that check themselves
+                A scheduling tool built around your team
                 <span
                   aria-hidden
                   className="ml-1 inline-block size-[0.2em] translate-y-[-0.02em] rounded-[0.04em] bg-[#E8590C]"
                 />
               </h1>
               <p className="max-w-xl text-lg leading-relaxed text-pretty text-muted-foreground">
-                ShiftSmith plans a 28-person hotel month by month. Try it in one
-                of three roles, then{" "}
+                ShiftSmith is the one I built for a 28-person hotel: rules
+                checked as you plan, one-click fixes and a month drafted for
+                you. Try it in one of three roles, then{" "}
                 <a
                   href="#contact"
                   className="font-medium text-foreground underline decoration-[#E8590C] decoration-2 underline-offset-4 hover:decoration-[3px]"
                 >
-                  have one built for your team
+                  have yours built
                 </a>
                 .
               </p>
@@ -251,7 +252,7 @@ export default function StartPage() {
                 "text-4xl leading-[1.02] font-bold text-balance sm:text-5xl",
               )}
             >
-              Want this for your own team?
+              Let&apos;s build yours
             </h2>
             <p className="max-w-lg text-lg leading-relaxed text-pretty text-muted-foreground">
               I&apos;m Lucien Andrieux, a freelance developer. I build planning
