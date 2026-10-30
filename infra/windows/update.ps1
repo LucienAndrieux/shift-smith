@@ -104,6 +104,13 @@ try {
 
   Step "Building the new version (the site stays online)"
   if (Test-Path $Next) { Remove-Item $Next -Recurse -Force }
+  # tsconfig.json includes the generated route types of .next too: those of the
+  # running version may point at pages this version removed and fail the type
+  # check. They are only used for type checking, never by `next start`.
+  foreach ($dir in @("types", "dev\types")) {
+    $types = Join-Path $Live $dir
+    if (Test-Path $types) { Remove-Item $types -Recurse -Force }
+  }
   $env:NEXT_DIST_DIR = ".next-build"
   try { Run $pnpm @("build") } finally { Remove-Item Env:NEXT_DIST_DIR }
 
