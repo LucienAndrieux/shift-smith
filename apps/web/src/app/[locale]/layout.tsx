@@ -32,6 +32,8 @@ export async function generateMetadata(): Promise<Metadata> {
       template: "%s · ShiftSmith",
     },
     description: t.meta.description,
+    // Google Search Console ownership of the public site (safe-browsing reviews).
+    verification: { google: "QDCgaAzGrQ7qBrs6RXSyTl3FZEfKNUCvPsBhHBKcCoM" },
   };
 }
 
