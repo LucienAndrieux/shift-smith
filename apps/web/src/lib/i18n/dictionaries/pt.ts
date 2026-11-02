@@ -35,6 +35,8 @@ export const pt: Dictionary = {
     generationFutureOnly:
       "A geração só está disponível para os meses seguintes ao atual.",
     generationNotFound: "Geração não encontrada.",
+    replanCurrentMonthOnly:
+      "O replaneamento só está disponível para o mês atual, até ao seu penúltimo dia.",
     sectionNotFound: "Secção não encontrada.",
     shiftTypeNotFound: "Tipo de turno não encontrado.",
     requirementNotFound: "Necessidade não encontrada.",
@@ -856,6 +858,16 @@ export const pt: Dictionary = {
     generated: (version, seconds, optimal) =>
       `Rascunho v${version} gerado${seconds ? ` em ${seconds} s` : ""}${optimal ? " (ótimo)" : ""}`,
     failed: "A geração falhou.",
+    replan: "Replanear",
+    replanTitle: (date: string) => `Replanear a partir de ${date}`,
+    replanText:
+      "O solver mantém tal como estão todos os dias antes de amanhã e refaz o resto do mês tendo em conta as novas ausências, as células bloqueadas e as regras, alterando o menor número possível de células. O resultado é um novo rascunho: compare-o com esta versão antes de o publicar.",
+    replanKept:
+      "Os dias passados, as células bloqueadas, as ausências aprovadas e os aniversários são mantidos. Um bloqueio num dia agora coberto por uma ausência é libertado.",
+    replanDraft: "Replanear num rascunho",
+    replanning: "A replanear…",
+    replanned: (version: number, seconds: number | null, optimal: boolean) =>
+      `Rascunho v${version} replaneado${seconds ? ` em ${seconds} s` : ""}${optimal ? " (ótimo)" : ""}`,
   },
   hours: {
     explanation:

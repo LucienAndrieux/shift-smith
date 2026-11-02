@@ -104,3 +104,53 @@ def test_reports_infeasible_when_locked_cells_break_hard_rules():
     ]
     response = solve(request(lockedAssignments=locked, options={"timeLimitSeconds": 10}))
     assert response.status == "infeasible"
+
+
+def reference_from(response) -> list[dict]:
+    return [a.model_dump(by_alias=True) for a in response.assignments]
+
+
+def test_replan_keeps_the_past_and_changes_few_cells():
+    first = solve(request())
+    before = grid(first)
+    # e1 falls sick from the 16th: replan from that day.
+    response = solve(
+        request(
+            absences=[
+                {"employeeId": "e3", "dayCode": "AL", "startDate": "2026-11-10", "endDate": "2026-11-12"},
+                {"employeeId": "e1", "dayCode": "AL", "startDate": "2026-11-16", "endDate": "2026-11-20"},
+            ],
+            referenceAssignments=reference_from(first),
+            options={"timeLimitSeconds": 20, "replanFrom": "2026-11-16"},
+        )
+    )
+    assert response.status in ("optimal", "feasible")
+    after = grid(response)
+    for employee, row in before.items():
+        for d, value in row.items():
+            if d < date(2026, 11, 16):
+                assert after[employee][d] == value, f"{employee} {d} changed in the past"
+    assert all(after["e1"][date(2026, 11, d)] in ("AL", "OF") for d in range(16, 21))
+    changed = sum(
+        1
+        for employee, row in before.items()
+        for d, value in row.items()
+        if d >= date(2026, 11, 16) and after[employee][d] != value
+        and not (employee == "e1" and d <= date(2026, 11, 20))
+    )
+    assert changed <= 25, f"{changed} cells changed"
+
+
+def test_replan_tolerates_a_past_that_breaks_hard_rules():
+    first = solve(request())
+    reference = reference_from(first)
+    # Seven consecutive working days already happened before the replan date.
+    for a in reference:
+        if a["employeeId"] == "e0" and "2026-11-02" <= a["date"] <= "2026-11-08":
+            a.update(shiftTypeId="A", dayCode=None)
+    response = solve(
+        request(referenceAssignments=reference, options={"timeLimitSeconds": 10, "replanFrom": "2026-11-12"})
+    )
+    assert response.status in ("optimal", "feasible")
+    row = grid(response)["e0"]
+    assert all(row[date(2026, 11, d)] == "A" for d in range(2, 9))

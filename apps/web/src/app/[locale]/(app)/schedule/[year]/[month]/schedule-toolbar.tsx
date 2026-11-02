@@ -136,6 +136,13 @@ export function ScheduleToolbar({
           {permissions.canGenerate && (
             <GenerateDialog year={year} month={month} />
           )}
+          {schedule && permissions.replanFrom && (
+            <GenerateDialog
+              year={year}
+              month={month}
+              replan={{ scheduleId: schedule.id, from: permissions.replanFrom }}
+            />
+          )}
           <NewDraftDialog
             year={year}
             month={month}

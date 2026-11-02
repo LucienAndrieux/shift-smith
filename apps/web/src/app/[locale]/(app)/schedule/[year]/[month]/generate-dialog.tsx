@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Sparkles } from "lucide-react";
+import { CalendarClock, Loader2, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -24,10 +24,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMonth } from "@/lib/domain/calendar";
+import { formatDayMonth, formatMonth } from "@/lib/domain/calendar";
 import {
   getScheduleGeneration,
   startScheduleGeneration,
+  startScheduleReplan,
 } from "../../generate-actions";
 
 /** Search times in seconds (labels in `t.generate.timeLimits`). */
@@ -39,19 +40,41 @@ type Phase =
   | { kind: "error"; message: string };
 
 /**
- * Generates a full-month draft with the OR-Tools solver. The result is a new
+ * Generates a full-month draft with the OR-Tools solver or, with `replan`,
+ * reworks a version of the current month from tomorrow on. The result is a new
  * draft version, checked by the validator like any other.
  */
 export function GenerateDialog({
   year,
   month,
+  replan,
 }: {
   year: number;
   month: number;
+  /** Version to replan and its first replanned day (tomorrow). */
+  replan?: { scheduleId: string; from: string };
 }) {
   const t = useT();
   const x = t.generate;
   const locale = useLocale();
+  const text = replan
+    ? {
+        trigger: x.replan,
+        title: x.replanTitle(formatDayMonth(replan.from, locale)),
+        description: x.replanText,
+        kept: x.replanKept,
+        submit: x.replanDraft,
+        working: x.replanning,
+      }
+    : {
+        trigger: x.generate,
+        title: x.title(formatMonth(year, month, locale)),
+        description: x.text,
+        kept: x.kept,
+        submit: x.generateDraft,
+        working: x.generating,
+      };
+  const replanning = replan !== undefined;
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [timeLimit, setTimeLimit] = useState("60");
@@ -76,7 +99,7 @@ export function GenerateDialog({
         setPhase({ kind: "idle" });
         setOpen(false);
         toast.success(
-          x.generated(
+          (replanning ? x.replanned : x.generated)(
             run.version,
             run.seconds ? Math.round(run.seconds) : null,
             run.quality === "optimal",
@@ -95,15 +118,17 @@ export function GenerateDialog({
       clearInterval(tick);
       clearInterval(poll);
     };
-  }, [phase, router, year, month, x]);
+  }, [phase, router, year, month, x, replanning]);
 
   async function start() {
     setElapsed(0);
-    const result = await startScheduleGeneration({
-      year,
-      month,
-      timeLimitSeconds: Number(timeLimit),
-    });
+    const timeLimitSeconds = Number(timeLimit);
+    const result = replan
+      ? await startScheduleReplan({
+          scheduleId: replan.scheduleId,
+          timeLimitSeconds,
+        })
+      : await startScheduleGeneration({ year, month, timeLimitSeconds });
     if (result.ok) {
       setPhase({
         kind: "running",
@@ -127,14 +152,14 @@ export function GenerateDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm">
-          <Sparkles /> {x.generate}
+        <Button size="sm" variant={replan ? "outline" : "default"}>
+          {replan ? <CalendarClock /> : <Sparkles />} {text.trigger}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{x.title(formatMonth(year, month, locale))}</DialogTitle>
-          <DialogDescription>{x.text}</DialogDescription>
+          <DialogTitle>{text.title}</DialogTitle>
+          <DialogDescription>{text.description}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
@@ -155,7 +180,7 @@ export function GenerateDialog({
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground">{x.kept}</p>
+          <p className="text-xs text-muted-foreground">{text.kept}</p>
         </div>
 
         {running && (
@@ -172,7 +197,7 @@ export function GenerateDialog({
 
         <DialogFooter>
           <Button onClick={start} disabled={running}>
-            {running ? x.generating : x.generateDraft}
+            {running ? text.working : text.submit}
           </Button>
         </DialogFooter>
       </DialogContent>

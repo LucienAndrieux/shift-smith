@@ -122,6 +122,15 @@ def solve(req: SolveRequest) -> SolveResponse:
 
     locked = {(a.employee_id, a.date): a.shift_type_id or a.day_code for a in req.locked_assignments}
     tail = {(a.employee_id, a.date): a.shift_type_id or a.day_code for a in req.previous_assignments}
+    # Replanning: cells before `replan_from` are kept as they are (with their lock
+    # flag), later ones should stay as close as possible to the reference.
+    reference = {(a.employee_id, a.date): a for a in req.reference_assignments}
+    replan_from = req.options.replan_from
+
+    def kept(employee_id: str, d: date) -> Assignment | None:
+        if replan_from is None or iso(d) >= replan_from:
+            return None
+        return reference.get((employee_id, iso(d)))
 
     # ------------------------------------------------------------------ cells
 
@@ -142,7 +151,10 @@ def solve(req: SolveRequest) -> SolveResponse:
                 (a for a in req.absences if a.employee_id == e.id and a.start_date <= iso(d) <= a.end_date),
                 None,
             )
-            if (e.id, iso(d)) in locked:
+            past = kept(e.id, d)
+            if past is not None:
+                cell.fixed = past.shift_type_id or past.day_code
+            elif (e.id, iso(d)) in locked:
                 cell.fixed = locked[(e.id, iso(d))]
             elif absence and leave_rule.active:
                 # Leave ranges are calendar ranges: fixed rest weekdays stay OF.
@@ -197,6 +209,17 @@ def solve(req: SolveRequest) -> SolveResponse:
             return [(cell.fixed, 1)] if cell.fixed in shifts else []
         return [(k, v) for k, v in cell.vars.items() if k in shifts]
 
+    def in_past(d: date) -> bool:
+        """Previous month's tail, or days kept as they are when replanning."""
+        return d < first or (replan_from is not None and iso(d) < replan_from)
+
+    def add_at_most(terms: list[tuple[date, object]], limit: int) -> None:
+        """sum <= limit, unless past days alone already break it: history is not the
+        solver's to fix (the validator reports it). Locked cells still make it hard."""
+        if sum(t for d, t in terms if isinstance(t, int) and in_past(d)) > limit:
+            return
+        m.add(sum(t for _, t in terms) <= limit)
+
     def iso_week(d: date) -> tuple[int, int]:
         y, wk, _ = d.isocalendar()
         return y, wk
@@ -228,7 +251,7 @@ def solve(req: SolveRequest) -> SolveResponse:
             for i in range(len(span) - n):
                 window = span[i : i + n + 1]
                 if window[-1] >= first:
-                    m.add(sum(work(e, d) for d in window) <= n)
+                    add_at_most([(d, work(e, d)) for d in window], n)
 
         # Two rest days (OF) per ISO week, at most two chosen by the solver.
         two_rest = resolve_rule(req.rules, "two_rest_days_per_week", e)
@@ -243,8 +266,12 @@ def solve(req: SolveRequest) -> SolveResponse:
                 if (first <= d <= last and (e.id, d) in cells) or (d < first and (e.id, iso(d)) in tail)
             ]
             unknown = 7 - len(known)
-            m.add(sum(var(e, d, REST_DAY) for d in week_days) <= 2)
-            if two_rest.active and two_rest.value and unknown < 2:
+            add_at_most([(d, var(e, d, REST_DAY)) for d in week_days], 2)
+            # When replanning, a week mostly in the past may no longer have room for
+            # two rest days: that is history, not something to make infeasible.
+            rests = [rest(e, d) for d in known]
+            reachable = sum(1 if not isinstance(r, int) else r for r in rests) + unknown
+            if two_rest.active and two_rest.value and unknown < 2 and (replan_from is None or reachable >= 2):
                 has_work = m.new_bool_var(f"hw_{e.id[:8]}_{wk}")
                 for d in known:
                     m.add(work(e, d) <= has_work)
@@ -253,17 +280,19 @@ def solve(req: SolveRequest) -> SolveResponse:
         # Weekly shift limits.
         for el in e.eligibility:
             for week_days in weeks.values():
-                count = sum(var(e, d, el.shift_type_id) for d in week_days)
+                terms = [(d, var(e, d, el.shift_type_id)) for d in week_days]
+                count = sum(t for _, t in terms)
                 if el.max_per_week is not None:
-                    m.add(count <= el.max_per_week)
+                    add_at_most(terms, el.max_per_week)
                 if el.exact_per_week is not None:
                     complete = len(week_days) == 7 and all(
                         (cell := cells.get((e.id, d))) is not None
                         and not (cell.fixed and day_kind.get(cell.fixed) == "absence")
                         for d in week_days
                     )
-                    m.add(count <= el.exact_per_week)
-                    if complete:
+                    add_at_most(terms, el.exact_per_week)
+                    past_count = sum(t for d, t in terms if isinstance(t, int) and in_past(d))
+                    if complete and past_count <= el.exact_per_week:
                         gap = m.new_int_var(0, 7, "")
                         m.add(gap == el.exact_per_week - count)
                         penalties.append(w.exact_per_week * gap)
@@ -386,6 +415,14 @@ def solve(req: SolveRequest) -> SolveResponse:
             if cost:
                 penalties.append(cost * sum(var(e, d, el.shift_type_id) for d in days))
 
+    # Replanning: stay close to the reference from `replan_from` on.
+    if replan_from is not None:
+        for (employee_id, d), cell in cells.items():
+            ref = reference.get((employee_id, iso(d)))
+            if cell.fixed is None and ref is not None and iso(d) >= replan_from:
+                same = cell.vars.get(ref.shift_type_id or ref.day_code)
+                penalties.append(w.changed_cell * (1 - same) if same is not None else w.changed_cell)
+
     m.minimize(sum(penalties))
 
     solver = cp_model.CpSolver()
@@ -416,13 +453,14 @@ def solve(req: SolveRequest) -> SolveResponse:
         if value is None:
             value = next(k for k, v in cell.vars.items() if solver.value(v))
         is_shift = value in shifts
+        past = kept(employee_id, d)
         assignments.append(
             Assignment(
                 employee_id=employee_id,
                 date=iso(d),
                 shift_type_id=value if is_shift else None,
                 day_code=None if is_shift else value,
-                is_locked=(employee_id, iso(d)) in locked,
+                is_locked=past.is_locked if past is not None else (employee_id, iso(d)) in locked,
             )
         )
     return SolveResponse(

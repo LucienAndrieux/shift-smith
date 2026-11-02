@@ -78,4 +78,9 @@ export const generateScheduleSchema = z.object({
   timeLimitSeconds: z.number().int().min(10).max(300),
 });
 
+export const replanScheduleSchema = z.object({
+  scheduleId: uuid,
+  timeLimitSeconds: z.number().int().min(10).max(300),
+});
+
 export const solverRunIdSchema = z.object({ runId: uuid });

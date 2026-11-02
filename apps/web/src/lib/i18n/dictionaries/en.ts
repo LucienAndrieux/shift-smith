@@ -36,6 +36,8 @@ export const en = {
     generationFutureOnly:
       "Generation is only available for months after the current one.",
     generationNotFound: "Generation not found.",
+    replanCurrentMonthOnly:
+      "Replanning is only available for the current month, until its last day but one.",
     sectionNotFound: "Section not found.",
     shiftTypeNotFound: "Shift type not found.",
     requirementNotFound: "Requirement not found.",
@@ -852,6 +854,16 @@ export const en = {
     generated: (version: number, seconds: number | null, optimal: boolean) =>
       `Draft v${version} generated${seconds ? ` in ${seconds} s` : ""}${optimal ? " (optimal)" : ""}`,
     failed: "The generation failed.",
+    replan: "Replan",
+    replanTitle: (date: string) => `Replan from ${date}`,
+    replanText:
+      "The solver keeps every day before tomorrow as it is and reworks the rest of the month around new absences, locked cells and rules, changing as few cells as it can. The result is a new draft: compare it with this version before publishing.",
+    replanKept:
+      "Past days, locked cells, approved absences and birthdays are kept. A lock on a day now covered by an absence is released.",
+    replanDraft: "Replan into a draft",
+    replanning: "Replanning…",
+    replanned: (version: number, seconds: number | null, optimal: boolean) =>
+      `Draft v${version} replanned${seconds ? ` in ${seconds} s` : ""}${optimal ? " (optimal)" : ""}`,
   },
   hours: {
     explanation:

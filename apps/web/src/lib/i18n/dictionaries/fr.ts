@@ -35,6 +35,8 @@ export const fr: Dictionary = {
     generationFutureOnly:
       "La génération n'est disponible que pour les mois suivant le mois en cours.",
     generationNotFound: "Génération introuvable.",
+    replanCurrentMonthOnly:
+      "La replanification n'est possible que pour le mois en cours, jusqu'à son avant-dernier jour.",
     sectionNotFound: "Section introuvable.",
     shiftTypeNotFound: "Type de service introuvable.",
     requirementNotFound: "Besoin introuvable.",
@@ -856,6 +858,16 @@ export const fr: Dictionary = {
     generated: (version, seconds, optimal) =>
       `Brouillon v${version} généré${seconds ? ` en ${seconds} s` : ""}${optimal ? " (optimal)" : ""}`,
     failed: "La génération a échoué.",
+    replan: "Replanifier",
+    replanTitle: (date: string) => `Replanifier à partir du ${date}`,
+    replanText:
+      "Le solveur garde tels quels tous les jours avant demain et retravaille la fin du mois en tenant compte des nouvelles absences, des cellules verrouillées et des règles, en changeant le moins de cellules possible. Le résultat est un nouveau brouillon : comparez-le avec cette version avant de le publier.",
+    replanKept:
+      "Les jours passés, les cellules verrouillées, les absences approuvées et les anniversaires sont conservés. Un verrou sur un jour désormais couvert par une absence est levé.",
+    replanDraft: "Replanifier dans un brouillon",
+    replanning: "Replanification…",
+    replanned: (version: number, seconds: number | null, optimal: boolean) =>
+      `Brouillon v${version} replanifié${seconds ? ` en ${seconds} s` : ""}${optimal ? " (optimal)" : ""}`,
   },
   hours: {
     explanation:

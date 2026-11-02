@@ -122,6 +122,12 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
   `${SOLVER_URL}/solve` → new draft `source = solver`. The dialog polls the run.
   The worker registers its queues at server start: restart `pnpm dev` after
   adding a queue.
+- "Replan" button (managers, a non-archived version of the current month whose
+  hour bank is open, until the month's last day but one): `startScheduleReplan`
+  sends the version as `referenceAssignments` with `options.replanFrom` = tomorrow
+  (`lib/domain/replan.ts`); the solver keeps the days before and penalises each
+  changed cell after. Locks under an approved absence are released. Same job and
+  dialog as Generate; the result is a new draft.
 - Solver contract and model notes: `services/solver/README.md`.
 - Showcase, no accounts: the start page (`/start`, `app/demo-actions.ts`) creates
   a Better Auth anonymous guest with role `manager` (every right on the shared

@@ -6,7 +6,13 @@ import {
   schedules,
   solverRuns,
 } from "@/db/schema";
-import { formatMonth, monthDates } from "@/lib/domain/calendar";
+import {
+  formatDayMonth,
+  formatMonth,
+  type IsoDate,
+  monthDates,
+} from "@/lib/domain/calendar";
+import { replanLocks } from "@/lib/domain/replan";
 import { env } from "@/lib/env";
 import {
   loadAssignments,
@@ -40,12 +46,16 @@ export interface SolveResponse {
   infeasibility: { message?: string }[];
 }
 
-/** Everything the solver needs for one month. */
+/**
+ * Everything the solver needs for one month. With `replan`, the solver keeps the
+ * cells of that version before `from` and changes as few cells as it can after.
+ */
 export async function buildSolveRequest(
   runId: string,
   year: number,
   month: number,
   timeLimitSeconds: number,
+  replan?: { scheduleId: string; from: IsoDate },
 ) {
   const first = monthDates(year, month)[0];
   const [context, previousAssignments, balances, latest] = await Promise.all([
@@ -73,6 +83,18 @@ export async function buildSolveRequest(
       .orderBy(desc(schedules.version))
       .limit(1),
   ]);
+  if (replan) {
+    const reference = await loadAssignments(db, replan.scheduleId);
+    return {
+      runId,
+      ...context,
+      lockedAssignments: replanLocks(reference, context.absences, replan.from),
+      previousAssignments,
+      referenceAssignments: reference,
+      hourBankBalances: balances,
+      options: { timeLimitSeconds, replanFrom: replan.from },
+    };
+  }
   const lockedAssignments = latest[0]
     ? (await loadAssignments(db, latest[0].id)).filter((a) => a.isLocked)
     : [];
@@ -109,7 +131,9 @@ export async function runSolver(runId: string) {
       .where(eq(solverRuns.id, runId));
 
   try {
-    const input = run.input as { options: { timeLimitSeconds: number } };
+    const input = run.input as {
+      options: { timeLimitSeconds: number; replanFrom?: IsoDate };
+    };
     const response = await fetch(new URL("/solve", env().SOLVER_URL), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -146,7 +170,9 @@ export async function runSolver(runId: string) {
           version,
           status: "draft",
           source: "solver",
-          title: `${formatMonth(run.year, run.month)} — generated v${version}`,
+          title: input.options.replanFrom
+            ? `${formatMonth(run.year, run.month)} — replanned from ${formatDayMonth(input.options.replanFrom)} v${version}`
+            : `${formatMonth(run.year, run.month)} — generated v${version}`,
           // The draft belongs to whoever asked for it.
           createdBy: run.createdBy,
         })

@@ -10,6 +10,8 @@ export interface SchedulePermissions {
   /** The displayed version is editable by this user. */
   canEditCurrent: boolean;
   canGenerate: boolean;
+  /** First replanned day (tomorrow) when the displayed version can be replanned. */
+  replanFrom: string | null;
   /** Employee guest: their row is highlighted and their section shown first. */
   ownEmployeeId: string | null;
 }

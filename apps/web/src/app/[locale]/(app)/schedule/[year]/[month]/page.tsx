@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import { currentYearMonth } from "@/lib/dates";
+import { currentYearMonth, today } from "@/lib/dates";
 import { formatMonth } from "@/lib/domain/calendar";
+import { replanStart } from "@/lib/domain/replan";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { getScheduleView } from "@/server/queries/schedule";
 import { isManager, requireUser } from "@/server/session";
@@ -43,6 +44,11 @@ export default async function SchedulePage({
   await connection();
   const now = currentYearMonth();
   const manager = isManager(user);
+  const schedule = view.schedule;
+  const replanFrom =
+    manager && schedule && schedule.status !== "archived" && !schedule.closedAt
+      ? replanStart(year, month, today())
+      : null;
   return (
     <ScheduleWorkspace
       view={view}
@@ -52,6 +58,8 @@ export default async function SchedulePage({
         canEditCurrent: manager,
         // The solver generates months after the current one only.
         canGenerate: manager && year * 12 + month > now.year * 12 + now.month,
+        // Replanning reworks the current month from tomorrow on.
+        replanFrom,
         ownEmployeeId: user.role === "employee" ? user.employeeId : null,
       }}
     />

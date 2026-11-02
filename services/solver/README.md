@@ -33,7 +33,8 @@ validated before an admin publishes it.
 
 ## Flow
 
-1. An admin clicks "Generate" for a month. The web app inserts a `solver_runs` row
+1. An admin clicks "Generate" for a month (or "Replan" on a version of the
+   current month, see [Replanning](#replanning-replan-from-tomorrow)). The web app inserts a `solver_runs` row
    (`status = queued`, `input` = the request below) and enqueues a pg-boss job
    `solve-schedule`.
 2. The worker sets `status = running`, `started_at`, and calls
@@ -134,18 +135,33 @@ The service is stateless: no database access, everything it needs is in the requ
   "hourBankBalances": [               // minutes; + = owed to the employee
     { "employeeId": "…", "balanceMinutes": 480 }
   ],
+  "referenceAssignments": [],         // replanning only, see below
 
   "options": {
     "timeLimitSeconds": 60,
+    "replanFrom": null,               // replanning only, see below
     "weights": {                       // soft objectives, tunable
       "staffingShort": 1000,
       "tlDays": 60,
       "fixedDayOffMoved": 20,
-      "hourBankPerHalfHour": 4
+      "hourBankPerHalfHour": 4,
+      "changedCell": 100
     }
   }
 }
 ```
+
+### Replanning ("Replan from tomorrow")
+
+With `options.replanFrom` (a date of the month) and `referenceAssignments` (every
+cell of the version being replanned), cells before `replanFrom` keep their
+reference value and lock flag, and each later cell that ends up different from
+its reference costs `weights.changedCell`. New absences, locks and rules apply from
+`replanFrom` on. Hard rules whose past days already break them (for example seven
+working days in a row before `replanFrom`) are not enforced again: that history
+is reported by the validator, not made infeasible. The web app sends the locked
+cells of the version from `replanFrom` on, minus those now under an approved
+absence.
 
 ### Response — success
 

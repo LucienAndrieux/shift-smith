@@ -151,11 +151,16 @@ class Weights(Model):
     hour_bank_per_half_hour: int = 4
     normal_shift: int = 1
     rare_shift: int = 8
+    # Replanning: each cell from `replanFrom` that differs from the reference. Above
+    # the TL gap and a day of hour bank (15 half-hours), below staffing and fairness.
+    changed_cell: int = 100
 
 
 class Options(Model):
     time_limit_seconds: float = 30
     weights: Weights = Field(default_factory=Weights)
+    # Replanning: days before this date keep the reference cells.
+    replan_from: str | None = None
 
 
 class SolveRequest(Model):
@@ -175,6 +180,9 @@ class SolveRequest(Model):
     rules: list[Rule] = Field(default_factory=list)
     locked_assignments: list[Assignment] = Field(default_factory=list)
     previous_assignments: list[Assignment] = Field(default_factory=list)
+    # Replanning: the version being replanned (kept before `options.replanFrom`,
+    # changes from that date are penalised).
+    reference_assignments: list[Assignment] = Field(default_factory=list)
     hour_bank_balances: list[Balance] = Field(default_factory=list)
     options: Options = Field(default_factory=Options)
 
