@@ -10,15 +10,22 @@ import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE } from "@/lib/i18n/config";
  *   `locale` cookie (English by default) picks the segment through a rewrite.
  */
 export function proxy(request: NextRequest) {
-  const { pathname, search } = request.nextUrl;
-  const isStart = pathname === "/start" || pathname.startsWith("/start/");
+  const { pathname } = request.nextUrl;
+  // `next start` runs the proxy again on the rewritten URL (/en/start): a path that
+  // already starts with a language is checked without it and not rewritten twice.
+  const first = pathname.split("/")[1];
+  const localized = isLocale(first);
+  const path = localized ? pathname.slice(first.length + 1) || "/" : pathname;
+  const isStart = path === "/start" || path.startsWith("/start/");
   if (!isStart && !getSessionCookie(request)) {
     return NextResponse.redirect(new URL("/start", request.url));
   }
+  if (localized) return NextResponse.next();
   const cookie = request.cookies.get(LOCALE_COOKIE)?.value;
   const locale = isLocale(cookie) ? cookie : DEFAULT_LOCALE;
-  const target = `/${locale}${pathname === "/" ? "" : pathname}${search}`;
-  return NextResponse.rewrite(new URL(target, request.url));
+  const target = request.nextUrl.clone();
+  target.pathname = `/${locale}${pathname === "/" ? "" : pathname}`;
+  return NextResponse.rewrite(target);
 }
 
 export const config = {
