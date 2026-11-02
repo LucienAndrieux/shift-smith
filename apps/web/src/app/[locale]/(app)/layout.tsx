@@ -43,7 +43,7 @@ export default function AppLayout({ children }: LayoutProps<"/[locale]">) {
           </Link>
           <SidebarTrigger className="hidden md:inline-flex" />
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent data-tour="nav">
           <Suspense fallback={<NavSkeleton />}>
             <SidebarNav />
           </Suspense>

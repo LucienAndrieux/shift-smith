@@ -1,10 +1,11 @@
 import { ArrowLeftRight } from "lucide-react";
 import Link from "next/link";
+import { GuidedTour } from "@/components/guided-tour";
 import { Button } from "@/components/ui/button";
 import { getT } from "@/lib/i18n/server";
 import type { CurrentUser } from "@/server/session";
 
-/** What the current role can do, and a way back to the start page. */
+/** What the current role can do, its guided tour and a way back to the start page. */
 export async function DemoBanner({ user }: { user: CurrentUser }) {
   const t = await getT();
   return (
@@ -18,11 +19,14 @@ export async function DemoBanner({ user }: { user: CurrentUser }) {
             ? t.shell.bannerEmployee(user.name)
             : t.shell.bannerViewer}
       </span>
-      <Button size="sm" variant="outline" asChild>
-        <Link href="/start">
-          <ArrowLeftRight /> {t.shell.changeRole}
-        </Link>
-      </Button>
+      <div data-tour="tour-actions" className="flex flex-wrap gap-2">
+        <GuidedTour role={user.role} userId={user.id} />
+        <Button size="sm" variant="outline" asChild>
+          <Link href="/start">
+            <ArrowLeftRight /> {t.shell.changeRole}
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }

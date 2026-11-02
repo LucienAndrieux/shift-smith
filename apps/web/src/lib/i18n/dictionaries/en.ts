@@ -294,6 +294,80 @@ export const en = {
     bannerViewer:
       "Read-only demo: browse the published schedules, the hour bank and the reference data.",
   },
+  /** Guided tour shown on the first visit of each role (steps in `GuidedTour` order). */
+  tour: {
+    replay: "Guided tour",
+    next: "Next",
+    previous: "Back",
+    done: "Got it",
+    progress: "{{current}} of {{total}}",
+    manager: [
+      {
+        title: "Welcome to ShiftSmith",
+        text: "You manage a fictional hotel: 28 employees in 6 sections. Here are the essentials in under a minute.",
+      },
+      {
+        title: "Build the month",
+        text: "Generate a whole month with the solver, replan the current month after an unexpected event, then publish the version employees see.",
+      },
+      {
+        title: "Read the schedule",
+        text: "Filter by section, open the code legend and switch between month and week. Click a cell to change it: days in error are circled in red.",
+      },
+      {
+        title: "Fix errors",
+        text: "Every rule is checked as you go. Validation lists errors and warnings, and the Fix button offers ready-made solutions.",
+      },
+      {
+        title: "Handle requests",
+        text: "Employees write their wishes in plain language. Check what the app understood, then approve or reject.",
+      },
+      {
+        title: "Change role at any time",
+        text: "Try the employee or read-only view from here. The Guided tour button replays this tour.",
+      },
+    ],
+    employee: [
+      {
+        title: "Welcome!",
+        text: "You play an employee of the demo hotel. Here is what you can do.",
+      },
+      {
+        title: "Your schedule",
+        text: "You see the published schedule, starting on your section, with your row highlighted. The week view gives a closer look.",
+      },
+      {
+        title: "Your hours and absences",
+        text: "My profile shows your contract, your hours and your absences.",
+      },
+      {
+        title: "Ask in plain language",
+        text: 'Write a request such as "I can\'t work on the evening of the 12th": a manager approves it before it reaches the schedule.',
+      },
+      {
+        title: "See the manager side",
+        text: "Change role here to plan the schedule yourself. The Guided tour button replays this tour.",
+      },
+    ],
+    viewer: [
+      {
+        title: "Welcome!",
+        text: "Read-only access: browse the published schedules and the hotel's settings. Nothing can be changed.",
+      },
+      {
+        title: "Browse the schedule",
+        text: "Filter by section, open the legend, switch between month and week, or print the month as a PDF.",
+      },
+      {
+        title: "Everything in one place",
+        text: "Hours, employees, absences, hour bank and setup pages are all open for reading.",
+      },
+      {
+        title: "Try it for real",
+        text: "Choose the manager role to edit, generate and fix schedules. The Guided tour button replays this tour.",
+      },
+    ],
+  },
   nav: {
     planning: "Planning",
     setup: "Setup",

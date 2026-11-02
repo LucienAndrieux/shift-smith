@@ -298,6 +298,79 @@ export const pt: Dictionary = {
     bannerViewer:
       "Demo só de leitura: consulte as escalas publicadas, o banco de horas e os dados de referência.",
   },
+  tour: {
+    replay: "Visita guiada",
+    next: "Seguinte",
+    previous: "Voltar",
+    done: "Vamos lá",
+    progress: "{{current}} de {{total}}",
+    manager: [
+      {
+        title: "Bem-vindo ao ShiftSmith",
+        text: "Gere um hotel fictício: 28 colaboradores em 6 secções. Eis o essencial em menos de um minuto.",
+      },
+      {
+        title: "Construir o mês",
+        text: "Gere um mês completo com o solver, replaneie o mês em curso após um imprevisto e publique a versão que os colaboradores vão ver.",
+      },
+      {
+        title: "Ler a escala",
+        text: "Filtre por secção, abra a legenda dos códigos e alterne entre mês e semana. Clique numa célula para a alterar: os dias com erro ficam assinalados a vermelho.",
+      },
+      {
+        title: "Corrigir erros",
+        text: "Cada regra é verificada em contínuo. A Validação lista erros e avisos, e o botão Corrigir propõe soluções prontas.",
+      },
+      {
+        title: "Tratar pedidos",
+        text: "Os colaboradores escrevem os seus pedidos em linguagem corrente. Verifique o que a aplicação entendeu e aprove ou rejeite.",
+      },
+      {
+        title: "Mude de papel quando quiser",
+        text: "Experimente aqui a vista de colaborador ou só de leitura. O botão Visita guiada repete esta visita.",
+      },
+    ],
+    employee: [
+      {
+        title: "Bem-vindo!",
+        text: "Interpreta um colaborador do hotel de demonstração. Eis o que pode fazer.",
+      },
+      {
+        title: "A sua escala",
+        text: "Vê a escala publicada, aberta na sua secção, com a sua linha em destaque. A vista semanal mostra mais pormenor.",
+      },
+      {
+        title: "As suas horas e ausências",
+        text: "O meu perfil mostra o seu contrato, as suas horas e as suas ausências.",
+      },
+      {
+        title: "Peça em linguagem corrente",
+        text: "Escreva um pedido como «não posso trabalhar na noite do dia 12»: um gestor aprova-o antes de chegar à escala.",
+      },
+      {
+        title: "Veja o lado do gestor",
+        text: "Mude de papel aqui para construir a escala. O botão Visita guiada repete esta visita.",
+      },
+    ],
+    viewer: [
+      {
+        title: "Bem-vindo!",
+        text: "Acesso só de leitura: consulte as escalas publicadas e as definições do hotel. Nada pode ser alterado.",
+      },
+      {
+        title: "Consultar a escala",
+        text: "Filtre por secção, abra a legenda, alterne entre mês e semana ou imprima o mês em PDF.",
+      },
+      {
+        title: "Tudo no mesmo sítio",
+        text: "Horas, colaboradores, ausências, banco de horas e páginas de configuração estão todos disponíveis para consulta.",
+      },
+      {
+        title: "Experimente a sério",
+        text: "Escolha o papel de gestor para editar, gerar e corrigir escalas. O botão Visita guiada repete esta visita.",
+      },
+    ],
+  },
   nav: {
     planning: "Planeamento",
     setup: "Configuração",

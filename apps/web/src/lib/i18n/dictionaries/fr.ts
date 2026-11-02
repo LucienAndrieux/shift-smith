@@ -303,6 +303,79 @@ export const fr: Dictionary = {
     bannerViewer:
       "Démo en lecture seule : parcourez les plannings publiés, la banque d'heures et les données de référence.",
   },
+  tour: {
+    replay: "Visite guidée",
+    next: "Suivant",
+    previous: "Retour",
+    done: "C'est parti",
+    progress: "{{current}} sur {{total}}",
+    manager: [
+      {
+        title: "Bienvenue sur ShiftSmith",
+        text: "Vous gérez un hôtel fictif : 28 employés répartis en 6 sections. Voici l'essentiel en moins d'une minute.",
+      },
+      {
+        title: "Construire le mois",
+        text: "Générez un mois complet avec le solveur, replanifiez le mois en cours après un imprévu, puis publiez la version que verront les employés.",
+      },
+      {
+        title: "Lire le planning",
+        text: "Filtrez par section, ouvrez la légende des codes et passez du mois à la semaine. Cliquez sur une case pour la modifier : les jours en erreur sont entourés en rouge.",
+      },
+      {
+        title: "Corriger les erreurs",
+        text: "Chaque règle est vérifiée en continu. Validation liste les erreurs et les avertissements, et le bouton Corriger propose des solutions toutes prêtes.",
+      },
+      {
+        title: "Traiter les demandes",
+        text: "Les employés écrivent leurs souhaits en langage courant. Vérifiez ce que l'application a compris, puis approuvez ou refusez.",
+      },
+      {
+        title: "Changer de rôle à tout moment",
+        text: "Essayez ici la vue employé ou lecture seule. Le bouton Visite guidée relance cette visite.",
+      },
+    ],
+    employee: [
+      {
+        title: "Bienvenue !",
+        text: "Vous jouez un employé de l'hôtel de démo. Voici ce que vous pouvez faire.",
+      },
+      {
+        title: "Votre planning",
+        text: "Vous voyez le planning publié, ouvert sur votre section, avec votre ligne mise en évidence. La vue semaine donne plus de détails.",
+      },
+      {
+        title: "Vos heures et absences",
+        text: "Mon profil affiche votre contrat, vos heures et vos absences.",
+      },
+      {
+        title: "Demander en langage courant",
+        text: "Écrivez une demande comme « je ne peux pas travailler le soir du 12 » : un manager l'approuve avant qu'elle n'arrive dans le planning.",
+      },
+      {
+        title: "Voir le côté manager",
+        text: "Changez de rôle ici pour construire le planning vous-même. Le bouton Visite guidée relance cette visite.",
+      },
+    ],
+    viewer: [
+      {
+        title: "Bienvenue !",
+        text: "Accès en lecture seule : parcourez les plannings publiés et les réglages de l'hôtel. Rien ne peut être modifié.",
+      },
+      {
+        title: "Parcourir le planning",
+        text: "Filtrez par section, ouvrez la légende, passez du mois à la semaine ou imprimez le mois en PDF.",
+      },
+      {
+        title: "Tout au même endroit",
+        text: "Heures, employés, absences, banque d'heures et pages de réglages sont tous consultables.",
+      },
+      {
+        title: "Essayer pour de vrai",
+        text: "Choisissez le rôle manager pour modifier, générer et corriger les plannings. Le bouton Visite guidée relance cette visite.",
+      },
+    ],
+  },
   nav: {
     planning: "Planification",
     setup: "Paramétrage",

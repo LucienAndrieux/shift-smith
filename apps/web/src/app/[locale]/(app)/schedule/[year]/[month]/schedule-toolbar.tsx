@@ -132,7 +132,7 @@ export function ScheduleToolbar({
       <div className="flex-1" />
 
       {permissions.canPlan && (
-        <div className="flex flex-wrap gap-2">
+        <div data-tour="schedule-actions" className="flex flex-wrap gap-2">
           {permissions.canGenerate && (
             <GenerateDialog year={year} month={month} />
           )}

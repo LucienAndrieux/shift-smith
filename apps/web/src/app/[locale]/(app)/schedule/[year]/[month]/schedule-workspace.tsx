@@ -62,7 +62,10 @@ export function ScheduleWorkspace({
         </Alert>
       ) : (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <div
+            data-tour="schedule-views"
+            className="flex flex-wrap items-center justify-between gap-2"
+          >
             <SectionPicker
               value={sectionId}
               onChange={(id) => setSection(id ?? ALL)}

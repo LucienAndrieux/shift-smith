@@ -140,6 +140,11 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
   and calls `ensureDemoMonth` (`server/demo/reset.ts`: truncate + seed shifted to
   the current month with `shiftSeedFile` + `generateDemoSchedule`); nightly
   restore at 03:xx.
+- Guided tour per role (`components/guided-tour.tsx`, driver.js themed in
+  `guided-tour.css`): steps in `t.tour.<role>`, targets are `data-tour` attributes
+  (`TARGETS`, same order; a missing or hidden target gives a centred card). Shown
+  once per guest and role on the schedule screen (localStorage), replayed from the
+  banner's "Guided tour" button.
 - The start page is also the developer's sales page (custom builds) with a public
   contact form and a meeting request: a day/slot picker (`MEETING_SLOTS`,
   `lib/meeting-slots.ts`, weekdays from tomorrow) minus the busy times of a Google
