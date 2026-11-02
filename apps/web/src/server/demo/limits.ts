@@ -20,9 +20,7 @@ export async function assertGenerationAllowed(user: CurrentUser) {
     .from(solverRuns)
     .where(inArray(solverRuns.status, ["queued", "running"]));
   if ((busy?.n ?? 0) > 0) {
-    throw new ActionError(
-      "Another visitor's schedule is being generated: try again in a minute.",
-    );
+    throw new ActionError((t) => t.errors.generationBusy);
   }
   const [mine] = await db
     .select({ n: count() })
@@ -35,7 +33,7 @@ export async function assertGenerationAllowed(user: CurrentUser) {
     );
   const max = env().DEMO_GENERATIONS_PER_HOUR;
   if ((mine?.n ?? 0) >= max) {
-    throw new ActionError(`The demo allows ${max} generations per hour.`);
+    throw new ActionError((t) => t.errors.generationsPerHour(max));
   }
 }
 
@@ -58,13 +56,9 @@ export async function assertLlmAllowed(user: CurrentUser) {
   ]);
   const { DEMO_LLM_PER_DAY, DEMO_LLM_GLOBAL_PER_DAY } = env();
   if ((mine[0]?.n ?? 0) >= DEMO_LLM_PER_DAY) {
-    throw new ActionError(
-      `The demo allows ${DEMO_LLM_PER_DAY} constraints per visitor per day.`,
-    );
+    throw new ActionError((t) => t.errors.constraintsPerDay(DEMO_LLM_PER_DAY));
   }
   if ((all[0]?.n ?? 0) >= DEMO_LLM_GLOBAL_PER_DAY) {
-    throw new ActionError(
-      "The demo's daily AI quota is used up: try again tomorrow.",
-    );
+    throw new ActionError((t) => t.errors.aiQuotaUsed);
   }
 }

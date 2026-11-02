@@ -7,7 +7,10 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
 
 ## Conventions
 
-- **Everything in English** (UI, code, DB, docs). Day codes are OF, PH, AL, SL, BD,
+- **Everything in English** (code, DB, docs). The UI is English, French and
+  Portuguese: never hard-code interface text, add it to
+  `src/lib/i18n/dictionaries/en.ts` and translate it in `fr.ts` and `pt.ts`.
+  Day codes are OF, PH, AL, SL, BD,
   TL, TR, OL, UL (`src/lib/domain/day-codes.ts`); shift codes are A–E per section.
   Keep accents in names.
 - Time zone from `APP_TIMEZONE` (default `Europe/Paris`); ISO weeks (Mon → Sun).
@@ -55,6 +58,17 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
   content is not revealed (no animation frames); read the server HTML instead.
 - `proxy.ts` (formerly middleware) only does optimistic cookie redirects; real
   checks happen in the data access layer.
+- Languages: every page lives under `app/[locale]/` (`en`, `fr`, `pt`, one static
+  shell each); `proxy.ts` rewrites URLs from the `locale` cookie (English by
+  default), so URLs carry no language. Server Components use `getT()` /
+  `getLocale()` (`next/root-params`); Server Actions and Route Handlers use
+  `getRequestT()` (cookie); client components `useT()` / `useLocale()`.
+  `ActionError((t) => t.errors.…)` returns errors in the visitor's language.
+  The validator writes messages in the locale it is given; shared Zod schemas keep
+  English messages, translated for display by `translateMessage`. Data (names,
+  sections, shift labels, holidays, DB notes) is not translated; built-in day-code
+  labels are, while unchanged (`dayCodeLabel`). Switchers: flag buttons on the
+  start page, a menu in the app sidebar (`components/language-switcher.tsx`).
 - Biome for lint + format (shadcn files in `src/components/ui` are not linted).
 - The single `.env` lives at the repo root; `next.config.ts` and
   `scripts/load-env.ts` load it.
@@ -127,6 +141,9 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
   visitor as organizer: `app/(auth)/start/actions.ts` →
   `server/email.ts` (nodemailer, `SMTP_*`) to `CONTACT_EMAIL`; honeypot +
   in-memory per-address limit, no session required. Display font Bricolage Grotesque on that page only.
+  Its pricing section shows three plans (one-off build "from" + monthly plan, the
+  third on quote): texts in `start.plans` of the dictionaries, prices in euros in
+  `PLAN_PRICES` of the page, one grid for every language (set for Portugal).
 - Deployment: Docker Compose + Caddy (`infra/`), or natively on Windows Server
   (`infra/windows/`, NSSM services `ShiftSmithWeb` / `ShiftSmithSolver`) with
   `next start`; the Docker image builds the standalone output

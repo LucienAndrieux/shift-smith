@@ -6,6 +6,7 @@ import {
   type FieldPath,
   type FieldValues,
 } from "react-hook-form";
+import { useT } from "@/components/i18n-provider";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
@@ -39,7 +40,7 @@ export function SelectField<
   name,
   label,
   options,
-  placeholder = "Choose…",
+  placeholder,
   noneLabel,
   description,
   disabled,
@@ -54,6 +55,7 @@ export function SelectField<
   description?: string;
   disabled?: boolean;
 }) {
+  const t = useT();
   return (
     <Controller
       control={control}
@@ -73,7 +75,7 @@ export function SelectField<
               aria-invalid={fieldState.invalid}
               className="w-full"
             >
-              <SelectValue placeholder={placeholder} />
+              <SelectValue placeholder={placeholder ?? t.common.choose} />
             </SelectTrigger>
             <SelectContent>
               {noneLabel && <SelectItem value={NONE}>{noneLabel}</SelectItem>}

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useState, useTransition } from "react";
 import { enterDemo } from "@/app/demo-actions";
+import { useT } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -32,6 +33,7 @@ export function RoleChooser({
 }: {
   employees: { id: string; name: string; section: string }[];
 }) {
+  const t = useT();
   const [pending, start] = useTransition();
   const [chosen, setChosen] = useState<Role | null>(null);
   const [employeeId, setEmployeeId] = useState("");
@@ -58,9 +60,9 @@ export function RoleChooser({
       >
         <RoleIcon icon={PencilRuler} accent />
         <RoleText
-          title="Manager"
-          badge="Every right"
-          text="Plan, generate, fix and publish; edit the reference data and approve requests. Other visitors see your changes."
+          title={t.roles.manager}
+          badge={t.roles.managerBadge}
+          text={t.roles.managerText}
         />
         <Go busy={pending && chosen === "manager"} />
       </button>
@@ -68,17 +70,14 @@ export function RoleChooser({
       <div className={cn(CARD, "flex-wrap sm:flex-nowrap")}>
         <RoleIcon icon={UserRound} />
         <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <RoleText
-            title="Employee"
-            text="Play one of the 28 employees: your schedule highlighted, your hours and absences, and requests sent to the managers."
-          />
+          <RoleText title={t.roles.employee} text={t.roles.employeeText} />
           <div className="flex gap-2">
             <Select value={employeeId} onValueChange={setEmployeeId}>
               <SelectTrigger
                 className="min-w-0 flex-1 bg-background"
-                aria-label="Employee to play"
+                aria-label={t.roles.employeeToPlay}
               >
-                <SelectValue placeholder="Choose an employee…" />
+                <SelectValue placeholder={t.roles.chooseEmployee} />
               </SelectTrigger>
               <SelectContent>
                 {sections.map((section) => (
@@ -104,7 +103,7 @@ export function RoleChooser({
               ) : (
                 <ArrowRight />
               )}
-              Enter
+              {t.roles.enter}
             </Button>
           </div>
         </div>
@@ -120,10 +119,7 @@ export function RoleChooser({
         )}
       >
         <RoleIcon icon={Eye} />
-        <RoleText
-          title="Read-only"
-          text="Browse the published schedules, the validation and the reference data without changing anything."
-        />
+        <RoleText title={t.roles.viewer} text={t.roles.viewerText} />
         <Go busy={pending && chosen === "viewer"} />
       </button>
     </div>

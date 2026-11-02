@@ -1,3 +1,4 @@
+import type { Locale } from "../i18n/config";
 import {
   addDays,
   daysInMonth,
@@ -22,6 +23,10 @@ import type {
   ScheduleInput,
   ShiftType,
 } from "./types";
+import {
+  VALIDATOR_MESSAGES,
+  type ValidatorMessages,
+} from "./validator-messages";
 
 export type Severity = "error" | "warning";
 
@@ -41,28 +46,13 @@ export type ViolationCode =
   | "fixed_days_off_mismatch"
   | "monthly_tl_days";
 
-export const VIOLATION_LABELS: Record<ViolationCode, string> = {
-  weekly_contract_hours_default: "Weekly contract",
-  max_consecutive_work_days: "Consecutive working days",
-  min_rest_between_shifts_hours: "Rest between shifts",
-  weekend_off_per_month: "Monthly weekend off",
-  birthday_off: "Birthday off",
-  two_rest_days_per_week: "Two rest days per week",
-  approved_leave_is_fixed: "Approved leave",
-  same_days_off: "Same days off",
-  different_weekend_off: "Different weekend off",
-  shift_eligibility: "Shift eligibility",
-  shift_max_per_week: "Max shifts per week",
-  shift_exact_per_week: "Exact shifts per week",
-  inactive_shift: "Inactive shift",
-  unavailability: "Unavailability",
-  min_staff: "Minimum staffing",
-  max_staff: "Maximum staffing",
-  unassigned_day: "Unassigned days",
-  unknown_code: "Unknown code",
-  fixed_days_off_mismatch: "Fixed days off",
-  monthly_tl_days: "Monthly time off in lieu",
-};
+/** English labels (scripts, logs); the UI uses `violationLabels(locale)`. */
+export const VIOLATION_LABELS: Record<ViolationCode, string> =
+  VALIDATOR_MESSAGES.en.labels;
+
+export function violationLabels(locale: Locale): Record<ViolationCode, string> {
+  return VALIDATOR_MESSAGES[locale].labels;
+}
 
 export interface Violation {
   code: ViolationCode;
@@ -126,10 +116,14 @@ type Cell = Pick<Assignment, "shiftTypeId" | "dayCode">;
 
 /**
  * Validates one month of assignments against hard rules (and a few soft checks
- * reported as warnings). Pure function: same input, same output.
+ * reported as warnings). Pure function: same input, same output. Messages are
+ * written in `locale`.
  */
-export function validateSchedule(input: ScheduleInput): ValidationResult {
-  return new Validator(input).run();
+export function validateSchedule(
+  input: ScheduleInput,
+  locale: Locale = "en",
+): ValidationResult {
+  return new Validator(input, locale).run();
 }
 
 class Validator {
@@ -145,8 +139,13 @@ class Validator {
   /** employeeId → date → cell, current month and previous-month tail. */
   private readonly cells = new Map<string, Map<IsoDate, Cell>>();
   private readonly employees: Employee[];
+  readonly m: ValidatorMessages;
 
-  constructor(private readonly input: ScheduleInput) {
+  constructor(
+    private readonly input: ScheduleInput,
+    readonly locale: Locale,
+  ) {
+    this.m = VALIDATOR_MESSAGES[locale];
     this.dates = monthDates(input.year, input.month);
     this.monthStart = this.dates[0];
     this.monthEnd = this.dates[this.dates.length - 1];
@@ -194,6 +193,18 @@ class Validator {
 
   // ---------------------------------------------------------------- helpers
 
+  private day(date: IsoDate): string {
+    return formatDayMonth(date, this.locale);
+  }
+
+  private weekdays(days: number[]): string {
+    return days.length === 0
+      ? this.m.none
+      : days
+          .map((d) => weekdayShort(d as 1 | 2 | 3 | 4 | 5 | 6 | 7, this.locale))
+          .join("/");
+  }
+
   private cell(employeeId: string, date: IsoDate): Cell | undefined {
     return this.cells.get(employeeId)?.get(date);
   }
@@ -222,7 +233,7 @@ class Validator {
 
   private shiftLabel(shiftTypeId: string): string {
     const st = this.shiftById.get(shiftTypeId);
-    if (!st) return "unknown shift";
+    if (!st) return this.m.unknownShiftLabel;
     return `${this.sectionNameById.get(st.sectionId) ?? ""} ${st.code}`.trim();
   }
 
@@ -283,7 +294,11 @@ class Validator {
         employeeId: id,
         sectionId: employee.primarySectionId,
         date: missing[0],
-        message: `${employee.displayName}: ${missing.length} day(s) without assignment, starting ${formatDayMonth(missing[0])}.`,
+        message: this.m.unassigned(
+          employee.displayName,
+          missing.length,
+          this.day(missing[0]),
+        ),
       });
     }
 
@@ -301,7 +316,7 @@ class Validator {
             severity: "error",
             employeeId: id,
             date,
-            message: `${employee.displayName}: unknown shift on ${formatDayMonth(date)}.`,
+            message: this.m.unknownShift(employee.displayName, this.day(date)),
           });
           continue;
         }
@@ -312,7 +327,11 @@ class Validator {
             employeeId: id,
             sectionId: shift.sectionId,
             date,
-            message: `${employee.displayName} is not eligible for ${this.shiftLabel(shift.id)} (${formatDayMonth(date)}).`,
+            message: this.m.notEligible(
+              employee.displayName,
+              this.shiftLabel(shift.id),
+              this.day(date),
+            ),
           });
         }
         if (!shift.isActive) {
@@ -322,7 +341,11 @@ class Validator {
             employeeId: id,
             sectionId: shift.sectionId,
             date,
-            message: `${this.shiftLabel(shift.id)} is inactive but assigned to ${employee.displayName} on ${formatDayMonth(date)}.`,
+            message: this.m.inactiveShift(
+              this.shiftLabel(shift.id),
+              employee.displayName,
+              this.day(date),
+            ),
           });
         }
       } else if (cell.dayCode && !this.dayCodeByCode.has(cell.dayCode)) {
@@ -331,7 +354,11 @@ class Validator {
           severity: "error",
           employeeId: id,
           date,
-          message: `${employee.displayName}: unknown day code "${cell.dayCode}" on ${formatDayMonth(date)}.`,
+          message: this.m.unknownDayCode(
+            employee.displayName,
+            cell.dayCode,
+            this.day(date),
+          ),
         });
       }
     }
@@ -369,7 +396,16 @@ class Validator {
           employeeId: employee.id,
           sectionId: employee.primarySectionId,
           date,
-          message: `${employee.displayName}: only ${formatRest(rest)} rest between ${this.shiftLabel(yesterday.shiftTypeId)} ending ${formatTimeOfDay(prev.lastEndMinute)} on ${formatDayMonth(addDays(date, -1))} and ${this.shiftLabel(today.shiftTypeId)} starting ${formatTimeOfDay(cur.firstStartMinute)} (minimum ${formatRest(minRest)}).`,
+          message: this.m.minRest({
+            name: employee.displayName,
+            rest: formatRest(rest),
+            prevShift: this.shiftLabel(yesterday.shiftTypeId),
+            prevEnd: formatTimeOfDay(prev.lastEndMinute),
+            prevDate: this.day(addDays(date, -1)),
+            shift: this.shiftLabel(today.shiftTypeId),
+            start: formatTimeOfDay(cur.firstStartMinute),
+            min: formatRest(minRest),
+          }),
         });
       }
     }
@@ -394,7 +430,11 @@ class Validator {
             employeeId: employee.id,
             sectionId: employee.primarySectionId,
             date,
-            message: `${employee.displayName}: more than ${max} consecutive working days (from ${formatDayMonth(streakStart)}).`,
+            message: this.m.consecutive(
+              employee.displayName,
+              max,
+              this.day(streakStart),
+            ),
           });
         }
       } else {
@@ -438,7 +478,11 @@ class Validator {
           sectionId: employee.primarySectionId,
           date: firstInMonth,
           weekKey: week.key,
-          message: `${employee.displayName}: ${restCells.length} rest day(s) in ${week.key} (2 required).`,
+          message: this.m.restDays(
+            employee.displayName,
+            restCells.length,
+            week.key,
+          ),
         });
       }
 
@@ -453,7 +497,12 @@ class Validator {
             sectionId: employee.primarySectionId,
             date: firstInMonth,
             weekKey: week.key,
-            message: `${employee.displayName}: rest days in ${week.key} are ${listWeekdays(actual)} instead of the fixed ${listWeekdays(expected)}.`,
+            message: this.m.fixedDaysOff(
+              employee.displayName,
+              week.key,
+              this.weekdays(actual),
+              this.weekdays(expected),
+            ),
           });
         }
       }
@@ -472,7 +521,13 @@ class Validator {
             sectionId: employee.primarySectionId,
             date: firstInMonth,
             weekKey: week.key,
-            message: `${employee.displayName}: ${count} × ${label} in ${week.key} (max ${elig.maxPerWeek}).`,
+            message: this.m.maxPerWeek(
+              employee.displayName,
+              count,
+              label,
+              week.key,
+              elig.maxPerWeek,
+            ),
           });
         }
         if (elig.exactPerWeek !== null) {
@@ -488,7 +543,13 @@ class Validator {
               sectionId: employee.primarySectionId,
               date: firstInMonth,
               weekKey: week.key,
-              message: `${employee.displayName}: ${count} × ${label} in ${week.key} (exactly ${elig.exactPerWeek} required).`,
+              message: this.m.exactPerWeek(
+                employee.displayName,
+                count,
+                label,
+                week.key,
+                elig.exactPerWeek,
+              ),
             });
           }
         }
@@ -517,7 +578,7 @@ class Validator {
         employeeId: employee.id,
         sectionId: employee.primarySectionId,
         date: null,
-        message: `${employee.displayName}: ${off.length} full weekend(s) off this month (${required} required).`,
+        message: this.m.weekendOff(employee.displayName, off.length, required),
       });
     }
   }
@@ -545,7 +606,12 @@ class Validator {
         employeeId: employee.id,
         sectionId: employee.primarySectionId,
         date,
-        message: `${employee.displayName}: birthday on ${formatDayMonth(date)} should be coded ${code} (found ${describeCell(cell, this)}).`,
+        message: this.m.birthday(
+          employee.displayName,
+          this.day(date),
+          code,
+          describeCell(cell, this),
+        ),
       });
     }
   }
@@ -571,7 +637,12 @@ class Validator {
           employeeId: employee.id,
           sectionId: employee.primarySectionId,
           date,
-          message: `${employee.displayName}: approved ${absence.dayCode} on ${formatDayMonth(date)} but the cell is ${describeCell(cell, this)}.`,
+          message: this.m.approvedLeave(
+            employee.displayName,
+            absence.dayCode,
+            this.day(date),
+            describeCell(cell, this),
+          ),
         });
       }
     }
@@ -595,7 +666,7 @@ class Validator {
         );
       if (!overlaps) continue;
       const window = wholeDay
-        ? "all day"
+        ? this.m.allDay
         : `${formatTimeOfDay(u.startMinute ?? 0)}–${formatTimeOfDay(u.endMinute ?? MINUTES_PER_DAY)}`;
       this.add({
         code: "unavailability",
@@ -603,7 +674,7 @@ class Validator {
         employeeId: employee.id,
         sectionId: shift.sectionId,
         date: u.date,
-        message: `${employee.displayName} is unavailable ${window} on ${formatDayMonth(u.date)} but works ${this.shiftLabel(shift.id)}${u.reason ? ` (${u.reason})` : ""}.`,
+        message: `${this.m.unavailable(employee.displayName, window, this.day(u.date), this.shiftLabel(shift.id))}${u.reason ? ` (${u.reason})` : ""}.`,
       });
     }
   }
@@ -620,7 +691,12 @@ class Validator {
         employeeId: employee.id,
         sectionId: employee.primarySectionId,
         date: null,
-        message: `${employee.displayName}: ${count} ${TIME_OFF_IN_LIEU} day(s) this month (${employee.monthlyTlDays} expected).`,
+        message: this.m.monthlyTl(
+          employee.displayName,
+          count,
+          TIME_OFF_IN_LIEU,
+          employee.monthlyTlDays,
+        ),
       });
     }
   }
@@ -650,7 +726,11 @@ class Validator {
             severity,
             employeeId: a.id,
             date,
-            message: `${pair} must share rest days, but only ${resting.displayName} rests on ${formatDayMonth(date)}.`,
+            message: this.m.sameDaysOff(
+              pair,
+              resting.displayName,
+              this.day(date),
+            ),
           });
         }
       } else {
@@ -666,7 +746,11 @@ class Validator {
               severity: "error",
               employeeId: a.id,
               date: sat,
-              message: `${pair} must not have the same weekend off (${formatDayMonth(sat)}–${formatDayMonth(sun)}).`,
+              message: this.m.differentWeekend(
+                pair,
+                this.day(sat),
+                this.day(sun),
+              ),
             });
           }
         }
@@ -715,7 +799,7 @@ class Validator {
           if (!target) continue;
           const what =
             shiftTypeId === null
-              ? `${section.name} (any shift)`
+              ? this.m.anyShift(section.name)
               : this.shiftLabel(shiftTypeId);
           if (count < target.minStaff) {
             this.add({
@@ -725,7 +809,7 @@ class Validator {
               sectionId: section.id,
               shiftTypeId,
               date,
-              message: `${what} on ${formatDayMonth(date)}: ${count} staff, minimum ${target.minStaff}${target.reason ? ` (${target.reason})` : ""}.`,
+              message: `${this.m.minStaff(what, this.day(date), count, target.minStaff)}${target.reason ? ` (${target.reason})` : ""}.`,
             });
           }
           if (target.maxStaff !== null && count > target.maxStaff) {
@@ -736,7 +820,7 @@ class Validator {
               sectionId: section.id,
               shiftTypeId,
               date,
-              message: `${what} on ${formatDayMonth(date)}: ${count} staff, maximum ${target.maxStaff}${target.reason ? ` (${target.reason})` : ""}.`,
+              message: `${this.m.maxStaff(what, this.day(date), count, target.maxStaff)}${target.reason ? ` (${target.reason})` : ""}.`,
             });
           }
         }
@@ -838,9 +922,9 @@ class Validator {
 }
 
 function describeCell(cell: Cell | undefined, v: Validator): string {
-  if (!cell) return "empty";
-  if (cell.shiftTypeId) return `shift ${v.describeShift(cell.shiftTypeId)}`;
-  return cell.dayCode ?? "empty";
+  if (!cell) return v.m.emptyCell;
+  if (cell.shiftTypeId) return v.m.shiftCell(v.describeShift(cell.shiftTypeId));
+  return cell.dayCode ?? v.m.emptyCell;
 }
 
 function formatRest(minutes: number): string {
@@ -849,14 +933,11 @@ function formatRest(minutes: number): string {
   return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, "0")}`;
 }
 
-function listWeekdays(days: number[]): string {
-  return days.length === 0
-    ? "none"
-    : days.map((d) => weekdayShort(d as 1 | 2 | 3 | 4 | 5 | 6 | 7)).join("/");
-}
-
 /** Violations grouped for summaries: code → count, split by severity. */
-export function summarizeViolations(violations: readonly Violation[]) {
+export function summarizeViolations(
+  violations: readonly Violation[],
+  locale: Locale = "en",
+) {
   const summary = new Map<ViolationCode, { error: number; warning: number }>();
   for (const v of violations) {
     const entry = summary.get(v.code) ?? { error: 0, warning: 0 };
@@ -866,7 +947,7 @@ export function summarizeViolations(violations: readonly Violation[]) {
   return [...summary.entries()]
     .map(([code, counts]) => ({
       code,
-      label: VIOLATION_LABELS[code],
+      label: VALIDATOR_MESSAGES[locale].labels[code],
       ...counts,
     }))
     .sort((a, b) => b.error - a.error || b.warning - a.warning);

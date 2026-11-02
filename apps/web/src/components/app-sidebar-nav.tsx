@@ -25,7 +25,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Role } from "@/server/session";
+import { useT } from "./i18n-provider";
 
 interface NavItem {
   href: string;
@@ -35,29 +37,31 @@ interface NavItem {
   match?: string;
 }
 
-const MAIN: NavItem[] = [
-  { href: "/schedule", label: "Schedule", icon: CalendarDays },
-  { href: "/validation", label: "Validation", icon: ListChecks },
-  { href: "/hours", label: "Hours", icon: Clock3 },
-  { href: "/employees", label: "Employees", icon: Users },
-  { href: "/absences", label: "Absences", icon: Plane },
-  { href: "/hour-bank", label: "Hour bank", icon: Timer },
-  { href: "/constraints", label: "Constraints", icon: MessageSquareText },
+type Nav = Dictionary["nav"];
+
+const main = (t: Nav): NavItem[] => [
+  { href: "/schedule", label: t.schedule, icon: CalendarDays },
+  { href: "/validation", label: t.validation, icon: ListChecks },
+  { href: "/hours", label: t.hours, icon: Clock3 },
+  { href: "/employees", label: t.employees, icon: Users },
+  { href: "/absences", label: t.absences, icon: Plane },
+  { href: "/hour-bank", label: t.hourBank, icon: Timer },
+  { href: "/constraints", label: t.constraints, icon: MessageSquareText },
 ];
 
-const SETUP: NavItem[] = [
-  { href: "/sections", label: "Sections & shifts", icon: ClipboardList },
-  { href: "/staffing", label: "Staffing", icon: Gauge },
-  { href: "/rules", label: "Rules", icon: Scale },
-  { href: "/holidays", label: "Holidays", icon: PartyPopper },
+const setup = (t: Nav): NavItem[] => [
+  { href: "/sections", label: t.sections, icon: ClipboardList },
+  { href: "/staffing", label: t.staffing, icon: Gauge },
+  { href: "/rules", label: t.rules, icon: Scale },
+  { href: "/holidays", label: t.holidays, icon: PartyPopper },
 ];
 
 /** An employee guest: their own pages first, then the shared schedule views. */
-const employeeNav = (employeeId: string): NavItem[] => [
-  { href: "/schedule", label: "Schedule", icon: CalendarDays },
-  { href: `/employees/${employeeId}`, label: "My profile", icon: UserRound },
-  { href: "/hours", label: "Hours", icon: Clock3 },
-  { href: "/constraints", label: "My requests", icon: MessageSquareText },
+const employeeNav = (t: Nav, employeeId: string): NavItem[] => [
+  { href: "/schedule", label: t.schedule, icon: CalendarDays },
+  { href: `/employees/${employeeId}`, label: t.myProfile, icon: UserRound },
+  { href: "/hours", label: t.hours, icon: Clock3 },
+  { href: "/constraints", label: t.myRequests, icon: MessageSquareText },
 ];
 
 /** Red / orange counters, same colours as the Errors and Warnings blocks. */
@@ -68,20 +72,21 @@ function ValidationCounts({
   errors: number;
   warnings: number;
 }) {
+  const t = useT();
   if (errors === 0 && warnings === 0) return null;
   const dot =
     "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-medium text-white tabular-nums";
   return (
     <span className="ml-auto flex items-center gap-1 group-data-[collapsible=icon]:hidden">
       {errors > 0 && (
-        <span className={`${dot} bg-destructive`} title={`${errors} error(s)`}>
+        <span className={`${dot} bg-destructive`} title={t.nav.errors(errors)}>
           {errors}
         </span>
       )}
       {warnings > 0 && (
         <span
           className={`${dot} bg-amber-500`}
-          title={`${warnings} warning(s)`}
+          title={t.nav.warnings(warnings)}
         >
           {warnings}
         </span>
@@ -100,6 +105,7 @@ export function AppSidebarNav({
   /** Errors and warnings of the Validation page (current and upcoming months). */
   validationCounts: { errors: number; warnings: number };
 }) {
+  const { nav } = useT();
   const pathname = usePathname();
   const group = (label: string, items: NavItem[]) => (
     <SidebarGroup>
@@ -137,11 +143,11 @@ export function AppSidebarNav({
   return (
     <>
       {role === "employee" && employeeId ? (
-        group("Planning", employeeNav(employeeId))
+        group(nav.planning, employeeNav(nav, employeeId))
       ) : (
         <>
-          {group("Planning", MAIN)}
-          {group("Setup", SETUP)}
+          {group(nav.planning, main(nav))}
+          {group(nav.setup, setup(nav))}
         </>
       )}
     </>

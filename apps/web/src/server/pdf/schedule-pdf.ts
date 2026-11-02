@@ -9,6 +9,8 @@ import {
 import { readableTextColor } from "@/lib/colors";
 import { formatMonth } from "@/lib/domain/calendar";
 import { formatHoursMinutes } from "@/lib/domain/time";
+import type { Locale } from "@/lib/i18n/config";
+import { DICTIONARIES } from "@/lib/i18n/dictionaries";
 import type { ScheduleView } from "@/server/queries/schedule";
 
 /**
@@ -39,9 +41,9 @@ const ROW_H = 16;
 const COVERAGE_H = 12;
 const LEGEND_LINE_H = 11;
 
-const WEEKDAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
-
 export interface SchedulePdfOptions {
+  /** Interface language of the sheet (Latin-1 text only, see the module docs). */
+  locale: Locale;
   /** Sections to include, in display order (all when empty). */
   sectionIds: string[];
   /** Shown in the header and the document properties. */
@@ -55,6 +57,10 @@ export function renderSchedulePdf(
 ): Promise<Buffer> {
   const schedule = view.schedule;
   if (!schedule) throw new Error("No schedule to render");
+  const { locale } = options;
+  const t = DICTIONARIES[locale];
+  const text = t.pdf;
+  const status = t.enums.scheduleStatus[schedule.status];
 
   const doc = new PDFDocument({
     size: "A4",
@@ -62,9 +68,9 @@ export function renderSchedulePdf(
     margin: MARGIN,
     bufferPages: true,
     info: {
-      Title: `Staff schedule - ${formatMonth(view.year, view.month)}`,
+      Title: `${text.title} - ${formatMonth(view.year, view.month, locale)}`,
       Author: options.hotelName,
-      Subject: `Version ${schedule.version} (${schedule.status})`,
+      Subject: text.subject(schedule.version, status),
     },
   });
   const chunks: Buffer[] = [];
@@ -88,7 +94,7 @@ export function renderSchedulePdf(
       (options.sectionIds.length === 0 || options.sectionIds.includes(s.id)) &&
       view.employees.some((e) => e.sectionId === s.id),
   );
-  const subtitle = sections.length === 1 ? sections[0].name : "All sections";
+  const subtitle = sections.length === 1 ? sections[0].name : text.allSections;
 
   const dayW = (PAGE.width - 2 * MARGIN - NAME_W - TOTAL_W) / view.dates.length;
   const contentTop = MARGIN + HEADER_H;
@@ -107,13 +113,13 @@ export function renderSchedulePdf(
       .fillColor("#0F172A")
       .font("Helvetica-Bold")
       .fontSize(15)
-      .text("Staff schedule", textX, MARGIN + 1, { lineBreak: false });
+      .text(text.title, textX, MARGIN + 1, { lineBreak: false });
     doc
       .fillColor(MUTED)
       .font("Helvetica")
       .fontSize(9.5)
       .text(
-        `${options.hotelName}  ·  ${subtitle}  ·  ${formatMonth(view.year, view.month)}`,
+        `${options.hotelName}  ·  ${subtitle}  ·  ${formatMonth(view.year, view.month, locale)}`,
         textX,
         MARGIN + 20,
         { lineBreak: false },
@@ -123,20 +129,15 @@ export function renderSchedulePdf(
       .font("Helvetica-Bold")
       .fontSize(9.5)
       .fillColor("#0F172A")
-      .text(
-        `Version ${schedule.version} · ${schedule.status}`,
-        right - 200,
-        MARGIN + 2,
-        {
-          width: 200,
-          align: "right",
-        },
-      );
+      .text(text.version(schedule.version, status), right - 200, MARGIN + 2, {
+        width: 200,
+        align: "right",
+      });
     doc
       .font("Helvetica")
       .fontSize(8)
       .fillColor(MUTED)
-      .text(`Generated ${options.generatedAt}`, right - 200, MARGIN + 16, {
+      .text(text.generated(options.generatedAt), right - 200, MARGIN + 16, {
         width: 200,
         align: "right",
       });
@@ -234,7 +235,7 @@ export function renderSchedulePdf(
     view.dates.forEach((d, i) => {
       const fill = d.holiday ? HOLIDAY_FILL : d.isWeekend ? WEEKEND_FILL : null;
       if (fill) doc.rect(dayX(i), y, dayW, DAY_HEAD_H).fill(fill);
-      cellText(WEEKDAY_LETTERS[d.weekday - 1], dayX(i), y + 1, dayW, 9, {
+      cellText(t.grid.weekdayLetters[d.weekday - 1], dayX(i), y + 1, dayW, 9, {
         size: 6.5,
         color: MUTED,
       });
@@ -243,13 +244,13 @@ export function renderSchedulePdf(
         bold: true,
       });
     });
-    cellText("Employee", x0, y, NAME_W, DAY_HEAD_H, {
+    cellText(text.employee, x0, y, NAME_W, DAY_HEAD_H, {
       bold: true,
       align: "left",
       size: 8,
     });
     cellText(
-      "Hours",
+      text.hours,
       x0 + NAME_W + view.dates.length * dayW,
       y,
       TOTAL_W,
@@ -334,7 +335,7 @@ export function renderSchedulePdf(
     for (const shiftTypeId of coverageKeys(section.id)) {
       const shift = shiftTypeId ? shiftById.get(shiftTypeId) : null;
       cellText(
-        shift ? `Coverage ${shift.code}` : "Coverage (any)",
+        shift ? text.coverage(shift.code) : text.coverageAny,
         x0,
         y,
         NAME_W,
@@ -434,7 +435,7 @@ export function renderSchedulePdf(
       fx += 18 + w + 2;
     }
     cellText(
-      `Page ${p - range.start + 1} / ${range.count}`,
+      t.pdf.page(p - range.start + 1, range.count),
       PAGE.width - MARGIN - 80,
       fy + 10,
       80,

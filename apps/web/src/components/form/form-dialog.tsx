@@ -3,6 +3,7 @@
 import { type ReactNode, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { z } from "zod";
+import { useT } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,8 +34,8 @@ export function FormDialog<
   schema,
   defaultValues,
   action,
-  successMessage = "Saved",
-  submitLabel = "Save",
+  successMessage,
+  submitLabel,
   wide,
   children,
 }: {
@@ -55,6 +56,7 @@ export function FormDialog<
     >,
   ) => ReactNode;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const { pending, run } = useAction();
   const form = useZodForm(schema, defaultValues);
@@ -83,7 +85,7 @@ export function FormDialog<
           noValidate
           onSubmit={form.submit(async (values) => {
             const result = await run(() => action(values), {
-              success: successMessage,
+              success: successMessage ?? t.common.saved,
             });
             if (result.ok) setOpen(false);
             else if (result.fieldErrors) {
@@ -98,7 +100,7 @@ export function FormDialog<
           <FieldGroup>{children(form)}</FieldGroup>
           <DialogFooter className="mt-6">
             <Button type="submit" disabled={pending}>
-              {pending ? "Saving…" : submitLabel}
+              {pending ? t.common.saving : (submitLabel ?? t.common.save)}
             </Button>
           </DialogFooter>
         </form>

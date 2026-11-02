@@ -28,16 +28,12 @@ export async function loadEditableSchedule(
     .from(schedules)
     .where(eq(schedules.id, scheduleId));
   if (!schedule || !canSeeSchedule(user, schedule))
-    throw new ActionError("Schedule not found.");
+    throw new ActionError((t) => t.errors.scheduleNotFound);
   if (schedule.status === "archived") {
-    throw new ActionError(
-      "Archived versions are read-only. Duplicate it into a new draft.",
-    );
+    throw new ActionError((t) => t.errors.archivedReadOnly);
   }
   if (schedule.closedAt) {
-    throw new ActionError(
-      "The hour bank of this month is closed: the schedule is read-only.",
-    );
+    throw new ActionError((t) => t.errors.closedReadOnly);
   }
   return schedule;
 }
@@ -97,6 +93,6 @@ export async function loadVisibleSchedule(
     .from(schedules)
     .where(eq(schedules.id, scheduleId));
   if (!schedule || !canSeeSchedule(user, schedule))
-    throw new ActionError("Schedule not found.");
+    throw new ActionError((t) => t.errors.scheduleNotFound);
   return schedule;
 }

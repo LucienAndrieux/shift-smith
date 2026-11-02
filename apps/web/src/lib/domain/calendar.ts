@@ -1,4 +1,5 @@
 import { getISOWeek, getISOWeekYear } from "date-fns";
+import type { Locale } from "../i18n/config";
 
 /** Calendar dates are "YYYY-MM-DD" strings. Weekdays are ISO: 1 = Monday … 7 = Sunday. */
 export type IsoDate = string;
@@ -111,42 +112,129 @@ export function isDateInRange(
   return (!start || date >= start) && (!end || date <= end);
 }
 
-export const WEEKDAY_SHORT = [
-  "Mon",
-  "Tue",
-  "Wed",
-  "Thu",
-  "Fri",
-  "Sat",
-  "Sun",
-] as const;
+/** Monday → Sunday, short ("Mon", "Lun", "Seg"). */
+export const WEEKDAY_SHORT: Record<Locale, readonly string[]> = {
+  en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+  fr: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
+  pt: ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"],
+};
 
-export function weekdayShort(day: Weekday): string {
-  return WEEKDAY_SHORT[day - 1];
+/** Monday → Sunday, in full. */
+export const WEEKDAY_NAMES: Record<Locale, readonly string[]> = {
+  en: [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ],
+  fr: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"],
+  pt: [
+    "Segunda-feira",
+    "Terça-feira",
+    "Quarta-feira",
+    "Quinta-feira",
+    "Sexta-feira",
+    "Sábado",
+    "Domingo",
+  ],
+};
+
+export function weekdayShort(day: Weekday, locale: Locale = "en"): string {
+  return WEEKDAY_SHORT[locale][day - 1];
 }
 
-export const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-] as const;
+export const MONTH_NAMES: Record<Locale, readonly string[]> = {
+  en: [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ],
+  fr: [
+    "Janvier",
+    "Février",
+    "Mars",
+    "Avril",
+    "Mai",
+    "Juin",
+    "Juillet",
+    "Août",
+    "Septembre",
+    "Octobre",
+    "Novembre",
+    "Décembre",
+  ],
+  pt: [
+    "Janeiro",
+    "Fevereiro",
+    "Março",
+    "Abril",
+    "Maio",
+    "Junho",
+    "Julho",
+    "Agosto",
+    "Setembro",
+    "Outubro",
+    "Novembro",
+    "Dezembro",
+  ],
+};
 
-/** "Oct 9" */
-export function formatDayMonth(date: IsoDate): string {
+const MONTH_SHORT: Record<Locale, readonly string[]> = {
+  en: MONTH_NAMES.en.map((m) => m.slice(0, 3)),
+  fr: [
+    "janv.",
+    "févr.",
+    "mars",
+    "avr.",
+    "mai",
+    "juin",
+    "juil.",
+    "août",
+    "sept.",
+    "oct.",
+    "nov.",
+    "déc.",
+  ],
+  pt: [
+    "jan.",
+    "fev.",
+    "mar.",
+    "abr.",
+    "mai.",
+    "jun.",
+    "jul.",
+    "ago.",
+    "set.",
+    "out.",
+    "nov.",
+    "dez.",
+  ],
+};
+
+/** "Oct 9", "9 oct.", "9 out." */
+export function formatDayMonth(date: IsoDate, locale: Locale = "en"): string {
   const [, m, d] = parts(date);
-  return `${MONTH_NAMES[m - 1].slice(0, 3)} ${d}`;
+  const month = MONTH_SHORT[locale][m - 1];
+  return locale === "en" ? `${month} ${d}` : `${d} ${month}`;
 }
 
-/** "October 2026" */
-export function formatMonth(year: number, month: number): string {
-  return `${MONTH_NAMES[month - 1]} ${year}`;
+/** "October 2026", "Octobre 2026", "Outubro 2026" */
+export function formatMonth(
+  year: number,
+  month: number,
+  locale: Locale = "en",
+): string {
+  return `${MONTH_NAMES[locale][month - 1]} ${year}`;
 }

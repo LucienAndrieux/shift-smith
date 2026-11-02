@@ -1,14 +1,23 @@
 import "server-only";
 import { refresh } from "next/cache";
 import { z } from "zod";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { getRequestT } from "@/lib/i18n/server";
 import { type CurrentUser, requireManager, requireUser } from "./session";
 
 export type ActionResult<T = undefined> =
   | { ok: true; data: T; message?: string }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
-/** Thrown inside an action to return a user-facing error. */
-export class ActionError extends Error {}
+/**
+ * Thrown inside an action to return a user-facing error: a text picked from the
+ * visitor's dictionary (`(t) => t.errors.…`), or a plain string.
+ */
+export class ActionError extends Error {
+  constructor(readonly text: string | ((t: Dictionary) => string)) {
+    super(typeof text === "string" ? text : "ActionError");
+  }
+}
 
 /**
  * Wraps a manager mutation: checks the session server-side, validates the input
@@ -45,11 +54,12 @@ function guardedAction<S extends z.ZodType, T>(
 ) {
   return async (input: z.input<S>): Promise<ActionResult<T>> => {
     const user = await requireRole();
+    const t = await getRequestT();
     const parsed = schema.safeParse(input);
     if (!parsed.success) {
       return {
         ok: false,
-        error: "Some fields are invalid.",
+        error: t.common.invalidFields,
         fieldErrors: z.flattenError(parsed.error).fieldErrors as Record<
           string,
           string[]
@@ -62,8 +72,11 @@ function guardedAction<S extends z.ZodType, T>(
       return { ok: true, data };
     } catch (error) {
       if (error instanceof ActionError)
-        return { ok: false, error: error.message };
-      const message = describeDbError(error);
+        return {
+          ok: false,
+          error: typeof error.text === "string" ? error.text : error.text(t),
+        };
+      const message = describeDbError(error, t);
       if (message) return { ok: false, error: message };
       throw error;
     }
@@ -71,15 +84,14 @@ function guardedAction<S extends z.ZodType, T>(
 }
 
 /** Friendly messages for common Postgres constraint errors. */
-function describeDbError(error: unknown): string | null {
+function describeDbError(error: unknown, t: Dictionary): string | null {
   const cause = (error as { cause?: unknown })?.cause ?? error;
   const code = (cause as { code?: string })?.code;
   const constraint = (cause as { constraint_name?: string })?.constraint_name;
-  if (code === "23505")
-    return `This already exists (${constraint ?? "unique"}).`;
+  if (code === "23505") return t.common.alreadyExists(constraint ?? "unique");
   if (code === "23503")
-    return `This is still referenced elsewhere (${constraint ?? "foreign key"}).`;
+    return t.common.stillReferenced(constraint ?? "foreign key");
   if (code === "23514")
-    return `A constraint was violated (${constraint ?? "check"}).`;
+    return t.common.constraintViolated(constraint ?? "check");
   return null;
 }

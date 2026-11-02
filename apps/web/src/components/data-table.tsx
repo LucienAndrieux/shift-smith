@@ -20,6 +20,7 @@ import {
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
 import type { ReactNode } from "react";
+import { useT } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -64,7 +65,7 @@ export function DataTable<T extends RowData>({
   data,
   searchPlaceholder,
   toolbar,
-  empty = "Nothing here yet.",
+  empty,
   initialSorting = [],
   rowClassName,
 }: {
@@ -78,6 +79,7 @@ export function DataTable<T extends RowData>({
   initialSorting?: SortingState;
   rowClassName?: (row: T) => string | undefined;
 }) {
+  const t = useT();
   const table = useTable({
     features: tableFeatureSet,
     columns,
@@ -150,7 +152,7 @@ export function DataTable<T extends RowData>({
                   colSpan={columns.length}
                   className="h-20 text-center text-muted-foreground"
                 >
-                  {empty}
+                  {empty ?? t.common.empty}
                 </TableCell>
               </TableRow>
             ) : (

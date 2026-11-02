@@ -29,7 +29,7 @@ const MAX_DAYS = 92;
 function eachDate(start: string, end: string): string[] {
   const days = diffDays(start, end) + 1;
   if (days < 1 || days > MAX_DAYS) {
-    throw new ActionError(`Date ranges must span 1 to ${MAX_DAYS} days.`);
+    throw new ActionError((t) => t.errors.dateRangeSpan(MAX_DAYS));
   }
   return Array.from({ length: days }, (_, i) => addDays(start, i));
 }
@@ -103,8 +103,7 @@ export async function applyOperations(
           .select()
           .from(shiftTypes)
           .where(eq(shiftTypes.id, op.shiftTypeId));
-        if (!shift)
-          throw new ActionError("Unknown shift in a shift_ban operation.");
+        if (!shift) throw new ActionError((t) => t.errors.unknownShiftBan);
         const periods = await tx
           .select()
           .from(shiftTypePeriods)

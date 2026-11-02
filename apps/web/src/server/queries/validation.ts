@@ -3,6 +3,7 @@ import { and, asc, eq, gt, gte, or } from "drizzle-orm";
 import { db } from "@/db";
 import { schedules } from "@/db/schema";
 import { validateSchedule } from "@/lib/domain/validator";
+import type { Locale } from "@/lib/i18n/config";
 import { loadScheduleInput } from "@/server/month-context";
 import { getScheduleView, type ScheduleView } from "@/server/queries/schedule";
 import { canSeeSchedule } from "@/server/schedules";
@@ -23,14 +24,18 @@ export async function getValidationTarget(
   year: number,
   month: number,
   requested: number | null,
+  locale: Locale = "en",
 ): Promise<ValidationTarget> {
-  let view = await getScheduleView(year, month, requested, { user });
+  let view = await getScheduleView(year, month, requested, { user, locale });
   if (requested === null) {
     const draft = view.versions
       .filter((v) => v.status === "draft" && user.role === "manager")
       .at(-1);
     if (draft && draft.version !== view.schedule?.version) {
-      view = await getScheduleView(year, month, draft.version, { user });
+      view = await getScheduleView(year, month, draft.version, {
+        user,
+        locale,
+      });
     }
   }
   const schedule = view.schedule;
@@ -46,6 +51,7 @@ export async function getValidationTarget(
 export async function getUpcomingValidationTargets(
   user: CurrentUser,
   from: { year: number; month: number },
+  locale: Locale = "en",
 ): Promise<ValidationTarget[]> {
   const months = await db
     .selectDistinct({ year: schedules.year, month: schedules.month })
@@ -58,7 +64,7 @@ export async function getUpcomingValidationTargets(
     )
     .orderBy(asc(schedules.year), asc(schedules.month));
   const targets = await Promise.all(
-    months.map((m) => getValidationTarget(user, m.year, m.month, null)),
+    months.map((m) => getValidationTarget(user, m.year, m.month, null, locale)),
   );
   return targets.filter((t) => t.view.schedule !== null);
 }
