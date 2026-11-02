@@ -202,18 +202,26 @@ Hard (when the rule is active and `isHard`; otherwise a penalised soft constrain
 | one value per cell | each employee/day gets exactly one shift or one day code |
 | `lockedAssignments` | locked cells are fixed |
 | `approved_leave_is_fixed` | approved absences fixed (fixed rest weekdays inside annual leave stay OF) |
-| eligibility | shifts only from `eligibility`; `maxPerWeek` / `exactPerWeek` per ISO week |
+| eligibility | shifts only from `eligibility`; `maxPerWeek` per ISO week |
 | `min_rest_between_shifts_hours` | ≥ 11h between the end of a shift and the next start, across midnight (B ends 24:00, D starts 00:00 → 0h) |
 | `max_consecutive_work_days` | ≤ 6 consecutive working days, including the previous-month tail |
 | `two_rest_days_per_week` | 2 rest days (OF) per ISO week |
-| `weekend_off_per_month` | employees with `requiresMonthlyWeekendOff`: ≥ 1 full Sat+Sun off |
 | `birthday_off` | birthday coded BD |
-| relations | `same_days_off`: identical rest days; `different_weekend_off`: never the same full weekend off |
 | unavailabilities | no shift overlapping an unavailable window |
-| staffing | per date/section/shift: `minStaff ≤ count ≤ maxStaff` (overrides replace requirements) |
-| `monthlyTlDays` | number of time-off-in-lieu (TL) days in the month |
+| replanning | cells before `options.replanFrom` keep their reference value |
 
-Soft objectives: keep rest days on the fixed weekdays, prefer `preferred` shifts and
+Soft, weighted by `options.weights` (default penalty in brackets):
+
+| Objective | Meaning |
+|---|---|
+| staffing (`staffingShort` 1000, `staffingOver` 200) | per date/section/shift: `minStaff ≤ count ≤ maxStaff` (overrides replace requirements) |
+| `weekend_off_per_month` (`weekendOff` 800) | employees with `requiresMonthlyWeekendOff`: ≥ 1 full Sat+Sun off |
+| relations (`sameDaysOff` 600, `differentWeekendOff` 600) | `same_days_off`: identical rest days; `different_weekend_off`: never the same full weekend off |
+| `exactPerWeek` (`exactPerWeek` 400) | exact number of a shift per ISO week |
+| `monthlyTlDays` (`tlDays` 60) | number of time-off-in-lieu (TL) days in the month |
+| replanning (`changedCell` 100) | each cell from `replanFrom` that differs from the reference |
+
+Other soft objectives: keep rest days on the fixed weekdays, prefer `preferred` shifts and
 avoid `rare` ones, and steer each employee's monthly hour-bank delta
 (`worked + credited − expected`, see `apps/web/src/lib/domain/hour-bank.ts`)
 towards bringing `balanceMinutes` back to zero. Expected time counts days with a

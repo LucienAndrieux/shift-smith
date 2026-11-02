@@ -25,4 +25,40 @@ describe("public holidays", () => {
       "2026-12-25",
     ]);
   });
+
+  it("lists the thirteen Portuguese national holidays", () => {
+    const holidays = publicHolidays("PT", 2026);
+    expect(holidays.map((h) => h.date)).toEqual([
+      "2026-01-01",
+      "2026-04-03",
+      "2026-04-05",
+      "2026-04-25",
+      "2026-05-01",
+      "2026-06-04",
+      "2026-06-10",
+      "2026-08-15",
+      "2026-10-05",
+      "2026-11-01",
+      "2026-12-01",
+      "2026-12-08",
+      "2026-12-25",
+    ]);
+  });
+
+  it("lists the English bank holidays, moved off weekends", () => {
+    expect(publicHolidays("GB-ENG", 2026).map((h) => h.date)).toEqual([
+      "2026-01-01",
+      "2026-04-03",
+      "2026-04-06",
+      "2026-05-04",
+      "2026-05-25",
+      "2026-08-31",
+      "2026-12-25",
+      "2026-12-28",
+    ]);
+    // 2022: New Year on Saturday, Christmas on Sunday.
+    const dates2022 = publicHolidays("GB-ENG", 2022).map((h) => h.date);
+    expect(dates2022[0]).toBe("2022-01-03");
+    expect(dates2022.slice(-2)).toEqual(["2022-12-26", "2022-12-27"]);
+  });
 });

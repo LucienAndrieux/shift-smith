@@ -100,7 +100,8 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
   weekdays and the monthly TL count are warnings.
 - Hour-bank close excludes employees with empty days; reopen deletes the entries.
 - Public holidays are generated (`src/lib/domain/holidays.ts`, country from the seed's
-  `_meta.country`); add regional or company holidays in the app.
+  `_meta.country`: `FR`, `PT` or `GB-ENG` for England and Wales); add regional,
+  municipal, one-off or company holidays in the app.
 - `shift_ban` constraints become unavailabilities over the shift's hours;
   `shift_force` becomes a locked cell in the month's latest draft.
 - pg-boss worker runs inside the Next.js server (`src/instrumentation.ts`);
