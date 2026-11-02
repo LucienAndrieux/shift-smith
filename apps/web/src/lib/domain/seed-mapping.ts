@@ -342,7 +342,7 @@ export function openingBalanceDate(
 function renderDates(text: string): string {
   return text.replace(
     /\{\d{4}-(\d{2})-(\d{2})\}/g,
-    (_, m, d) => `${MONTH_NAMES[Number(m) - 1]} ${Number(d)}`,
+    (_, m, d) => `${MONTH_NAMES.en[Number(m) - 1]} ${Number(d)}`,
   );
 }
 

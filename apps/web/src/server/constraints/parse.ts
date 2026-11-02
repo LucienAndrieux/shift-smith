@@ -113,7 +113,7 @@ async function buildContext(year: number, month: number) {
   const sectionName = new Map(sections.map((s) => [s.id, s.name]));
   const today = todayInAppZone();
   const weekday =
-    WEEKDAY_SHORT[(new Date(`${today}T12:00:00Z`).getUTCDay() + 6) % 7];
+    WEEKDAY_SHORT.en[(new Date(`${today}T12:00:00Z`).getUTCDay() + 6) % 7];
 
   const instructions = [
     "You turn scheduling notes written by the manager of a small hotel into structured operations.",

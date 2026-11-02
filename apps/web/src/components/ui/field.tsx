@@ -3,9 +3,10 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 import { useMemo } from "react";
-
+import { useT } from "@/components/i18n-provider";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { translateMessage } from "@/lib/i18n/messages";
 
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   return (
@@ -181,9 +182,13 @@ function FieldError({
 }: React.ComponentProps<"div"> & {
   errors?: Array<{ message?: string } | undefined>;
 }) {
+  // Shared Zod schemas carry English messages: translate them for display.
+  const t = useT();
   const content = useMemo(() => {
     if (children) {
-      return children;
+      return typeof children === "string"
+        ? translateMessage(t, children)
+        : children;
     }
 
     if (!errors?.length) {
@@ -191,7 +196,14 @@ function FieldError({
     }
 
     const uniqueErrors = [
-      ...new Map(errors.map((error) => [error?.message, error])).values(),
+      ...new Map(
+        errors.map((error) => [
+          error?.message,
+          error?.message
+            ? { message: translateMessage(t, error.message) }
+            : error,
+        ]),
+      ).values(),
     ];
 
     if (uniqueErrors?.length === 1) {
@@ -206,7 +218,7 @@ function FieldError({
         )}
       </ul>
     );
-  }, [children, errors]);
+  }, [children, errors, t]);
 
   if (!content) {
     return null;

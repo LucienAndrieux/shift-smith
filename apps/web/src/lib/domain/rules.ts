@@ -47,6 +47,7 @@ export const RULE_DEFAULTS: { [C in RuleCode]: RuleValue<C> } = {
   approved_leave_is_fixed: { value: true },
 };
 
+/** English descriptions; the UI shows `t.rules.descriptions`. */
 export const RULE_DESCRIPTIONS: Record<RuleCode, string> = {
   weekly_contract_hours_default: "Default weekly contract (hours)",
   max_consecutive_work_days: "Maximum consecutive working days",

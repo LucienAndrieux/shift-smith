@@ -2,14 +2,13 @@ import { Wand2 } from "lucide-react";
 import { softCodeStyle } from "@/lib/colors";
 import { DEFAULT_DAY_CODES } from "@/lib/domain/day-codes";
 import { SHIFT_CODE_COLORS } from "@/lib/domain/seed-mapping";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 
 const COLORS: Record<string, string> = {
   ...SHIFT_CODE_COLORS,
   ...Object.fromEntries(DEFAULT_DAY_CODES.map((d) => [d.code, d.color])),
 };
-
-const DAYS = ["M", "T", "W", "T", "F", "S", "S", "M", "T", "W", "T", "F"];
 
 /** A fictional fortnight, one row per employee (decorative). */
 const ROWS: { name: string; codes: string[] }[] = [
@@ -28,15 +27,15 @@ const MOBILE_DAYS = 9;
 const ERROR = { row: 3, day: 6 };
 
 /** Stylised preview of the month grid for the start page. */
-export function SchedulePreview() {
+export function SchedulePreview({ t }: { t: Dictionary["preview"] }) {
   return (
     <div className="relative">
       <div className="overflow-hidden rounded-2xl border bg-card/80 shadow-xl shadow-black/5 backdrop-blur dark:shadow-black/30">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold">November</span>
+            <span className="text-sm font-semibold">{t.month}</span>
             <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
-              published
+              {t.published}
             </span>
           </div>
           <div className="flex gap-1.5" aria-hidden>
@@ -50,9 +49,9 @@ export function SchedulePreview() {
             <thead>
               <tr>
                 <th className="w-16 text-left font-medium text-muted-foreground">
-                  Reception
+                  {t.section}
                 </th>
-                {DAYS.map((d, i) => (
+                {t.days.map((d, i) => (
                   <th
                     // biome-ignore lint/suspicious/noArrayIndexKey: static header
                     key={i}
@@ -102,10 +101,8 @@ export function SchedulePreview() {
           <Wand2 className="size-3.5" />
         </span>
         <div className="flex flex-col gap-0.5">
-          <span className="font-medium">Leila: only 7h30 rest after B</span>
-          <span className="text-muted-foreground">
-            3 fixes found, such as a swap with Chloé
-          </span>
+          <span className="font-medium">{t.fixTitle}</span>
+          <span className="text-muted-foreground">{t.fixText}</span>
         </div>
       </div>
     </div>

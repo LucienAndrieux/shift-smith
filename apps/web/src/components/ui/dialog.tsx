@@ -4,6 +4,7 @@ import { cn } from "cn";
 import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import type * as React from "react";
+import { useT } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 
 function Dialog({
@@ -74,7 +75,7 @@ function DialogContent({
               size="icon-sm"
             >
               <XIcon />
-              <span className="sr-only">Close</span>
+              <CloseLabel />
             </Button>
           </DialogPrimitive.Close>
         )}
@@ -113,7 +114,9 @@ function DialogFooter({
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close asChild>
-          <Button variant="outline">Close</Button>
+          <Button variant="outline">
+            <CloseLabel visible />
+          </Button>
         </DialogPrimitive.Close>
       )}
     </div>
@@ -164,3 +167,13 @@ export {
   DialogTitle,
   DialogTrigger,
 };
+
+/** "Close" in the interface language (screen readers, or visible). */
+function CloseLabel({ visible }: { visible?: boolean }) {
+  const t = useT();
+  return visible ? (
+    t.common.close
+  ) : (
+    <span className="sr-only">{t.common.close}</span>
+  );
+}

@@ -117,17 +117,7 @@ export const parsedConstraintSchema = z.object({
 export type ConstraintOperation = z.infer<typeof constraintOperation>;
 export type ParsedConstraint = z.infer<typeof parsedConstraintSchema>;
 
-export const OPERATION_LABELS: Record<ConstraintOperation["type"], string> = {
-  absence: "Absence",
-  unavailability: "Unavailability",
-  shift_ban: "Shift ban",
-  shift_force: "Forced shift",
-  days_off_change: "Days off change",
-  staffing_override: "Staffing override",
-  unparseable: "Not understood",
-};
-
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+export type OperationType = ConstraintOperation["type"];
 
 export interface OperationNames {
   employee: (id: string) => string;
@@ -135,34 +125,77 @@ export interface OperationNames {
   section: (id: string) => string;
 }
 
-function range(start: string, end: string) {
-  return start === end ? `on ${start}` : `from ${start} to ${end}`;
+/** Sentences of the interface language (`t.operations`). */
+export interface OperationText {
+  on: (date: string) => string;
+  fromTo: (start: string, end: string) => string;
+  allDay: string;
+  anyShift: string;
+  absence: (name: string, code: string, range: string) => string;
+  unavailable: (name: string, window: string, range: string) => string;
+  shiftBan: (name: string, shift: string, range: string) => string;
+  shiftForce: (name: string, shift: string, date: string) => string;
+  daysOff: (name: string, first: string, second: string) => string;
+  staffing: (
+    section: string,
+    shift: string,
+    min: number,
+    max: number | null,
+    range: string,
+  ) => string;
 }
 
 /** Human-readable sentence for the review card. */
 export function describeOperation(
   op: ConstraintOperation,
   names: OperationNames,
+  text: OperationText,
+  /** Short weekday names, Monday first. */
+  weekdays: readonly string[],
 ): string {
+  const range = (start: string, end: string) =>
+    start === end ? text.on(start) : text.fromTo(start, end);
   switch (op.type) {
     case "absence":
-      return `${names.employee(op.employeeId)}: ${op.dayCode} ${range(op.startDate, op.endDate)}.`;
+      return text.absence(
+        names.employee(op.employeeId),
+        op.dayCode,
+        range(op.startDate, op.endDate),
+      );
     case "unavailability":
-      return `${names.employee(op.employeeId)} unavailable ${
-        op.startTime && op.endTime ? `${op.startTime}–${op.endTime}` : "all day"
-      } ${range(op.startDate, op.endDate)}.`;
+      return text.unavailable(
+        names.employee(op.employeeId),
+        op.startTime && op.endTime
+          ? `${op.startTime}–${op.endTime}`
+          : text.allDay,
+        range(op.startDate, op.endDate),
+      );
     case "shift_ban":
-      return `${names.employee(op.employeeId)} must not work ${names.shift(op.shiftTypeId)} ${range(op.startDate, op.endDate)}.`;
+      return text.shiftBan(
+        names.employee(op.employeeId),
+        names.shift(op.shiftTypeId),
+        range(op.startDate, op.endDate),
+      );
     case "shift_force":
-      return `${names.employee(op.employeeId)} works ${names.shift(op.shiftTypeId)} on ${op.date}.`;
+      return text.shiftForce(
+        names.employee(op.employeeId),
+        names.shift(op.shiftTypeId),
+        op.date,
+      );
     case "days_off_change":
-      return `${names.employee(op.employeeId)}: fixed days off become ${
-        op.firstWeekday ? WEEKDAYS[op.firstWeekday - 1] : "—"
-      } and ${op.secondWeekday ? WEEKDAYS[op.secondWeekday - 1] : "—"}.`;
+      return text.daysOff(
+        names.employee(op.employeeId),
+        op.firstWeekday ? weekdays[op.firstWeekday - 1] : "—",
+        op.secondWeekday ? weekdays[op.secondWeekday - 1] : "—",
+      );
     case "staffing_override":
-      return `${names.section(op.sectionId)} ${
-        op.shiftTypeId ? names.shift(op.shiftTypeId) : "(any shift)"
-      }: min ${op.minStaff}${op.maxStaff !== null ? `, max ${op.maxStaff}` : ""} ${range(op.startDate, op.endDate)}.`;
+      return text.staffing(
+        names.section(op.sectionId),
+        op.shiftTypeId ? names.shift(op.shiftTypeId) : text.anyShift,
+        op.minStaff,
+        op.maxStaff,
+        range(op.startDate, op.endDate),
+      );
     case "unparseable":
       return op.reason;
   }

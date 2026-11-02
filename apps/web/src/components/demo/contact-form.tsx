@@ -2,9 +2,10 @@
 
 import { CheckCircle2, Loader2, Send } from "lucide-react";
 import { useState } from "react";
-import { sendContactMessage } from "@/app/(auth)/start/actions";
+import { sendContactMessage } from "@/app/[locale]/(auth)/start/actions";
 import { TextareaField } from "@/components/form/fields";
 import { TextField } from "@/components/form/text-field";
+import { useT } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { useAction } from "@/hooks/use-action";
@@ -16,6 +17,7 @@ const EMPTY = { name: "", email: "", company: "", message: "", website: "" };
 
 /** Prospect → developer message, sent by email (see start/actions.ts). */
 export function ContactForm() {
+  const t = useT();
   const form = useZodForm(contactFormSchema, EMPTY);
   const { pending, run } = useAction();
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -24,13 +26,12 @@ export function ContactForm() {
     return (
       <div className="flex flex-col items-start gap-3 py-6" role="status">
         <CheckCircle2 className="size-8 text-emerald-600 dark:text-emerald-400" />
-        <p className="text-lg font-semibold">Message sent.</p>
+        <p className="text-lg font-semibold">{t.contact.sent}</p>
         <p className="text-sm text-muted-foreground">
-          A confirmation is on its way to {sentTo}. I usually reply within two
-          working days.
+          {t.contact.sentText(sentTo)}
         </p>
         <Button variant="outline" size="sm" onClick={() => setSentTo(null)}>
-          Write another message
+          {t.contact.another}
         </Button>
       </div>
     );
@@ -54,13 +55,13 @@ export function ContactForm() {
             <TextField
               control={form.control}
               name="name"
-              label="Your name"
+              label={t.contact.name}
               autoComplete="name"
             />
             <TextField
               control={form.control}
               name="email"
-              label="Email"
+              label={t.contact.email}
               type="email"
               autoComplete="email"
             />
@@ -68,15 +69,15 @@ export function ContactForm() {
           <TextField
             control={form.control}
             name="company"
-            label="Company or team (optional)"
+            label={t.contact.company}
             autoComplete="organization"
           />
           <TextareaField
             control={form.control}
             name="message"
-            label="Your project"
+            label={t.contact.project}
             rows={5}
-            placeholder="How many people, how you plan today, what you would like the tool to do…"
+            placeholder={t.contact.projectPlaceholder}
           />
           {/* Honeypot: off-screen and skipped by keyboard and screen readers. */}
           <input
@@ -100,9 +101,11 @@ export function ContactForm() {
           className="bg-[#E8590C] text-white hover:bg-[#cf4f0b]"
         >
           {pending ? <Loader2 className="animate-spin" /> : <Send />}
-          Send message
+          {t.contact.send}
         </Button>
-        <span className="text-center text-sm text-muted-foreground">or</span>
+        <span className="text-center text-sm text-muted-foreground">
+          {t.contact.or}
+        </span>
         <MeetingDialog />
       </div>
     </div>

@@ -1,0 +1,395 @@
+"use client";
+
+import { Lock } from "lucide-react";
+import Link from "next/link";
+import { type ComponentProps, Fragment, useMemo, useState } from "react";
+import { useLocale, useT } from "@/components/i18n-provider";
+import { softCodeStyle } from "@/lib/colors";
+import { formatDayMonth, WEEKDAY_NAMES } from "@/lib/domain/calendar";
+import { formatHoursMinutes } from "@/lib/domain/time";
+import { violationIdentity } from "@/lib/domain/validator";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { cn } from "@/lib/utils";
+import { CellEditor } from "./cell-editor";
+import { DayErrorsDialog } from "./day-errors-dialog";
+import { CellFixDialog, type FixIssue } from "./fix-dialog";
+import type { View, ViewCell, ViewEmployee, ViewIndex } from "./types";
+
+export function MonthGrid({
+  view,
+  index,
+  sectionId,
+  canEdit,
+  canPlan,
+  ownEmployeeId = null,
+}: {
+  view: View;
+  index: ViewIndex;
+  /** null = all sections */
+  sectionId: string | null;
+  canEdit: boolean;
+  /** Manager: cells outlined in red open the fix suggestions. */
+  canPlan: boolean;
+  /** Employee guest: their row is highlighted. */
+  ownEmployeeId?: string | null;
+}) {
+  const t = useT();
+  const g = t.grid;
+  const locale = useLocale();
+  /** Cell (`employeeId|date`) whose editor or fix dialog is open. */
+  const [editing, setEditing] = useState<string | null>(null);
+  const [fixing, setFixing] = useState<string | null>(null);
+  /** Day whose error summary is open. */
+  const [openDay, setOpenDay] = useState<string | null>(null);
+
+  const sections = view.sections.filter(
+    (s) => !sectionId || s.id === sectionId,
+  );
+
+  const errorCells = useMemo(() => {
+    const map = new Map<string, FixIssue[]>();
+    for (const v of view.violations) {
+      if (v.severity !== "error" || !v.employeeId || !v.date) continue;
+      const key = `${v.employeeId}|${v.date}`;
+      const issue = { violation: violationIdentity(v), message: v.message };
+      map.set(key, [...(map.get(key) ?? []), issue]);
+    }
+    return map;
+  }, [view.violations]);
+
+  /** Errors per day, limited to the displayed section. */
+  const dayErrors = useMemo(() => {
+    const map = new Map<string, View["violations"]>();
+    for (const v of view.violations) {
+      if (v.severity !== "error" || !v.date) continue;
+      const vSection = v.employeeId
+        ? index.employeeById.get(v.employeeId)?.sectionId
+        : v.sectionId;
+      if (sectionId && vSection !== sectionId) continue;
+      map.set(v.date, [...(map.get(v.date) ?? []), v]);
+    }
+    return map;
+  }, [view.violations, index, sectionId]);
+
+  const monthTotals = useMemo(
+    () => new Map(view.totals.map((t) => [t.employeeId, t.month])),
+    [view.totals],
+  );
+
+  const colSpan = view.dates.length + 2;
+
+  const fixingCell = useMemo(() => {
+    if (!fixing) return null;
+    const [employeeId, date] = fixing.split("|");
+    const issues = errorCells.get(fixing);
+    // The cell is no longer in error (fix applied): nothing left to show.
+    if (!issues) return null;
+    return {
+      key: fixing,
+      date,
+      employee: view.employees.find((e) => e.id === employeeId),
+      issues,
+    };
+  }, [fixing, errorCells, view.employees]);
+
+  return (
+    // The grid grows with the page (no inner vertical scrollbar); it only scrolls
+    // sideways on narrow screens, keeping the name column visible. Same look as
+    // the start page's preview: separate rounded cells, no gridlines.
+    <div className="overflow-x-auto rounded-2xl border bg-card p-2 shadow-sm">
+      <table className="w-full border-separate border-spacing-0.5 text-xs">
+        <thead className="sticky top-0 z-10 bg-card">
+          <tr>
+            <th className="sticky left-0 z-20 w-28 min-w-28 bg-card px-2 py-1 text-left font-medium sm:w-auto sm:min-w-40">
+              {g.employee}
+            </th>
+            {view.dates.map((d) => {
+              const errors = dayErrors.get(d.date);
+              const label = (
+                <>
+                  <div className="text-[10px] text-muted-foreground">
+                    {g.weekdayLetters[d.weekday - 1]}
+                  </div>
+                  <div>{d.day}</div>
+                </>
+              );
+              return (
+                <th
+                  key={d.date}
+                  title={d.holiday ?? undefined}
+                  className={cn(
+                    "min-w-7 rounded-md p-0 text-center font-medium sm:min-w-8",
+                    d.isWeekend && "bg-muted",
+                    d.holiday && "bg-amber-200/70 dark:bg-amber-900/50",
+                  )}
+                >
+                  {errors ? (
+                    // Outlined in red: opens the summary of the day's errors.
+                    <button
+                      type="button"
+                      onClick={() => setOpenDay(d.date)}
+                      title={g.dayErrors(errors.length)}
+                      className="w-full cursor-pointer rounded-md px-0.5 py-1 ring-2 ring-red-500 ring-inset outline-none hover:bg-red-500/10 focus-visible:bg-red-500/10"
+                    >
+                      {label}
+                    </button>
+                  ) : (
+                    <div className="px-0.5 py-1">{label}</div>
+                  )}
+                </th>
+              );
+            })}
+            <th className="px-2 py-1 text-right font-medium">Δ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sections.map((section, i) => {
+            const employees = view.employees.filter(
+              (e) => e.sectionId === section.id,
+            );
+            return (
+              <Fragment key={section.id}>
+                {i > 0 && (
+                  // Breathing space between two sections.
+                  <tr aria-hidden>
+                    <td colSpan={colSpan} className="h-6 p-0" />
+                  </tr>
+                )}
+                <tr>
+                  <td colSpan={colSpan} className="rounded-md bg-muted/60 p-0">
+                    {/* Centered in the visible part of the grid, even while it
+                        scrolls sideways. */}
+                    <span className="sticky left-1/2 inline-block -translate-x-1/2 px-3 py-2 text-base font-semibold tracking-wide">
+                      {section.name}
+                    </span>
+                  </td>
+                </tr>
+                {employees.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={colSpan}
+                      className="px-2 py-2 text-muted-foreground"
+                    >
+                      {g.noEmployees}
+                    </td>
+                  </tr>
+                )}
+                {employees.map((employee) => {
+                  const total = monthTotals.get(employee.id);
+                  const own = employee.id === ownEmployeeId;
+                  return (
+                    <tr
+                      key={employee.id}
+                      className={cn(
+                        "hover:bg-muted/30",
+                        own && "bg-sky-500/10 font-semibold",
+                      )}
+                    >
+                      <td
+                        className={cn(
+                          "sticky left-0 z-[5] rounded-md px-2 py-0.5 whitespace-nowrap",
+                          own ? "bg-sky-100 dark:bg-sky-950" : "bg-card",
+                        )}
+                      >
+                        <div className="flex max-w-28 items-center gap-1.5 sm:max-w-none">
+                          <Link
+                            href={`/employees/${employee.id}`}
+                            className="truncate hover:underline"
+                            title={employee.name}
+                          >
+                            {employee.name}
+                          </Link>
+                          {employee.toConfirm && (
+                            <span
+                              className="size-2 shrink-0 rounded-full bg-amber-500"
+                              title={t.employees.dataToConfirm}
+                            />
+                          )}
+                        </div>
+                      </td>
+                      {view.dates.map((d) => {
+                        const cell = view.cells[employee.id]?.[d.date];
+                        const key = `${employee.id}|${d.date}`;
+                        const issues = errorCells.get(key);
+                        const fixable = canPlan && !!issues && !!view.schedule;
+                        const box = (
+                          <CellBox
+                            cell={cell}
+                            index={index}
+                            t={g}
+                            errors={issues?.map((x) => x.message)}
+                            interactive={canEdit || fixable}
+                            onClick={(event) => {
+                              if (!fixable) return;
+                              // Opens the fix suggestions instead of the editor.
+                              event.preventDefault();
+                              setFixing(key);
+                            }}
+                          />
+                        );
+                        return (
+                          <td
+                            key={d.date}
+                            className={cn(
+                              "rounded-md p-0",
+                              d.isWeekend && "bg-muted/50",
+                              d.holiday &&
+                                "bg-amber-100/60 dark:bg-amber-900/30",
+                            )}
+                          >
+                            {canEdit && view.schedule ? (
+                              <CellEditor
+                                view={view}
+                                scheduleId={view.schedule.id}
+                                employee={employee as ViewEmployee}
+                                date={d.date}
+                                cell={cell}
+                                open={editing === key}
+                                onOpenChange={(open) =>
+                                  setEditing(open ? key : null)
+                                }
+                              >
+                                {box}
+                              </CellEditor>
+                            ) : (
+                              box
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td
+                        className={cn(
+                          "px-2 text-right font-mono whitespace-nowrap",
+                          total && total.deltaMinutes < 0 && "text-destructive",
+                        )}
+                        title={
+                          total
+                            ? g.deltaTitle(
+                                formatHoursMinutes(total.workedMinutes),
+                                formatHoursMinutes(total.creditedMinutes),
+                                formatHoursMinutes(total.expectedMinutes),
+                                total.unassignedDays,
+                              )
+                            : undefined
+                        }
+                      >
+                        {total
+                          ? formatHoursMinutes(total.deltaMinutes, true)
+                          : ""}
+                        {total?.unassignedDays ? "*" : ""}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+      {openDay && (
+        <DayErrorsDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setOpenDay(null);
+          }}
+          title={`${WEEKDAY_NAMES[locale][(view.dates.find((d) => d.date === openDay)?.weekday ?? 1) - 1]} ${formatDayMonth(openDay, locale)}`}
+          violations={dayErrors.get(openDay) ?? []}
+          view={view}
+          index={index}
+          canPlan={canPlan}
+          canEdit={canEdit}
+        />
+      )}
+      {fixingCell && view.schedule && (
+        <CellFixDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setFixing(null);
+          }}
+          title={`${fixingCell.employee?.name ?? ""} · ${formatDayMonth(fixingCell.date, locale)}`}
+          issues={fixingCell.issues}
+          scheduleId={view.schedule.id}
+          scheduleStatus={view.schedule.status}
+          editable={canEdit}
+          canApplyToPublished={
+            view.schedule.status === "published" &&
+            view.schedule.closedAt === null
+          }
+          onEditByHand={
+            canEdit
+              ? () => {
+                  setFixing(null);
+                  setEditing(fixingCell.key);
+                }
+              : undefined
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+/** A grid cell. Extra props are forwarded so it can be a Popover trigger. */
+function CellBox({
+  cell,
+  index,
+  t,
+  errors,
+  interactive,
+  ...buttonProps
+}: {
+  cell: ViewCell | undefined;
+  index: ViewIndex;
+  t: Dictionary["grid"];
+  errors?: string[];
+  interactive: boolean;
+} & ComponentProps<"button">) {
+  const shift = cell?.shiftTypeId
+    ? index.shiftById.get(cell.shiftTypeId)
+    : undefined;
+  const dayCode = cell?.dayCode
+    ? index.dayCodeByCode.get(cell.dayCode)
+    : undefined;
+  const color = shift?.color ?? dayCode?.color;
+  const label = shift?.code ?? dayCode?.code ?? "";
+  const title = [
+    shift
+      ? `${shift.label}`
+      : dayCode
+        ? `${dayCode.code} — ${dayCode.label}`
+        : t.empty,
+    cell?.isLocked ? t.locked : null,
+    cell?.note ? t.note(cell.note) : null,
+    ...(errors ?? []),
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return (
+    <button
+      type="button"
+      {...buttonProps}
+      disabled={!interactive}
+      title={title}
+      className={cn(
+        "relative flex h-7 w-full min-w-7 items-center sm:min-w-8 justify-center rounded-md font-semibold outline-none",
+        interactive &&
+          "cursor-pointer hover:brightness-95 focus-visible:ring-2 focus-visible:ring-ring",
+        !interactive && "cursor-default",
+        errors && "ring-2 ring-red-500 ring-inset",
+        // Empty days keep a faint tile so the grid stays readable without lines.
+        !color && "bg-muted/60",
+      )}
+      style={color ? softCodeStyle(color) : undefined}
+      aria-label={title.replaceAll("\n", ", ")}
+    >
+      {label}
+      {cell?.isLocked && (
+        <Lock className="absolute top-0.5 right-0.5 size-2 opacity-70" />
+      )}
+      {cell?.note && (
+        <span className="absolute bottom-0.5 left-0.5 size-1 rounded-full bg-current opacity-70" />
+      )}
+    </button>
+  );
+}

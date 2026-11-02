@@ -5,9 +5,10 @@ import { useState } from "react";
 import {
   getMeetingAvailability,
   requestMeeting,
-} from "@/app/(auth)/start/actions";
+} from "@/app/[locale]/(auth)/start/actions";
 import { TextareaField } from "@/components/form/fields";
 import { TextField } from "@/components/form/text-field";
+import { useLocale, useT } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,20 +22,20 @@ import { FieldGroup } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAction } from "@/hooks/use-action";
 import { useZodForm } from "@/hooks/use-zod-form";
+import { LOCALE_TAGS, type Locale } from "@/lib/i18n/config";
 import type { DaySlots } from "@/lib/meeting-slots";
 import { meetingRequestSchema } from "@/lib/schemas/contact";
 import { cn } from "@/lib/utils";
 
-const DAY_LABEL = new Intl.DateTimeFormat("en-GB", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  timeZone: "UTC",
-});
 /** "Tuesday 3 November 2026" (dates are calendar days, read as UTC noon). */
-const dayLabel = (date: string) =>
-  DAY_LABEL.format(new Date(`${date}T12:00:00Z`));
+const dayLabel = (date: string, locale: Locale) =>
+  new Intl.DateTimeFormat(LOCALE_TAGS[locale], {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${date}T12:00:00Z`));
 
 const EMPTY = {
   name: "",
@@ -53,6 +54,8 @@ type Step = "closed" | "pick" | "details";
  * emails a calendar invitation.
  */
 export function MeetingDialog() {
+  const t = useT();
+  const locale = useLocale();
   const [step, setStep] = useState<Step>("closed");
   const [days, setDays] = useState<DaySlots[] | null>(null);
   const [more, setMore] = useState(false);
@@ -98,12 +101,14 @@ export function MeetingDialog() {
     setStep("details");
   }
 
-  const when = chosen ? `${dayLabel(chosen.date)} at ${chosen.time}` : "";
+  const when = chosen
+    ? t.meeting.when(dayLabel(chosen.date, locale), chosen.time)
+    : "";
 
   return (
     <>
       <Button type="button" variant="outline" size="lg" onClick={openPicker}>
-        <CalendarClock /> Schedule a meeting
+        <CalendarClock /> {t.meeting.open}
       </Button>
 
       {/* Step 1: a day, then a time. */}
@@ -113,10 +118,8 @@ export function MeetingDialog() {
       >
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Choose a time for a 30-minute call</DialogTitle>
-            <DialogDescription>
-              Times are in Paris time. Only the times I&apos;m free are shown.
-            </DialogDescription>
+            <DialogTitle>{t.meeting.pickTitle}</DialogTitle>
+            <DialogDescription>{t.meeting.pickText}</DialogDescription>
           </DialogHeader>
 
           {days === null && loading && (
@@ -128,21 +131,19 @@ export function MeetingDialog() {
           )}
           {loadError && (
             <div className="flex flex-col items-start gap-2 text-sm">
-              <p className="text-destructive">
-                The free times could not be loaded.
-              </p>
+              <p className="text-destructive">{t.meeting.loadError}</p>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => load(days === null)}
               >
-                Try again
+                {t.meeting.retry}
               </Button>
             </div>
           )}
           {days?.length === 0 && !loading && (
             <p className="text-sm text-muted-foreground">
-              No free time in the coming weeks: send a message instead.
+              {t.meeting.noFreeTime}
             </p>
           )}
 
@@ -158,10 +159,11 @@ export function MeetingDialog() {
                       onClick={() => setExpanded(open ? null : day.date)}
                       className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-medium hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
                     >
-                      <span className="flex-1">{dayLabel(day.date)}</span>
+                      <span className="flex-1">
+                        {dayLabel(day.date, locale)}
+                      </span>
                       <span className="text-xs font-normal text-muted-foreground">
-                        {day.slots.length}{" "}
-                        {day.slots.length === 1 ? "time" : "times"}
+                        {t.meeting.times(day.slots.length)}
                       </span>
                       <ChevronDown
                         className={cn(
@@ -198,7 +200,7 @@ export function MeetingDialog() {
               className="w-full"
             >
               {loading && <Loader2 className="animate-spin" />}
-              See more dates
+              {t.meeting.more}
             </Button>
           )}
         </DialogContent>
@@ -211,15 +213,15 @@ export function MeetingDialog() {
       >
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Your details</DialogTitle>
+            <DialogTitle>{t.meeting.detailsTitle}</DialogTitle>
             <DialogDescription>
-              {when} (Paris time).{" "}
+              {when}{" "}
               <button
                 type="button"
                 onClick={() => setStep("pick")}
                 className="font-medium text-foreground underline underline-offset-4"
               >
-                Change
+                {t.meeting.change}
               </button>
             </DialogDescription>
           </DialogHeader>
@@ -227,8 +229,7 @@ export function MeetingDialog() {
             noValidate
             onSubmit={form.submit(async (values) => {
               const result = await run(() => requestMeeting(values), {
-                success:
-                  "Invitation sent: check your inbox for the confirmation",
+                success: t.meeting.sent,
               });
               if (result.ok) {
                 setStep("closed");
@@ -246,13 +247,13 @@ export function MeetingDialog() {
                 <TextField
                   control={form.control}
                   name="name"
-                  label="Your name"
+                  label={t.contact.name}
                   autoComplete="name"
                 />
                 <TextField
                   control={form.control}
                   name="email"
-                  label="Email"
+                  label={t.contact.email}
                   type="email"
                   autoComplete="email"
                 />
@@ -260,7 +261,7 @@ export function MeetingDialog() {
               <TextareaField
                 control={form.control}
                 name="topic"
-                label="What would you like to discuss? (optional)"
+                label={t.meeting.topic}
                 rows={3}
               />
               {/* Honeypot: off-screen and skipped by keyboard and screen readers. */}
@@ -279,7 +280,7 @@ export function MeetingDialog() {
                   className="bg-[#E8590C] text-white hover:bg-[#cf4f0b]"
                 >
                   {pending ? <Loader2 className="animate-spin" /> : <Send />}
-                  Send invitation
+                  {t.meeting.send}
                 </Button>
               </DialogFooter>
             </FieldGroup>

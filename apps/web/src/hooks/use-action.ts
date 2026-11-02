@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { toast } from "sonner";
+import { useT } from "@/components/i18n-provider";
 import type { ActionResult } from "@/server/action";
 
 /**
@@ -9,6 +10,7 @@ import type { ActionResult } from "@/server/action";
  * Returns the result so callers can react (close a dialog, map field errors…).
  */
 export function useAction() {
+  const t = useT();
   const [pending, startTransition] = useTransition();
 
   function run<T>(
@@ -28,8 +30,8 @@ export function useAction() {
           resolve(result);
         } catch (error) {
           console.error(error);
-          toast.error("Something went wrong. Please try again.");
-          resolve({ ok: false, error: "Unexpected error" });
+          toast.error(t.common.unexpected);
+          resolve({ ok: false, error: t.common.unexpected });
         }
       });
     });

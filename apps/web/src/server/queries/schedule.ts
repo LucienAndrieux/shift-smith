@@ -11,6 +11,9 @@ import { isWeekend, monthDates, weekday } from "@/lib/domain/calendar";
 import { computeShiftDuration } from "@/lib/domain/durations";
 import { formatTimeOfDay } from "@/lib/domain/time";
 import { validateSchedule } from "@/lib/domain/validator";
+import type { Locale } from "@/lib/i18n/config";
+import { DICTIONARIES } from "@/lib/i18n/dictionaries";
+import { dayCodeLabel } from "@/lib/i18n/labels";
 import {
   loadMonthContext,
   loadPreviousMonthTail,
@@ -41,12 +44,13 @@ function pickSchedule<T extends { version: number; status: string }>(
  * Everything the schedule screen needs, as plain serialisable data.
  * Only the versions the user may see are loaded (canSeeSchedule): managers see
  * every version, employees and viewers the published one or nothing.
+ * Violation messages and day-code labels are written in `locale`.
  */
 export async function getScheduleView(
   year: number,
   month: number,
   requestedVersion: number | null,
-  { user }: { user: CurrentUser },
+  { user, locale = "en" }: { user: CurrentUser; locale?: Locale },
 ) {
   const versions = (
     await db
@@ -78,17 +82,20 @@ export async function getScheduleView(
     loadPreviousMonthTail(db, year, month),
   ]);
 
-  const validation = validateSchedule({
-    ...context,
-    assignments: assignmentRows.map((a) => ({
-      employeeId: a.employeeId,
-      date: a.date,
-      shiftTypeId: a.shiftTypeId,
-      dayCode: a.dayCode,
-      isLocked: a.isLocked,
-    })),
-    previousAssignments: previous,
-  });
+  const validation = validateSchedule(
+    {
+      ...context,
+      assignments: assignmentRows.map((a) => ({
+        employeeId: a.employeeId,
+        date: a.date,
+        shiftTypeId: a.shiftTypeId,
+        dayCode: a.dayCode,
+        isLocked: a.isLocked,
+      })),
+      previousAssignments: previous,
+    },
+    locale,
+  );
 
   const holidayByDate = new Map(context.holidays.map((h) => [h.date, h.name]));
   const employeeById = new Map(employeeRows.map((e) => [e.id, e]));
@@ -173,7 +180,7 @@ export async function getScheduleView(
     }),
     dayCodes: dayCodeRows.map((d) => ({
       code: d.code,
-      label: d.label,
+      label: dayCodeLabel(DICTIONARIES[locale], d.code, d.label),
       kind: d.kind,
       color: d.color,
     })),

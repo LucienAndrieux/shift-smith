@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { employees, user } from "@/db/schema";
 import { auth } from "@/lib/auth";
+import { getRequestT } from "@/lib/i18n/server";
 import { getCurrentUser, type Role } from "@/server/session";
 
 /**
@@ -14,6 +15,7 @@ import { getCurrentUser, type Role } from "@/server/session";
  * would still read the previous (possibly deleted) guest's session cookie.
  */
 export async function enterDemo(role: Role, employeeId?: string) {
+  const t = await getRequestT();
   let played: { id: string; name: string } | null = null;
   if (role === "employee") {
     const [row] = employeeId
@@ -24,7 +26,7 @@ export async function enterDemo(role: Role, employeeId?: string) {
             and(eq(employees.id, employeeId), eq(employees.status, "active")),
           )
       : [];
-    if (!row) throw new Error("Choose an employee to play.");
+    if (!row) throw new Error(t.roles.chooseEmployeeError);
     played = row;
   }
 
@@ -36,7 +38,7 @@ export async function enterDemo(role: Role, employeeId?: string) {
     });
     id = result?.user.id;
   }
-  if (!id) throw new Error("Could not start the demo.");
+  if (!id) throw new Error(t.roles.startError);
   await db
     .update(user)
     .set({
@@ -44,10 +46,10 @@ export async function enterDemo(role: Role, employeeId?: string) {
       employeeId: played?.id ?? null,
       name:
         role === "manager"
-          ? "Guest manager"
+          ? t.roles.guestManager
           : role === "employee"
-            ? (played?.name ?? "Guest employee")
-            : "Guest viewer",
+            ? (played?.name ?? t.roles.guestEmployee)
+            : t.roles.guestViewer,
     })
     .where(eq(user.id, id));
 }
