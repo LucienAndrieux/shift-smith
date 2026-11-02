@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LOCALES } from "@/lib/i18n/config";
 import { getLocale, getT } from "@/lib/i18n/server";
+import { linkPreview } from "@/lib/og";
 import "../globals.css";
 
 const geistSans = Geist({
@@ -25,8 +26,13 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getT();
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   return {
+    // Absolute URLs for the link-preview image.
+    metadataBase: new URL(
+      process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+    ),
+    ...linkPreview(locale, "ShiftSmith", t.meta.description),
     title: {
       default: "ShiftSmith",
       template: "%s · ShiftSmith",

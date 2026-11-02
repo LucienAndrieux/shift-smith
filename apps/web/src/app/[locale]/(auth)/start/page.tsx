@@ -30,12 +30,17 @@ import { SHIFT_CODE_COLORS } from "@/lib/domain/seed-mapping";
 import { LOCALE_TAGS, type Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { getLocale, getT } from "@/lib/i18n/server";
+import { linkPreview } from "@/lib/og";
 import { cn } from "@/lib/utils";
 import { getEmployees } from "@/server/queries/reference";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getT();
-  return { title: t.start.title, description: t.start.description };
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  return {
+    title: t.start.title,
+    description: t.start.description,
+    ...linkPreview(locale, t.start.title, t.start.description),
+  };
 }
 
 const LINKS = {

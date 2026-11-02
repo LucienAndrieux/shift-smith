@@ -14,7 +14,8 @@ loadEnvConfig(
 
 /**
  * Pages live under `app/[locale]/`; URLs carry no language. Every other path is
- * rewritten to the `locale` cookie's language, English by default. Done here and
+ * rewritten to the `?lang=` language of a shared link, else the `locale` cookie's,
+ * English by default. Done here and
  * not in proxy.ts: a proxy rewrite counts as external behind `next start -H
  * 127.0.0.1` (the proxy sees "localhost"), and Next then fetches it over the
  * network (500 behind an HTTPS reverse proxy).
@@ -31,7 +32,16 @@ function localeRewrites() {
       { source: UNLOCALIZED, has, destination: `/${locale}/:path` },
     ];
   });
+  // A shared link can carry its language (`/start?lang=pt`): it wins over the cookie.
+  const byQuery = LOCALES.flatMap((locale) => {
+    const has = [{ type: "query" as const, key: "lang", value: locale }];
+    return [
+      { source: "/", has, destination: `/${locale}` },
+      { source: UNLOCALIZED, has, destination: `/${locale}/:path` },
+    ];
+  });
   return [
+    ...byQuery,
     ...byCookie,
     { source: "/", destination: `/${DEFAULT_LOCALE}` },
     { source: UNLOCALIZED, destination: `/${DEFAULT_LOCALE}/:path` },
@@ -55,6 +65,8 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // These use Node APIs; keep them out of the server bundle.
   serverExternalPackages: ["pg-boss", "postgres", "nodemailer", "pdfkit"],
+  // Read at runtime by the link-preview image; include them in the standalone build.
+  outputFileTracingIncludes: { "/api/og": ["./assets/fonts/*.woff"] },
   turbopack: {
     root: path.resolve(import.meta.dirname, "../.."),
     rules: {

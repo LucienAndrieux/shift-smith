@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Languages } from "lucide-react";
+import { useEffect } from "react";
 import { Flag } from "@/components/flags";
 import { useLocale, useT } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
@@ -18,17 +19,31 @@ import {
 } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils";
 
-/** Stores the choice for a year; the reload re-renders every page in it. */
-function chooseLocale(locale: Locale) {
-  // biome-ignore lint/suspicious/noDocumentCookie: plain preference cookie, read by proxy.ts
+function storeLocale(locale: Locale) {
+  // biome-ignore lint/suspicious/noDocumentCookie: plain preference cookie, read by next.config.ts rewrites
   document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=31536000; samesite=lax`;
-  window.location.reload();
+}
+
+/**
+ * Stores the choice for a year; the reload re-renders every page in it. A shared
+ * link's `?lang=` would override the cookie, so it is dropped.
+ */
+function chooseLocale(locale: Locale) {
+  storeLocale(locale);
+  const url = new URL(window.location.href);
+  url.searchParams.delete("lang");
+  window.location.replace(url);
 }
 
 /** Start page: one button per language, flag inside. */
 export function LanguageButtons({ className }: { className?: string }) {
   const current = useLocale();
   const t = useT();
+  // Opened from a shared `?lang=` link: keep that language once in the app.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("lang") === current)
+      storeLocale(current);
+  }, [current]);
   return (
     <fieldset
       aria-label={t.common.language}

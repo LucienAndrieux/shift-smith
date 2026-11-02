@@ -16,7 +16,10 @@ export function proxy(request: NextRequest) {
     : pathname;
   const isStart = path === "/start" || path.startsWith("/start/");
   if (!isStart && !getSessionCookie(request)) {
-    return NextResponse.redirect(new URL("/start", request.url));
+    // Keep the query: a shared `?lang=` link opens the start page in that language.
+    const url = new URL("/start", request.url);
+    url.search = request.nextUrl.search;
+    return NextResponse.redirect(url);
   }
   return NextResponse.next();
 }

@@ -69,6 +69,10 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
   sections, shift labels, holidays, DB notes) is not translated; built-in day-code
   labels are, while unchanged (`dayCodeLabel`). Switchers: flag buttons on the
   start page, a menu in the app sidebar (`components/language-switcher.tsx`).
+  A shared link can carry `?lang=fr|pt|en` (rewrite before the cookie; the start
+  page then stores it). Link previews: `lib/og.ts` Open Graph tags with the image
+  of `app/api/og` (next/og, Bricolage font files in `assets/fonts`), absolute
+  through `metadataBase` = `BETTER_AUTH_URL`.
 - Biome for lint + format (shadcn files in `src/components/ui` are not linted).
 - The single `.env` lives at the repo root; `next.config.ts` and
   `scripts/load-env.ts` load it.

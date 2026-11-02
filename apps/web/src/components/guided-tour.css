@@ -58,8 +58,9 @@
 .shiftsmith-tour .driver-popover-footer .driver-popover-next-btn:hover {
   background: color-mix(in oklab, var(--brand) 88%, black);
 }
-/* driver.js sets display inline: hide "Back" on the first step. */
+/* Hide "Back" on the first step. */
 .shiftsmith-tour .driver-popover-footer .driver-popover-btn-disabled {
+  /* biome-ignore lint/complexity/noImportantStyles: driver.js sets display inline */
   display: none !important;
 }
 .shiftsmith-tour .driver-popover-close-btn {
