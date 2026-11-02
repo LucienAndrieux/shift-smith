@@ -1,6 +1,6 @@
 /**
- * Interface languages. The choice lives in the `locale` cookie; `proxy.ts` rewrites
- * every page to `/[locale]/…`, so URLs stay the same in every language.
+ * Interface languages. The choice lives in the `locale` cookie; next.config.ts
+ * rewrites every page to `/[locale]/…`, so URLs stay the same in every language.
  * Pure module: safe to import from domain code.
  */
 export const LOCALES = ["en", "fr", "pt"] as const;

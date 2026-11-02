@@ -59,7 +59,7 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
 - `proxy.ts` (formerly middleware) only does optimistic cookie redirects; real
   checks happen in the data access layer.
 - Languages: every page lives under `app/[locale]/` (`en`, `fr`, `pt`, one static
-  shell each); `proxy.ts` rewrites URLs from the `locale` cookie (English by
+  shell each); `next.config.ts` rewrites URLs (beforeFiles, by the `locale` cookie, English by
   default), so URLs carry no language. Server Components use `getT()` /
   `getLocale()` (`next/root-params`); Server Actions and Route Handlers use
   `getRequestT()` (cookie); client components `useT()` / `useLocale()`.
