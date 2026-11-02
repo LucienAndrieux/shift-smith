@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   CalendarCog,
   Check,
   FolderGit2,
@@ -42,6 +43,8 @@ const LINKS = {
   github: "https://github.com/LucienAndrieux",
   malt: "https://www.malt.fr/profile/lucienandrieux",
   repo: "https://github.com/LucienAndrieux/shift-smith",
+  // Published Notion page, French and English.
+  docs: "https://kind-grass-02d.notion.site/Shiftsmith-Documentation-40c3f4e4a1dd800ea9bcffd55609ecbd",
 };
 
 /** Icons of the feature list, in the order of `t.start.features`. */
@@ -73,8 +76,8 @@ const POPULAR_PLAN = 1;
 
 const CONTACTS: {
   href: string;
-  /** null: the localized "Source code of this demo". */
-  label: string | null;
+  /** A brand name, or a localized label. */
+  label: string | ((t: Dictionary["start"]) => string);
   handle: string;
   icon: ComponentType<{ className?: string }>;
 }[] = [
@@ -98,9 +101,15 @@ const CONTACTS: {
   },
   {
     href: LINKS.repo,
-    label: null,
+    label: (t) => t.sourceOfDemo,
     handle: "shift-smith",
     icon: FolderGit2,
+  },
+  {
+    href: LINKS.docs,
+    label: (t) => t.documentation,
+    handle: "Notion",
+    icon: BookOpen,
   },
 ];
 
@@ -324,7 +333,7 @@ export default async function StartPage() {
                   >
                     <c.icon className="size-5 text-foreground/80" />
                     <span className="flex-1 font-medium">
-                      {c.label ?? t.start.sourceOfDemo}
+                      {typeof c.label === "string" ? c.label : c.label(t.start)}
                     </span>
                     <span className="truncate text-sm text-muted-foreground">
                       {c.handle}

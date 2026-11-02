@@ -202,6 +202,7 @@ export const pt: Dictionary = {
       },
     ],
     sourceOfDemo: "Código-fonte desta demo",
+    documentation: "Documentação do projeto",
     contactTitle: "Fale-me da sua escala",
     contactText:
       "Quantas pessoas, como planeia hoje e o que o atrasa. Respondo em dois dias úteis com perguntas ou uma primeira proposta.",

@@ -205,6 +205,7 @@ export const en = {
       },
     ],
     sourceOfDemo: "Source code of this demo",
+    documentation: "Project documentation",
     contactTitle: "Tell me about your schedule",
     contactText:
       "How many people, how you plan today and what slows you down. I reply within two working days with questions or a first proposal.",

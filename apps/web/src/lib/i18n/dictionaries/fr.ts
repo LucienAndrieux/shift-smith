@@ -205,6 +205,7 @@ export const fr: Dictionary = {
       },
     ],
     sourceOfDemo: "Code source de cette démo",
+    documentation: "Documentation du projet",
     contactTitle: "Parlez-moi de votre planning",
     contactText:
       "Combien de personnes, comment vous planifiez aujourd'hui et ce qui vous ralentit. Je réponds sous deux jours ouvrés avec des questions ou une première proposition.",
