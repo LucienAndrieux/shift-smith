@@ -26,12 +26,14 @@ function storeLocale(locale: Locale) {
 
 /**
  * Stores the choice for a year; the reload re-renders every page in it. A shared
- * link's `?lang=` would override the cookie, so it is dropped.
+ * link's `?lang=` would override the cookie, so it is dropped. So is the fragment:
+ * going to the same URL with a `#contact` only scrolls, without reloading.
  */
 function chooseLocale(locale: Locale) {
   storeLocale(locale);
   const url = new URL(window.location.href);
   url.searchParams.delete("lang");
+  url.hash = "";
   window.location.replace(url);
 }
 
