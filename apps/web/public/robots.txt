@@ -1,2 +1,9 @@
+# Demo site: kept out of search engines. LinkedIn may read the start page and its
+# preview image (Open Graph tags, app/api/og) to build link previews.
+User-agent: LinkedInBot
+Allow: /start
+Allow: /api/og
+Disallow: /
+
 User-agent: *
 Disallow: /
