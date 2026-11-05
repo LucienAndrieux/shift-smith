@@ -18,21 +18,30 @@ import { Button } from "@/components/ui/button";
 import { useAction } from "@/hooks/use-action";
 import type { ActionResult } from "@/server/action";
 
-/** Destructive action behind a confirmation dialog. */
-export function ConfirmButton({
+/** An action behind a confirmation dialog (destructive by default). */
+export function ConfirmButton<T>({
   title,
   description,
   confirmLabel,
   successMessage,
   action,
+  onSuccess,
   trigger,
+  children,
+  destructive = true,
 }: {
   title: string;
   description?: ReactNode;
   confirmLabel?: string;
   successMessage?: string;
-  action: () => Promise<ActionResult<unknown>>;
+  action: () => Promise<ActionResult<T>>;
+  /** Replaces the success toast: the caller reports the outcome from the data. */
+  onSuccess?: (data: T) => void;
   trigger?: ReactNode;
+  /** Extra content between the text and the buttons (choices for the action). */
+  children?: ReactNode;
+  /** false: a plain confirmation (approve), not a red delete button. */
+  destructive?: boolean;
 }) {
   const t = useT();
   const { pending, run } = useAction();
@@ -53,14 +62,20 @@ export function ConfirmButton({
             <AlertDialogDescription>{description}</AlertDialogDescription>
           )}
         </AlertDialogHeader>
+        {children}
         <AlertDialogFooter>
           <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
           <AlertDialogAction
-            variant="destructive"
+            variant={destructive ? "destructive" : "default"}
             disabled={pending}
-            onClick={() =>
-              run(action, { success: successMessage ?? t.common.deleted })
-            }
+            onClick={async () => {
+              const result = await run(action, {
+                success: onSuccess
+                  ? undefined
+                  : (successMessage ?? t.common.deleted),
+              });
+              if (result.ok) onSuccess?.(result.data);
+            }}
           >
             {label}
           </AlertDialogAction>

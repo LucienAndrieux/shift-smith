@@ -114,6 +114,18 @@ export const parsedConstraintSchema = z.object({
   operations: z.array(constraintOperation),
 });
 
+/**
+ * What the model answers: the stored result plus whether the text gives any
+ * date at all (a note without one is refused, see server/constraints/parse.ts).
+ */
+export const constraintResponseSchema = parsedConstraintSchema.extend({
+  hasDate: z
+    .boolean()
+    .describe(
+      'Whether the text gives at least one date or period: a day ("the 16th", "16/11", "next Monday", "tomorrow"), a range, a week or a month',
+    ),
+});
+
 export type ConstraintOperation = z.infer<typeof constraintOperation>;
 export type ParsedConstraint = z.infer<typeof parsedConstraintSchema>;
 

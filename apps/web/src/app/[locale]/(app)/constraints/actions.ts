@@ -4,7 +4,11 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { naturalLanguageConstraints } from "@/db/schema";
 import { parsedConstraintSchema } from "@/lib/constraints/operations";
-import { constraintFormSchema } from "@/lib/schemas/constraints";
+import { currentYearMonth } from "@/lib/dates";
+import {
+  approveConstraintSchema,
+  constraintFormSchema,
+} from "@/lib/schemas/constraints";
 import { idSchema } from "@/lib/schemas/reference";
 import { ActionError, managerAction, userAction } from "@/server/action";
 import { audit } from "@/server/audit";
@@ -30,11 +34,13 @@ async function loadConstraintFor(id: string, user: CurrentUser) {
 /** Managers write constraints, employees send requests for the managers. */
 export const submitConstraint = userAction(
   constraintFormSchema,
-  async ({ rawText, target }, user) => {
+  async ({ rawText }, user) => {
     if (user.role === "viewer")
       throw new ActionError((t) => t.errors.viewerCannotSend);
     await assertLlmAllowed(user);
-    const [targetYear, targetMonth] = target.split("-").map(Number);
+    // The text carries its dates; the month it was sent in fills the old
+    // target-month columns.
+    const { year: targetYear, month: targetMonth } = currentYearMonth();
     const [row] = await db
       .insert(naturalLanguageConstraints)
       .values({
@@ -52,7 +58,7 @@ export const submitConstraint = userAction(
       action: "create",
       entity: "natural_language_constraint",
       entityId: row.id,
-      diff: { rawText, targetYear, targetMonth },
+      diff: { rawText },
     });
     try {
       await enqueueConstraintParse(row.id);
@@ -89,10 +95,11 @@ export const retryConstraint = userAction(idSchema, async ({ id }, user) => {
 });
 
 export const approveConstraint = managerAction(
-  idSchema,
-  async ({ id }, user) => {
+  approveConstraintSchema,
+  async ({ id, placement }, user) => {
     await loadConstraintFor(id, user);
-    await db.transaction(async (tx) => {
+    // The versions that received cells: the card links to them.
+    return db.transaction(async (tx) => {
       const [row] = await tx
         .select()
         .from(naturalLanguageConstraints)
@@ -103,11 +110,16 @@ export const approveConstraint = managerAction(
         throw new ActionError((t) => t.errors.onlyParsedApproved);
       }
       const parsed = parsedConstraintSchema.parse(row.parsed);
-      const applied = await applyOperations(tx, parsed.operations, {
-        constraintId: id,
-        userId: user.id,
-        rawText: row.rawText,
-      });
+      const { applied, versions } = await applyOperations(
+        tx,
+        parsed.operations,
+        {
+          constraintId: id,
+          userId: user.id,
+          rawText: row.rawText,
+          placement,
+        },
+      );
       await tx
         .update(naturalLanguageConstraints)
         .set({
@@ -123,6 +135,7 @@ export const approveConstraint = managerAction(
         entityId: id,
         diff: { appliedOperations: applied },
       });
+      return versions;
     });
   },
 );

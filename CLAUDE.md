@@ -106,8 +106,17 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
 - Public holidays are generated (`src/lib/domain/holidays.ts`, country from the seed's
   `_meta.country`: `FR`, `PT` or `GB-ENG` for England and Wales); add regional,
   municipal, one-off or company holidays in the app.
+- Constraints have no target month: the text carries its dates, resolved against
+  today. The model also answers `hasDate`; a note without any date is stored as
+  failed with `NO_DATE` (`lib/constraints/check.ts`), except a permanent change of
+  the fixed rest days. The old `target_year`/`target_month` columns keep the month
+  the note was sent in.
 - `shift_ban` constraints become unavailabilities over the shift's hours;
-  `shift_force` becomes a locked cell in the month's latest draft.
+  `shift_force` becomes a locked cell in the version the manager picks when
+  approving (a new draft copied from the published version, an existing draft or
+  the published version; `placement` in `server/constraints/apply.ts`); the
+  approval toast links to it. A wish to start or finish at a given time maps to the shift of the
+  employee's section that starts or ends then (`server/constraints/parse.ts`).
 - pg-boss worker runs inside the Next.js server (`src/instrumentation.ts`);
   `DISABLE_JOB_WORKER=true` turns it off.
 - Postgres must use UTF-8 (the Docker image does): notes may contain characters

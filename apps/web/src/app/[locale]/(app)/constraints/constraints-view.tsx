@@ -2,11 +2,11 @@
 
 import { Check, Loader2, RotateCw, Sparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { ConfirmButton } from "@/components/confirm-button";
 import { TextareaField } from "@/components/form/fields";
-import { TextField } from "@/components/form/text-field";
-import { useT } from "@/components/i18n-provider";
+import { useLocale, useT } from "@/components/i18n-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,7 @@ import { FieldGroup } from "@/components/ui/field";
 import { useAction } from "@/hooks/use-action";
 import { useZodForm } from "@/hooks/use-zod-form";
 import type { OperationType } from "@/lib/constraints/operations";
+import { formatMonth } from "@/lib/domain/calendar";
 import { constraintFormSchema } from "@/lib/schemas/constraints";
 import {
   approveConstraint,
@@ -37,7 +38,6 @@ export interface ConstraintItem {
   /** The user may parse it again (managers, or the employee who wrote it). */
   canRetry: boolean;
   rawText: string;
-  target: string;
   status: Status;
   model: string | null;
   parseError: string | null;
@@ -46,8 +46,15 @@ export interface ConstraintItem {
   reviewedBy: string | null;
   reviewedAt: string | null;
   summary: string | null;
-  /** The text names other months than the target month. */
-  monthWarning: string | null;
+  /**
+   * Parsed constraint with forced shifts in one month: the editable versions of
+   * that month, newest first, for the approval's choice.
+   */
+  placement: {
+    label: string;
+    published: number | null;
+    versions: { id: string; version: number; status: "draft" | "published" }[];
+  } | null;
   operations: { type: OperationType; text: string }[];
 }
 
@@ -67,7 +74,6 @@ export function ConstraintsView({
   canReview,
   canSubmit,
   asEmployee,
-  defaultTarget,
 }: {
   items: ConstraintItem[];
   /** Approve and reject (managers). */
@@ -76,7 +82,6 @@ export function ConstraintsView({
   canSubmit: boolean;
   /** Employee guest: the form sends a request about themselves. */
   asEmployee: boolean;
-  defaultTarget: string;
 }) {
   const t = useT();
   const router = useRouter();
@@ -91,12 +96,7 @@ export function ConstraintsView({
 
   return (
     <div className="flex flex-col gap-4">
-      {canSubmit && (
-        <NewConstraintForm
-          defaultTarget={defaultTarget}
-          asEmployee={asEmployee}
-        />
-      )}
+      {canSubmit && <NewConstraintForm asEmployee={asEmployee} />}
       {items.length === 0 && (
         <p className="text-sm text-muted-foreground">{t.constraints.none}</p>
       )}
@@ -107,18 +107,11 @@ export function ConstraintsView({
   );
 }
 
-function NewConstraintForm({
-  defaultTarget,
-  asEmployee,
-}: {
-  defaultTarget: string;
-  asEmployee: boolean;
-}) {
+function NewConstraintForm({ asEmployee }: { asEmployee: boolean }) {
   const t = useT();
   const c = t.constraints;
   const form = useZodForm(constraintFormSchema, {
     rawText: "",
-    target: defaultTarget,
   });
   const { pending, run } = useAction();
   return (
@@ -138,7 +131,7 @@ function NewConstraintForm({
             const result = await run(() => submitConstraint(values), {
               success: c.sent,
             });
-            if (result.ok) form.reset({ rawText: "", target: values.target });
+            if (result.ok) form.reset({ rawText: "" });
           })}
         >
           <FieldGroup>
@@ -148,15 +141,7 @@ function NewConstraintForm({
               label={c.constraint}
               rows={3}
             />
-            <div className="flex flex-wrap items-end gap-4">
-              <div className="w-48">
-                <TextField
-                  control={form.control}
-                  name="target"
-                  label={c.targetMonth}
-                  type="month"
-                />
-              </div>
+            <div>
               <Button type="submit" disabled={pending}>
                 <Sparkles /> {c.parse}
               </Button>
@@ -177,7 +162,15 @@ function ConstraintCard({
 }) {
   const t = useT();
   const c = t.constraints;
+  const locale = useLocale();
+  const router = useRouter();
   const { pending, run } = useAction();
+  // Where approval puts forced shifts: "new" or a version id. The latest draft
+  // by default, else a new copy of the published version.
+  const [placement, setPlacement] = useState(
+    () =>
+      item.placement?.versions.find((v) => v.status === "draft")?.id ?? "new",
+  );
   return (
     <Card>
       <CardHeader>
@@ -185,7 +178,7 @@ function ConstraintCard({
           “{item.rawText}”
         </CardTitle>
         <CardDescription>
-          {c.target(item.target)} · {item.createdAt}
+          {item.createdAt}
           {item.createdBy && ` · ${item.createdBy}`}
           {item.model === "example"
             ? ` · ${c.example}`
@@ -201,11 +194,6 @@ function ConstraintCard({
       {(item.summary || item.operations.length > 0 || item.parseError) && (
         <CardContent className="flex flex-col gap-3">
           {item.summary && <p className="text-sm">{item.summary}</p>}
-          {item.monthWarning && (
-            <p className="text-sm text-amber-700 dark:text-amber-400">
-              {item.monthWarning}
-            </p>
-          )}
           {item.operations.length > 0 && (
             <ul className="flex flex-col gap-1.5">
               {item.operations.map((op, i) => (
@@ -278,14 +266,89 @@ function ConstraintCard({
                   title={c.applyTitle}
                   description={c.applyText}
                   confirmLabel={c.approve}
-                  successMessage={c.applied}
-                  action={() => approveConstraint({ id: item.id })}
+                  destructive={false}
+                  action={() =>
+                    approveConstraint({
+                      id: item.id,
+                      placement: !item.placement
+                        ? null
+                        : placement === "new"
+                          ? { kind: "new" }
+                          : { kind: "version", scheduleId: placement },
+                    })
+                  }
+                  onSuccess={(versions) => {
+                    // Forced shifts may land in a version other than the one
+                    // on screen: say which, with a way there.
+                    const target = versions[0];
+                    if (!target) {
+                      toast.success(c.applied);
+                      return;
+                    }
+                    const month = formatMonth(
+                      target.year,
+                      target.month,
+                      locale,
+                    );
+                    const draft = target.status === "draft";
+                    toast.success(
+                      draft
+                        ? c.appliedToDraft(month, target.version)
+                        : c.appliedToPublished(month, target.version),
+                      {
+                        duration: 15_000,
+                        action: {
+                          label: draft ? c.openDraft : c.openSchedule,
+                          onClick: () =>
+                            router.push(
+                              `/schedule/${target.year}/${target.month}?version=${target.version}`,
+                            ),
+                        },
+                      },
+                    );
+                  }}
                   trigger={
                     <Button size="sm">
                       <Check /> {c.approve}
                     </Button>
                   }
-                />
+                >
+                  {item.placement && (
+                    <fieldset className="flex flex-col gap-2 text-sm">
+                      <legend className="mb-2 font-medium">
+                        {c.placeLabel(item.placement.label)}
+                      </legend>
+                      {[
+                        {
+                          value: "new",
+                          label: c.placeNew(item.placement.published),
+                        },
+                        ...item.placement.versions.map((v) => ({
+                          value: v.id,
+                          label:
+                            v.status === "draft"
+                              ? c.placeDraft(v.version)
+                              : c.placePublished(v.version),
+                        })),
+                      ].map((choice) => (
+                        <label
+                          key={choice.value}
+                          className="flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2 has-checked:border-brand/50 has-checked:bg-brand/5"
+                        >
+                          <input
+                            type="radio"
+                            name={`placement-${item.id}`}
+                            value={choice.value}
+                            checked={placement === choice.value}
+                            onChange={() => setPlacement(choice.value)}
+                            className="mt-0.5 accent-brand"
+                          />
+                          {choice.label}
+                        </label>
+                      ))}
+                    </fieldset>
+                  )}
+                </ConfirmButton>
               )}
             </div>
           )}

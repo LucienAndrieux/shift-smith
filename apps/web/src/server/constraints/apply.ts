@@ -39,16 +39,46 @@ function eachDate(start: string, end: string): string[] {
  * constraint id (`source = constraint`). Runs inside the approval transaction.
  * - shift_ban → unavailability covering the shift's hours on each date
  *   (the validator then flags any shift overlapping that window);
- * - shift_force → a locked cell in the latest draft of the month (a draft is
- *   created when the month has none).
+ * - shift_force → a locked cell in the version the manager picked (`placement`):
+ *   a new draft copied from the published version, or an existing draft or
+ *   published version of that month. Without a choice, the month's latest draft
+ *   (a copy of the published version when it has none).
+ * Returns the count of applied operations and the versions that received cells,
+ * so the manager can be sent to them.
  */
 export async function applyOperations(
   tx: Tx,
   operations: ConstraintOperation[],
-  ctx: { constraintId: string; userId: string; rawText: string },
+  ctx: {
+    constraintId: string;
+    userId: string;
+    rawText: string;
+    placement?: Placement | null;
+  },
 ) {
   const reason = (r: string | null) => r ?? ctx.rawText.slice(0, 200);
   let applied = 0;
+  const versions = new Map<string, VersionRef>();
+  /** New drafts already created by this approval, by month. */
+  const created = new Map<string, VersionRef>();
+  const versionFor = async (date: string): Promise<VersionRef> => {
+    const placement = ctx.placement;
+    if (placement?.kind === "version")
+      return pickedVersion(tx, placement.scheduleId, date);
+    const { year, month } = yearMonthOf(date);
+    const key = `${year}-${month}`;
+    if (placement?.kind === "new") {
+      const existing = created.get(key);
+      if (existing) return existing;
+      const draft = await createDraftFromPublished(tx, year, month, ctx.userId);
+      created.set(key, draft);
+      return draft;
+    }
+    return (
+      (await latestDraft(tx, year, month)) ??
+      createDraftFromPublished(tx, year, month, ctx.userId)
+    );
+  };
 
   for (const op of operations) {
     switch (op.type) {
@@ -131,7 +161,9 @@ export async function applyOperations(
         break;
       }
       case "shift_force": {
-        const scheduleId = await latestDraftFor(tx, op.date, ctx.userId);
+        const target = await versionFor(op.date);
+        versions.set(target.id, target);
+        const scheduleId = target.id;
         const values = {
           shiftTypeId: op.shiftTypeId,
           dayCode: null,
@@ -220,18 +252,54 @@ export async function applyOperations(
         break;
     }
   }
-  return applied;
+  return { applied, versions: [...versions.values()] };
 }
 
-/** Latest draft of the date's month, created empty when the month has none. */
-async function latestDraftFor(
+/** Where an approval puts forced shifts (see applyOperations). */
+export type Placement =
+  | { kind: "new" }
+  | { kind: "version"; scheduleId: string };
+
+export interface VersionRef {
+  id: string;
+  year: number;
+  month: number;
+  version: number;
+  status: "draft" | "published";
+}
+
+/** The version the manager picked: same month as the date, still editable. */
+async function pickedVersion(
   tx: Tx,
+  scheduleId: string,
   date: string,
-  userId: string,
-): Promise<string> {
+): Promise<VersionRef> {
+  const [row] = await tx
+    .select()
+    .from(schedules)
+    .where(eq(schedules.id, scheduleId));
   const { year, month } = yearMonthOf(date);
+  if (!row || row.year !== year || row.month !== month)
+    throw new ActionError((t) => t.errors.scheduleNotFound);
+  if (row.status === "archived")
+    throw new ActionError((t) => t.errors.archivedReadOnly);
+  if (row.closedAt) throw new ActionError((t) => t.errors.closedReadOnly);
+  return {
+    id: row.id,
+    year,
+    month,
+    version: row.version,
+    status: row.status,
+  };
+}
+
+async function latestDraft(
+  tx: Tx,
+  year: number,
+  month: number,
+): Promise<VersionRef | null> {
   const [draft] = await tx
-    .select({ id: schedules.id })
+    .select({ id: schedules.id, version: schedules.version })
     .from(schedules)
     .where(
       and(
@@ -242,14 +310,31 @@ async function latestDraftFor(
     )
     .orderBy(desc(schedules.version))
     .limit(1);
-  if (draft) return draft.id;
-  const [last] = await tx
-    .select({ version: schedules.version })
+  return draft ? { ...draft, year, month, status: "draft" } : null;
+}
+
+/**
+ * A new draft of the month: a copy (cells included) of its published version,
+ * else of its latest one; empty only when the month has no version at all.
+ */
+async function createDraftFromPublished(
+  tx: Tx,
+  year: number,
+  month: number,
+  userId: string,
+): Promise<VersionRef> {
+  const versions = await tx
+    .select({
+      id: schedules.id,
+      version: schedules.version,
+      status: schedules.status,
+    })
     .from(schedules)
     .where(and(eq(schedules.year, year), eq(schedules.month, month)))
-    .orderBy(desc(schedules.version))
-    .limit(1);
-  const version = (last?.version ?? 0) + 1;
+    .orderBy(desc(schedules.version));
+  const source =
+    versions.find((v) => v.status === "published") ?? versions[0] ?? null;
+  const version = (versions[0]?.version ?? 0) + 1;
   const [created] = await tx
     .insert(schedules)
     .values({
@@ -258,9 +343,37 @@ async function latestDraftFor(
       version,
       status: "draft",
       source: "manual",
-      title: `${formatMonth(year, month)} — draft v${version}`,
+      title: source
+        ? `${formatMonth(year, month)} — draft v${version} (from v${source.version})`
+        : `${formatMonth(year, month)} — draft v${version}`,
       createdBy: userId,
     })
     .returning({ id: schedules.id });
-  return created.id;
+  if (source) {
+    const cells = await tx
+      .select()
+      .from(scheduleAssignments)
+      .where(eq(scheduleAssignments.scheduleId, source.id));
+    if (cells.length > 0) {
+      await tx.insert(scheduleAssignments).values(
+        cells.map((c) => ({
+          scheduleId: created.id,
+          employeeId: c.employeeId,
+          date: c.date,
+          shiftTypeId: c.shiftTypeId,
+          dayCode: c.dayCode,
+          isLocked: c.isLocked,
+          note: c.note,
+        })),
+      );
+    }
+    await audit(tx, {
+      userId,
+      action: "duplicate",
+      entity: "schedule",
+      entityId: created.id,
+      diff: { from: source.id, version, cells: cells.length },
+    });
+  }
+  return { id: created.id, year, month, version, status: "draft" };
 }

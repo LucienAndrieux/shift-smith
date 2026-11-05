@@ -443,8 +443,8 @@ export const pt: Dictionary = {
     unknownEmployee: (id) => `colaborador desconhecido (${id})`,
     unknownSection: "secção desconhecida",
     unknownShift: "turno desconhecido",
-    monthWarning: (months, target) =>
-      `As datas caem em ${months}, não no mês de destino (${target}).`,
+    noDate:
+      "A mensagem não indica nenhuma data. Diga quando se aplica (um dia, um período ou uma semana) e envie-a de novo.",
     none: "Ainda não há restrições.",
     newRequest: "Novo pedido",
     newConstraint: "Nova restrição",
@@ -454,9 +454,7 @@ export const pt: Dictionary = {
       "Por exemplo: «A Priya não pode trabalhar de manhã na semana de 7 dez.» ou «O Jonas está de baixa médica até 18 dez.».",
     sent: "Enviado para análise",
     constraint: "Restrição",
-    targetMonth: "Mês de destino",
     parse: "Analisar",
-    target: (month) => `Mês de destino ${month}`,
     example: "exemplo",
     model: (model) => `modelo ${model}`,
     statuses: {
@@ -473,9 +471,23 @@ export const pt: Dictionary = {
     reject: "Recusar",
     applyTitle: "Aplicar estas operações?",
     applyText:
-      "Cada operação é registada na sua tabela (ausências, indisponibilidades, exceções de efetivo, folgas fixas ou uma célula bloqueada de rascunho) com a origem «restrição».",
+      "Cada operação é registada na sua tabela (ausências, indisponibilidades, exceções de efetivo, folgas fixas ou uma célula bloqueada da escala) com a origem «restrição».",
     approve: "Aprovar",
     applied: "Restrição aplicada",
+    appliedToDraft: (month, version) =>
+      `Restrição aplicada ao rascunho de ${month} (v${version}). A versão publicada não muda até publicar este rascunho.`,
+    openDraft: "Abrir rascunho",
+    appliedToPublished: (month, version) =>
+      `Restrição aplicada à escala publicada de ${month} (v${version}): os funcionários já a veem.`,
+    openSchedule: "Abrir escala",
+    placeLabel: (month) => `Colocar os turnos forçados de ${month} em`,
+    placeNew: (published) =>
+      published === null
+        ? "Um novo rascunho"
+        : `Um novo rascunho (cópia da v${published} publicada)`,
+    placeDraft: (version) => `O rascunho v${version}`,
+    placePublished: (version) =>
+      `A versão publicada v${version}: os funcionários veem-na de imediato`,
   },
   operations: {
     labels: {

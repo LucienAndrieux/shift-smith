@@ -3,10 +3,10 @@ import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { db } from "@/db";
 import { naturalLanguageConstraints } from "@/db/schema";
-import { checkParsedConstraint } from "@/lib/constraints/check";
-import { parsedConstraintSchema } from "@/lib/constraints/operations";
+import { checkParsedConstraint, NO_DATE } from "@/lib/constraints/check";
+import { constraintResponseSchema } from "@/lib/constraints/operations";
 import { APP_TIME_ZONE, today as todayInAppZone } from "@/lib/dates";
-import { formatMonth, WEEKDAY_SHORT } from "@/lib/domain/calendar";
+import { WEEKDAY_SHORT } from "@/lib/domain/calendar";
 import { env } from "@/lib/env";
 import {
   getDayCodes,
@@ -42,7 +42,7 @@ export async function parseConstraint(constraintId: string): Promise<void> {
   }
 
   try {
-    const context = await buildContext(row.targetYear, row.targetMonth);
+    const context = await buildContext();
     const client = new OpenAI({
       apiKey: LLM_API_KEY,
       baseURL: LLM_BASE_URL || undefined,
@@ -56,13 +56,12 @@ export async function parseConstraint(constraintId: string): Promise<void> {
         { role: "user", content: row.rawText },
       ],
       response_format: zodResponseFormat(
-        parsedConstraintSchema,
+        constraintResponseSchema,
         "constraint_operations",
       ),
     });
     const message = response.choices[0]?.message;
-    const parsed = message?.parsed;
-    if (!parsed) {
+    if (!message?.parsed) {
       await fail(
         message?.refusal
           ? `The model refused: ${message.refusal}`
@@ -70,7 +69,15 @@ export async function parseConstraint(constraintId: string): Promise<void> {
       );
       return;
     }
-    const problems = checkParsedConstraint(parsed, context.references);
+    const { hasDate, ...parsed } = message.parsed;
+    // Every request needs a date, except a permanent change of the fixed rest days.
+    const permanent =
+      parsed.operations.length > 0 &&
+      parsed.operations.every((op) => op.type === "days_off_change");
+    const problems = [
+      ...(hasDate || permanent ? [] : [NO_DATE]),
+      ...checkParsedConstraint(parsed, context.references),
+    ];
     await db
       .update(naturalLanguageConstraints)
       .set(
@@ -103,7 +110,7 @@ export async function parseConstraint(constraintId: string): Promise<void> {
   }
 }
 
-async function buildContext(year: number, month: number) {
+async function buildContext() {
   const [employees, sections, shifts, dayCodes] = await Promise.all([
     getEmployees(),
     getSections(),
@@ -117,13 +124,15 @@ async function buildContext(year: number, month: number) {
 
   const instructions = [
     "You turn scheduling notes written by the manager of a small hotel into structured operations.",
-    `Today is ${weekday} ${today} (${APP_TIME_ZONE}). The target month is ${formatMonth(year, month)}: resolve partial or relative dates against it (e.g. "the week of the 9th" = that ISO week, Monday to Sunday).`,
+    `Today is ${weekday} ${today} (${APP_TIME_ZONE}). Resolve partial or relative dates against today: a day without a month (or a weekday) is the next one from today, "the week of the 9th" is that ISO week, Monday to Sunday.`,
     "Rules:",
+    "- Set hasDate to false when the text gives no date or period at all; never invent one.",
     "- Use only ids copied exactly from the lists below. Match people by first name, surname or nickname; accents may be missing.",
     "- An absence (annual leave AL, sick leave SL, etc.) uses the day codes below; ranges are inclusive.",
     '- Sickness, leave, training, a birthday or any other reason that has a day code is always an absence with that code, even when only part of a day is mentioned ("sick on the 7th in the morning" = SL on the 7th): a day code covers the whole day.',
     '- "Can\'t work mornings/evenings/at a given time" is an unavailability with a time window (mornings = 00:00–13:00, afternoons = 13:00–19:00, evenings = 19:00–24:00) unless a specific shift code is named, which is a shift_ban.',
-    "- shift_force is only for an explicit request that someone works a given shift on a given date.",
+    "- shift_force is for a request that someone works a given shift on a given date: the shift is either named by its code or identified by its hours.",
+    '- A wish to start or finish at a given time on a date ("I would like to start at 9:30 on Monday") is a shift_force: look only at the shifts of the employee\'s own section and pick the one whose start (or end) is exactly that time. If no shift or several shifts match, add an `unparseable` operation that names the shifts closest to that time.',
     "- days_off_change is a permanent change of the two weekly fixed rest days.",
     "- staffing_override changes the minimum (and optionally maximum) staff of a section on dates.",
     "- If a sentence is ambiguous or refers to someone or something not in the lists, add an `unparseable` operation explaining why. Never guess an id.",
@@ -139,13 +148,14 @@ async function buildContext(year: number, month: number) {
     "Sections (id | name):",
     ...sections.map((s) => `${s.id} | ${s.name}`),
     "",
-    "Shift types (id | section | code | hours):",
+    "Shift types (id | section | code | hours | starts | ends):",
     ...shifts
       .filter((s) => s.isActive)
-      .map(
-        (s) =>
-          `${s.id} | ${sectionName.get(s.sectionId)} | ${s.code} | ${s.label.replace(/^\w · /, "")}`,
-      ),
+      .map((s) => {
+        const hours = s.label.replace(/^\w · /, "");
+        const times = hours.match(/\d{2}:\d{2}/g) ?? [];
+        return `${s.id} | ${sectionName.get(s.sectionId)} | ${s.code} | ${hours} | ${times[0] ?? "?"} | ${times.at(-1) ?? "?"}`;
+      }),
     "",
     "Day codes (code | meaning | kind):",
     ...dayCodes.map((d) => `${d.code} | ${d.label} | ${d.kind}`),

@@ -444,8 +444,8 @@ export const fr: Dictionary = {
     unknownEmployee: (id) => `employé inconnu (${id})`,
     unknownSection: "section inconnue",
     unknownShift: "service inconnu",
-    monthWarning: (months, target) =>
-      `Les dates tombent en ${months}, pas dans le mois cible (${target}).`,
+    noDate:
+      "Le message ne contient aucune date. Précisez quand il s'applique (un jour, une période ou une semaine), puis renvoyez-le.",
     none: "Aucune contrainte pour l'instant.",
     newRequest: "Nouvelle demande",
     newConstraint: "Nouvelle contrainte",
@@ -455,9 +455,7 @@ export const fr: Dictionary = {
       "Par exemple : « Priya ne peut pas travailler le matin la semaine du 7 déc. » ou « Jonas est en arrêt maladie jusqu'au 18 déc. ».",
     sent: "Envoyée pour analyse",
     constraint: "Contrainte",
-    targetMonth: "Mois cible",
     parse: "Analyser",
-    target: (month) => `Mois cible ${month}`,
     example: "exemple",
     model: (model) => `modèle ${model}`,
     statuses: {
@@ -474,9 +472,23 @@ export const fr: Dictionary = {
     reject: "Refuser",
     applyTitle: "Appliquer ces opérations ?",
     applyText:
-      "Chaque opération est enregistrée dans sa table (absences, indisponibilités, exceptions d'effectif, jours de repos fixes ou cellule verrouillée d'un brouillon) avec l'origine « contrainte ».",
+      "Chaque opération est enregistrée dans sa table (absences, indisponibilités, exceptions d'effectif, jours de repos fixes ou cellule verrouillée du planning) avec l'origine « contrainte ».",
     approve: "Approuver",
     applied: "Contrainte appliquée",
+    appliedToDraft: (month, version) =>
+      `Contrainte appliquée au brouillon de ${month} (v${version}). La version publiée ne change pas tant que vous ne publiez pas ce brouillon.`,
+    openDraft: "Ouvrir le brouillon",
+    appliedToPublished: (month, version) =>
+      `Contrainte appliquée au planning publié de ${month} (v${version}) : les employés la voient déjà.`,
+    openSchedule: "Ouvrir le planning",
+    placeLabel: (month) => `Placer les shifts forcés de ${month} dans`,
+    placeNew: (published) =>
+      published === null
+        ? "Un nouveau brouillon"
+        : `Un nouveau brouillon (copie de la v${published} publiée)`,
+    placeDraft: (version) => `Le brouillon v${version}`,
+    placePublished: (version) =>
+      `La version publiée v${version} : les employés la voient tout de suite`,
   },
   operations: {
     labels: {

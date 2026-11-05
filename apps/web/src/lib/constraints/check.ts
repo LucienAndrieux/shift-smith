@@ -26,23 +26,11 @@ function validTime(value: string): boolean {
 }
 
 /**
- * Months (YYYY-MM) of the operations' dates that differ from the target month: the
- * text named another month than the one picked in the form.
+ * Parse error of a note that gives no date at all: such a note is refused. The
+ * constraints page shows it in the visitor's language (`t.constraints.noDate`).
  */
-export function monthsOutsideTarget(
-  parsed: ParsedConstraint,
-  target: string,
-): string[] {
-  const months = new Set(
-    parsed.operations.flatMap((op) =>
-      operationDates(op)
-        .filter((d) => DATE_RE.test(d))
-        .map((d) => d.slice(0, 7)),
-    ),
-  );
-  months.delete(target);
-  return [...months].sort();
-}
+export const NO_DATE =
+  "The message gives no date. Say when it applies (a day, a period or a week), then send it again.";
 
 /**
  * Problems that structured outputs cannot rule out: ids that are not in the lists

@@ -435,8 +435,8 @@ export const en = {
     unknownEmployee: (id: string) => `unknown employee (${id})`,
     unknownSection: "unknown section",
     unknownShift: "unknown shift",
-    monthWarning: (months: string, target: string) =>
-      `The dates fall in ${months}, not in the target month (${target}).`,
+    noDate:
+      "The message gives no date. Say when it applies (a day, a period or a week), then send it again.",
     none: "No constraints yet.",
     newRequest: "New request",
     newConstraint: "New constraint",
@@ -446,9 +446,7 @@ export const en = {
       "For example: “Priya can't work mornings the week of Dec 7” or “Jonas is on sick leave until Dec 18”.",
     sent: "Sent for parsing",
     constraint: "Constraint",
-    targetMonth: "Target month",
     parse: "Parse",
-    target: (month: string) => `Target ${month}`,
     example: "example",
     model: (model: string) => `model ${model}`,
     statuses: {
@@ -465,9 +463,23 @@ export const en = {
     reject: "Reject",
     applyTitle: "Apply these operations?",
     applyText:
-      "Each operation is written to its table (absences, unavailabilities, staffing overrides, fixed days off or a locked draft cell) with source “constraint”.",
+      "Each operation is written to its table (absences, unavailabilities, staffing overrides, fixed days off or a locked schedule cell) with source “constraint”.",
     approve: "Approve",
     applied: "Constraint applied",
+    appliedToDraft: (month: string, version: number) =>
+      `Constraint applied to the ${month} draft (v${version}). The published version is unchanged until you publish it.`,
+    openDraft: "Open draft",
+    appliedToPublished: (month: string, version: number) =>
+      `Constraint applied to the published ${month} schedule (v${version}): employees already see it.`,
+    openSchedule: "Open schedule",
+    placeLabel: (month: string) => `Put the forced shifts of ${month} in`,
+    placeNew: (published: number | null) =>
+      published === null
+        ? "A new draft"
+        : `A new draft (copy of the published v${published})`,
+    placeDraft: (version: number) => `Draft v${version}`,
+    placePublished: (version: number) =>
+      `The published version v${version}: employees see it right away`,
   },
   operations: {
     labels: {
