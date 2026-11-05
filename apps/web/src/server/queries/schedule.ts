@@ -53,33 +53,38 @@ export async function getScheduleView(
   requestedVersion: number | null,
   { user, locale = "en" }: { user: CurrentUser; locale?: Locale },
 ) {
-  const versions = (
-    await db
-      .select()
-      .from(schedules)
-      .where(and(eq(schedules.year, year), eq(schedules.month, month)))
-      .orderBy(asc(schedules.version))
-  ).filter((s) => canSeeSchedule(user, s));
-  const schedule = pickSchedule(versions, requestedVersion);
+  // The version and its cells load alongside the reference data, not before.
+  const versionAndCells = (async () => {
+    const versions = (
+      await db
+        .select()
+        .from(schedules)
+        .where(and(eq(schedules.year, year), eq(schedules.month, month)))
+        .orderBy(asc(schedules.version))
+    ).filter((s) => canSeeSchedule(user, s));
+    const schedule = pickSchedule(versions, requestedVersion);
+    const assignmentRows = schedule
+      ? await db
+          .select()
+          .from(scheduleAssignments)
+          .where(eq(scheduleAssignments.scheduleId, schedule.id))
+      : [];
+    return { versions, schedule, assignmentRows };
+  })();
 
   const [
+    { versions, schedule, assignmentRows },
     context,
     shiftRows,
     dayCodeRows,
     employeeRows,
-    assignmentRows,
     previous,
   ] = await Promise.all([
+    versionAndCells,
     loadMonthContext(db, year, month),
     getShiftTypes(),
     db.select().from(dayCodesTable).orderBy(asc(dayCodesTable.code)),
     db.select().from(employees),
-    schedule
-      ? db
-          .select()
-          .from(scheduleAssignments)
-          .where(eq(scheduleAssignments.scheduleId, schedule.id))
-      : Promise.resolve([]),
     loadPreviousMonthTail(db, year, month),
   ]);
 

@@ -119,6 +119,14 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
   employee's section that starts or ends then (`server/constraints/parse.ts`).
 - pg-boss worker runs inside the Next.js server (`src/instrumentation.ts`);
   `DISABLE_JOB_WORKER=true` turns it off.
+- The sidebar's validation counts revalidate whole months: cached in memory per
+  role and month (`server/validation-cache.ts`, on `globalThis`, 5-minute TTL),
+  cleared by every write action (`guardedAction`) and every background job. A
+  new write path outside those must call `invalidateValidationCounts()`.
+- Month grid: cells are plain buttons (`data-cell="employeeId|date"`); one shared
+  card (`schedule/[year]/[month]/cell-card.tsx`, Radix Popover on a virtual
+  anchor) listens on the table, so hovering never re-renders the grid. Clicks
+  never edit; the card holds the editor, the lock and "Solve".
 - Postgres must use UTF-8 (the Docker image does): notes may contain characters
   such as "−" that single-byte encodings cannot store.
 - Printable monthly sheet: `src/server/pdf/schedule-pdf.ts` (pdfkit, standard

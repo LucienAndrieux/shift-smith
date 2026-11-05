@@ -899,7 +899,6 @@ export const fr: Dictionary = {
     empty: "Vide",
     locked: "Verrouillée",
     note: (note) => `Note : ${note}`,
-    editCell: "Modifier",
     solve: "Résoudre",
   },
   cellEditor: {

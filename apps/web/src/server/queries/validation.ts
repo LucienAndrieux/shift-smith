@@ -8,6 +8,10 @@ import { loadScheduleInput } from "@/server/month-context";
 import { getScheduleView, type ScheduleView } from "@/server/queries/schedule";
 import { canSeeSchedule } from "@/server/schedules";
 import type { CurrentUser } from "@/server/session";
+import {
+  cachedValidationCounts,
+  type ValidationCounts,
+} from "@/server/validation-cache";
 
 export interface ValidationTarget {
   view: ScheduleView;
@@ -73,10 +77,20 @@ export async function getUpcomingValidationTargets(
  * Error and warning counts of the Validation page (current and upcoming months,
  * same version choice), computed without building the full schedule views.
  */
-export async function getValidationCounts(
+export function getValidationCounts(
   user: CurrentUser,
   from: { year: number; month: number },
-) {
+): Promise<ValidationCounts> {
+  // What a user sees depends only on the role (managers also see drafts).
+  return cachedValidationCounts(`${user.role}|${from.year}-${from.month}`, () =>
+    computeValidationCounts(user, from),
+  );
+}
+
+async function computeValidationCounts(
+  user: CurrentUser,
+  from: { year: number; month: number },
+): Promise<ValidationCounts> {
   const rows = (
     await db
       .select()
@@ -94,21 +108,24 @@ export async function getValidationCounts(
     const key = `${s.year}-${s.month}`;
     byMonth.set(key, [...(byMonth.get(key) ?? []), s]);
   }
+  // The months load in parallel.
+  const inputs = await Promise.all(
+    [...byMonth.values()].map((versions) => {
+      const editableDraft = versions
+        .filter((v) => v.status === "draft" && user.role === "manager")
+        .at(-1);
+      const schedule =
+        editableDraft ??
+        versions.find((v) => v.status === "published") ??
+        versions.at(-1);
+      return schedule ? loadScheduleInput(db, schedule) : null;
+    }),
+  );
   let errors = 0;
   let warnings = 0;
-  for (const versions of byMonth.values()) {
-    const editableDraft = versions
-      .filter((v) => v.status === "draft" && user.role === "manager")
-      .at(-1);
-    const schedule =
-      editableDraft ??
-      versions.find((v) => v.status === "published") ??
-      versions.at(-1);
-    if (!schedule) continue;
-    const { violations } = validateSchedule(
-      await loadScheduleInput(db, schedule),
-    );
-    for (const v of violations) {
+  for (const input of inputs) {
+    if (!input) continue;
+    for (const v of validateSchedule(input).violations) {
       if (v.severity === "error") errors++;
       else warnings++;
     }

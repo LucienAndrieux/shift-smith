@@ -3,6 +3,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { getRequestT } from "@/lib/i18n/server";
+import { invalidateValidationCounts } from "@/server/validation-cache";
 import { type CurrentUser, requireManager, requireUser } from "./session";
 
 export type ActionResult<T = undefined> =
@@ -68,7 +69,11 @@ function guardedAction<S extends z.ZodType, T>(
     }
     try {
       const data = await handler(parsed.data, user);
-      if (options.refreshOnSuccess !== false) refresh();
+      if (options.refreshOnSuccess !== false) {
+        // A write: the cached sidebar counts may be out of date.
+        invalidateValidationCounts();
+        refresh();
+      }
       return { ok: true, data };
     } catch (error) {
       if (error instanceof ActionError)

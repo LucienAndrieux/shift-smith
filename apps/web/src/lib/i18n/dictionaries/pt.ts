@@ -898,7 +898,6 @@ export const pt: Dictionary = {
     empty: "Vazia",
     locked: "Bloqueada",
     note: (note) => `Nota: ${note}`,
-    editCell: "Editar",
     solve: "Resolver",
   },
   cellEditor: {

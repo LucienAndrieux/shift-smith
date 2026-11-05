@@ -1,16 +1,11 @@
 "use client";
 
 import { Lock } from "lucide-react";
-import { type ReactNode, useId, useState } from "react";
-import { useLocale, useT } from "@/components/i18n-provider";
+import { useId, useState } from "react";
+import { useT } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -23,7 +18,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useAction } from "@/hooks/use-action";
-import { formatDayMonth } from "@/lib/domain/calendar";
 import { formatHours } from "@/lib/domain/time";
 import { encodeCellValue } from "@/lib/schemas/schedule";
 import { setCell } from "../../actions";
@@ -31,51 +25,9 @@ import type { View, ViewCell, ViewEmployee } from "./types";
 
 const EMPTY = "__empty__";
 
-/** Editor popover, opened from the Fix dialog's "Edit the cell by hand". */
-export function CellEditor({
-  view,
-  scheduleId,
-  employee,
-  date,
-  cell,
-  open,
-  onOpenChange,
-  children,
-}: {
-  view: View;
-  scheduleId: string;
-  employee: ViewEmployee;
-  date: string;
-  cell: ViewCell | undefined;
-  /** Controlled by the grid. */
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  children: ReactNode;
-}) {
-  const locale = useLocale();
-  return (
-    <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="flex w-72 flex-col gap-3" align="center">
-        <div className="text-sm font-medium">
-          {employee.name} · {formatDayMonth(date, locale)}
-        </div>
-        <CellEditorForm
-          view={view}
-          scheduleId={scheduleId}
-          employee={employee}
-          date={date}
-          cell={cell}
-          onDone={() => onOpenChange(false)}
-        />
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 /**
  * Code, solver lock and note of one cell, with Clear and Save. Starts from the
- * cell each time it mounts (its popover or hover card opens).
+ * cell each time it mounts (the cell card opens).
  */
 export function CellEditorForm({
   view,

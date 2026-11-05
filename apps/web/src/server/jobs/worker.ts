@@ -4,6 +4,7 @@ import { parseConstraint } from "@/server/constraints/parse";
 import { purgeExpiredGuests } from "@/server/demo/guests";
 import { ensureDemoMonth, resetDemoData } from "@/server/demo/reset";
 import { runSolver } from "@/server/solver/run";
+import { invalidateValidationCounts } from "@/server/validation-cache";
 import {
   getBoss,
   type ParseConstraintJob,
@@ -25,18 +26,22 @@ export async function startWorkers() {
         for (const job of jobs) {
           await parseConstraint(job.data.constraintId);
         }
+        invalidateValidationCounts();
       },
     );
     await boss.work<SolveScheduleJob>(QUEUES.solveSchedule, async (jobs) => {
       for (const job of jobs) {
         await runSolver(job.data.runId);
       }
+      // A new draft: the sidebar counts change.
+      invalidateValidationCounts();
     });
     await boss.work(QUEUES.demoMaintenance, async () => {
       await demoMaintenance();
+      invalidateValidationCounts();
     });
     await boss.schedule(QUEUES.demoMaintenance, "5 * * * *");
-    void demoMaintenance();
+    void demoMaintenance().then(invalidateValidationCounts);
     console.info("[jobs] worker started");
   } catch (error) {
     globalForWorker.workersStarted = false;

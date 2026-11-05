@@ -895,7 +895,6 @@ export const en = {
     empty: "Empty",
     locked: "Locked",
     note: (note: string) => `Note: ${note}`,
-    editCell: "Edit",
     solve: "Solve",
   },
   cellEditor: {

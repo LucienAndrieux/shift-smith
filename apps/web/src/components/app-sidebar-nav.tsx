@@ -41,8 +41,16 @@ interface NavItem {
 
 type Nav = Dictionary["nav"];
 
-const main = (t: Nav): NavItem[] => [
-  { href: "/schedule", label: t.schedule, icon: CalendarDays },
+/** The schedule item links straight to the current month (no redirect hop). */
+const scheduleItem = (t: Nav, href: string): NavItem => ({
+  href,
+  match: "/schedule",
+  label: t.schedule,
+  icon: CalendarDays,
+});
+
+const main = (t: Nav, scheduleHref: string): NavItem[] => [
+  scheduleItem(t, scheduleHref),
   {
     href: "/validation",
     label: t.validation,
@@ -69,8 +77,12 @@ const setup = (t: Nav): NavItem[] => [
 ];
 
 /** An employee guest: their own pages first, then the shared schedule views. */
-const employeeNav = (t: Nav, employeeId: string): NavItem[] => [
-  { href: "/schedule", label: t.schedule, icon: CalendarDays },
+const employeeNav = (
+  t: Nav,
+  employeeId: string,
+  scheduleHref: string,
+): NavItem[] => [
+  scheduleItem(t, scheduleHref),
   {
     href: `/employees/${employeeId}`,
     label: t.myProfile,
@@ -120,10 +132,13 @@ function ValidationCounts({
 export function AppSidebarNav({
   role,
   employeeId,
+  scheduleHref,
   validationCounts,
 }: {
   role: Role;
   employeeId: string | null;
+  /** The current month's schedule, e.g. /schedule/2026/11. */
+  scheduleHref: string;
   /** Errors and warnings of the Validation page (current and upcoming months). */
   validationCounts: { errors: number; warnings: number };
 }) {
@@ -165,10 +180,10 @@ export function AppSidebarNav({
   return (
     <>
       {role === "employee" && employeeId ? (
-        group(nav.planning, employeeNav(nav, employeeId))
+        group(nav.planning, employeeNav(nav, employeeId, scheduleHref))
       ) : (
         <>
-          {group(nav.planning, main(nav))}
+          {group(nav.planning, main(nav, scheduleHref))}
           {group(nav.setup, setup(nav))}
         </>
       )}

@@ -99,11 +99,13 @@ async function GuestBanner() {
 
 async function SidebarNav() {
   const user = await requireUser();
-  const counts = await getValidationCounts(user, currentYearMonth());
+  const now = currentYearMonth();
+  const counts = await getValidationCounts(user, now);
   return (
     <AppSidebarNav
       role={user.role}
       employeeId={user.employeeId}
+      scheduleHref={`/schedule/${now.year}/${now.month}`}
       validationCounts={counts}
     />
   );

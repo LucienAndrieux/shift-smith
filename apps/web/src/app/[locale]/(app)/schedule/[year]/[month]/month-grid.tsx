@@ -1,32 +1,19 @@
 "use client";
 
-import { Lock, Wand2 } from "lucide-react";
+import { Lock } from "lucide-react";
 import Link from "next/link";
-import { HoverCard } from "radix-ui";
-import {
-  type ComponentProps,
-  createContext,
-  Fragment,
-  type ReactNode,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { Fragment, memo, useCallback, useMemo, useRef, useState } from "react";
 import { useLocale, useT } from "@/components/i18n-provider";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { softCodeStyle } from "@/lib/colors";
 import { formatDayMonth, WEEKDAY_NAMES } from "@/lib/domain/calendar";
 import { formatHoursMinutes } from "@/lib/domain/time";
 import { violationIdentity } from "@/lib/domain/validator";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { cn } from "@/lib/utils";
-import { CellEditor, CellEditorForm } from "./cell-editor";
+import { CellCard, type CellCardHandle } from "./cell-card";
 import { DayErrorsDialog } from "./day-errors-dialog";
 import { CellFixDialog, type FixIssue } from "./fix-dialog";
-import type { View, ViewCell, ViewEmployee, ViewIndex } from "./types";
+import type { View, ViewCell, ViewIndex } from "./types";
 
 export function MonthGrid({
   view,
@@ -49,9 +36,10 @@ export function MonthGrid({
   const t = useT();
   const g = t.grid;
   const locale = useLocale();
-  /** Cell (`employeeId|date`) whose editor or fix dialog is open. */
-  const [editing, setEditing] = useState<string | null>(null);
+  /** Cell (`employeeId|date`) whose fix dialog is open. */
   const [fixing, setFixing] = useState<string | null>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
+  const cardRef = useRef<CellCardHandle>(null);
   /** Day whose error summary is open. */
   const [openDay, setOpenDay] = useState<string | null>(null);
 
@@ -95,6 +83,19 @@ export function MonthGrid({
 
   const colSpan = view.dates.length + 2;
 
+  const errorsOf = useCallback(
+    (key: string) => {
+      const issues = errorCells.get(key);
+      return issues
+        ? {
+            messages: issues.map((x) => x.message),
+            fixable: canPlan && !!view.schedule,
+          }
+        : null;
+    },
+    [errorCells, canPlan, view.schedule],
+  );
+
   const fixingCell = useMemo(() => {
     if (!fixing) return null;
     const [employeeId, date] = fixing.split("|");
@@ -114,7 +115,10 @@ export function MonthGrid({
     // sideways on narrow screens, keeping the name column visible. Same look as
     // the start page's preview: separate rounded cells, no gridlines.
     <div className="overflow-x-auto rounded-2xl border bg-card p-2 shadow-sm">
-      <table className="w-full border-separate border-spacing-0.5 text-xs">
+      <table
+        ref={tableRef}
+        className="w-full border-separate border-spacing-0.5 text-xs"
+      >
         <thead className="sticky top-0 z-10 bg-card">
           <tr>
             <th className="sticky left-0 z-20 w-28 min-w-28 bg-card px-2 py-1 text-left font-medium sm:w-auto sm:min-w-40">
@@ -232,19 +236,7 @@ export function MonthGrid({
                         </div>
                       </td>
                       {view.dates.map((d) => {
-                        const cell = view.cells[employee.id]?.[d.date];
                         const key = `${employee.id}|${d.date}`;
-                        const issues = errorCells.get(key);
-                        const fixable = canPlan && !!issues && !!view.schedule;
-                        const errors = issues?.map((x) => x.message);
-                        const box = (
-                          <CellBox
-                            cell={cell}
-                            index={index}
-                            t={g}
-                            errors={errors}
-                          />
-                        );
                         return (
                           <td
                             key={d.date}
@@ -256,40 +248,13 @@ export function MonthGrid({
                               dim,
                             )}
                           >
-                            <CellCard
-                              view={view}
-                              cell={cell}
+                            <CellBox
+                              cellKey={key}
+                              cell={view.cells[employee.id]?.[d.date]}
                               index={index}
-                              employee={employee as ViewEmployee}
-                              date={d.date}
-                              scheduleId={
-                                canEdit && view.schedule
-                                  ? view.schedule.id
-                                  : null
-                              }
-                              errors={errors}
-                              onSolve={
-                                fixable ? () => setFixing(key) : undefined
-                              }
-                            >
-                              {canEdit && view.schedule ? (
-                                <CellEditor
-                                  view={view}
-                                  scheduleId={view.schedule.id}
-                                  employee={employee as ViewEmployee}
-                                  date={d.date}
-                                  cell={cell}
-                                  open={editing === key}
-                                  onOpenChange={(open) =>
-                                    setEditing(open ? key : null)
-                                  }
-                                >
-                                  {box}
-                                </CellEditor>
-                              ) : (
-                                box
-                              )}
-                            </CellCard>
+                              t={g}
+                              errors={errorCells.get(key)}
+                            />
                           </td>
                         );
                       })}
@@ -323,6 +288,15 @@ export function MonthGrid({
           })}
         </tbody>
       </table>
+      <CellCard
+        ref={cardRef}
+        tableRef={tableRef}
+        view={view}
+        index={index}
+        scheduleId={canEdit && view.schedule ? view.schedule.id : null}
+        errorsOf={errorsOf}
+        onSolve={setFixing}
+      />
       {openDay && (
         <DayErrorsDialog
           open
@@ -356,7 +330,7 @@ export function MonthGrid({
             canEdit
               ? () => {
                   setFixing(null);
-                  setEditing(fixingCell.key);
+                  cardRef.current?.open(fixingCell.key);
                 }
               : undefined
           }
@@ -366,21 +340,23 @@ export function MonthGrid({
   );
 }
 
-/** A grid cell, the trigger of its hover card (and of the editor's popover). */
-function CellBox({
+/**
+ * A grid cell: a plain button (no listener of its own). The shared card listens
+ * on the table and marks the cell it shows with `data-active`.
+ */
+const CellBox = memo(function CellBox({
+  cellKey,
   cell,
   index,
   t,
   errors,
-  ...buttonProps
 }: {
+  cellKey: string;
   cell: ViewCell | undefined;
   index: ViewIndex;
   t: Dictionary["grid"];
-  errors?: string[];
-} & ComponentProps<"button">) {
-  const card = useContext(CellCardContext);
-  const pointer = useRef<string>("mouse");
+  errors?: FixIssue[];
+}) {
   const shift = cell?.shiftTypeId
     ? index.shiftById.get(cell.shiftTypeId)
     : undefined;
@@ -397,242 +373,37 @@ function CellBox({
         : t.empty,
     cell?.isLocked ? t.locked : null,
     cell?.note ? t.note(cell.note) : null,
-    ...(errors ?? []),
+    ...(errors ?? []).map((x) => x.message),
   ]
     .filter(Boolean)
-    .join("\n");
+    .join(", ");
 
   return (
-    <HoverCard.Trigger asChild>
-      <button
-        type="button"
-        {...buttonProps}
-        onPointerDown={(event) => {
-          pointer.current = event.pointerType;
-          buttonProps.onPointerDown?.(event);
-        }}
-        onClick={(event) => {
-          // A click never edits: the card (hover, or tap on touch screens)
-          // holds the actions.
-          event.preventDefault();
-          if (pointer.current !== "mouse") card?.open();
-          buttonProps.onClick?.(event);
-        }}
-        className={cn(
-          "relative flex h-7 w-full min-w-7 cursor-default items-center justify-center rounded-md font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-w-8",
-          // Grows under the pointer and while its card is open; stays under the
-          // sticky name column (z-5).
-          "transition-[scale,box-shadow] duration-150 ease-out hover:z-[4] hover:scale-[1.18] hover:shadow-md motion-reduce:transition-none",
-          card?.isOpen && "z-[4] scale-[1.18] shadow-md",
-          errors && "ring-2 ring-red-500 ring-inset",
-          // Empty days keep a faint tile so the grid stays readable without lines.
-          !color && "bg-muted/60",
-        )}
-        style={color ? softCodeStyle(color) : undefined}
-        aria-label={title.replaceAll("\n", ", ")}
-      >
-        {label}
-        {cell?.isLocked && (
-          <Lock
-            strokeWidth={3}
-            className="absolute top-px right-px size-2.5 text-black drop-shadow-[0_0_1px_white]"
-          />
-        )}
-        {cell?.note && (
-          <span className="absolute bottom-0.5 left-0.5 size-1 rounded-full bg-current opacity-70" />
-        )}
-      </button>
-    </HoverCard.Trigger>
+    <button
+      type="button"
+      data-cell={cellKey}
+      className={cn(
+        "relative flex h-7 w-full min-w-7 cursor-default items-center justify-center rounded-md font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-w-8",
+        // Grows under the pointer and while its card is open; stays under the
+        // sticky name column (z-5).
+        "transition-[scale,box-shadow] duration-150 ease-out hover:z-[4] hover:scale-[1.18] hover:shadow-md data-[active=true]:z-[4] data-[active=true]:scale-[1.18] data-[active=true]:shadow-md motion-reduce:transition-none",
+        errors && "ring-2 ring-red-500 ring-inset",
+        // Empty days keep a faint tile so the grid stays readable without lines.
+        !color && "bg-muted/60",
+      )}
+      style={color ? softCodeStyle(color) : undefined}
+      aria-label={title}
+    >
+      {label}
+      {cell?.isLocked && (
+        <Lock
+          strokeWidth={3}
+          className="absolute top-px right-px size-2.5 text-black drop-shadow-[0_0_1px_white]"
+        />
+      )}
+      {cell?.note && (
+        <span className="absolute bottom-0.5 left-0.5 size-1 rounded-full bg-current opacity-70" />
+      )}
+    </button>
   );
-}
-
-/** The cell card currently open in the grid: only one at a time. */
-const openCard: { hide: (() => void) | null } = { hide: null };
-
-/** Lets a tap on a cell open its card (hover cards ignore touch). */
-const CellCardContext = createContext<{
-  open: () => void;
-  isOpen: boolean;
-} | null>(null);
-
-/**
- * Hover card of a cell (a tap on touch screens): who and when, then for a
- * manager on an editable version the editor itself (code, solver lock, note,
- * Clear and Save), else the code, lock and note read-only; "Solve" on a cell in
- * error. Once used (a click or a key inside), it stays open until saved,
- * dismissed (Escape, a click outside) or solved.
- */
-function CellCard({
-  view,
-  cell,
-  index,
-  employee,
-  date,
-  scheduleId,
-  errors,
-  onSolve,
-  children,
-}: {
-  view: View;
-  cell: ViewCell | undefined;
-  index: ViewIndex;
-  employee: ViewEmployee;
-  date: string;
-  /** Set when this user may edit the displayed version. */
-  scheduleId: string | null;
-  errors?: string[];
-  /** Set when the cell is in error and the user may fix it. */
-  onSolve?: () => void;
-  children: ReactNode;
-}) {
-  const t = useT();
-  const locale = useLocale();
-  const [open, setOpen] = useState(false);
-  // Used: hovering away no longer closes it (a select menu, typing a note).
-  const pinned = useRef(false);
-  // Stable for the life of the card: the grid-wide open card points at it.
-  const hide = useRef(() => {
-    pinned.current = false;
-    setOpen(false);
-  }).current;
-  const close = () => {
-    hide();
-    if (openCard.hide === hide) openCard.hide = null;
-  };
-  // One card at a time: opening this one closes the other (even a used one).
-  const show = () => {
-    if (openCard.hide && openCard.hide !== hide) openCard.hide();
-    openCard.hide = hide;
-    pinned.current = false;
-    setOpen(true);
-  };
-  useEffect(
-    () => () => {
-      if (openCard.hide === hide) openCard.hide = null;
-    },
-    [hide],
-  );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: show only uses refs and setters
-  const context = useMemo(() => ({ open: show, isOpen: open }), [open]);
-  const shift = cell?.shiftTypeId
-    ? index.shiftById.get(cell.shiftTypeId)
-    : undefined;
-  const dayCode = cell?.dayCode
-    ? index.dayCodeByCode.get(cell.dayCode)
-    : undefined;
-  const color = shift?.color ?? dayCode?.color;
-
-  return (
-    <CellCardContext value={context}>
-      <HoverCard.Root
-        open={open}
-        onOpenChange={(next) => {
-          if (next) show();
-          else if (!pinned.current) close();
-        }}
-        openDelay={60}
-        closeDelay={80}
-      >
-        {children}
-        <HoverCard.Portal>
-          <HoverCard.Content
-            side="top"
-            sideOffset={6}
-            collisionPadding={12}
-            onPointerDownCapture={() => {
-              pinned.current = true;
-            }}
-            onKeyDownCapture={(event) => {
-              if (event.key !== "Escape") pinned.current = true;
-            }}
-            onEscapeKeyDown={close}
-            onPointerDownOutside={(event) => {
-              // The code menu opens outside the card: picking in it keeps it.
-              const target = event.target as Element | null;
-              if (target?.closest("[data-radix-popper-content-wrapper]")) {
-                event.preventDefault();
-                return;
-              }
-              close();
-            }}
-            className="z-50 flex w-72 max-w-[calc(100vw-2rem)] origin-(--radix-hover-card-content-transform-origin) flex-col gap-3 rounded-xl border bg-popover p-3 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-50 data-[state=open]:duration-150 data-[state=open]:ease-out data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-50 data-[state=closed]:duration-100 data-[state=closed]:ease-in"
-          >
-            <div className="text-sm font-semibold">
-              {employee.name} · {formatDayMonth(date, locale)}
-            </div>
-            {scheduleId ? (
-              <CellEditorForm
-                view={view}
-                scheduleId={scheduleId}
-                employee={employee}
-                date={date}
-                cell={cell}
-                onDone={close}
-              />
-            ) : (
-              <>
-                <div className="flex items-start gap-2 rounded-lg border px-2.5 py-2 text-xs">
-                  {color && (
-                    <span
-                      className="inline-flex min-w-7 shrink-0 justify-center rounded px-1 font-bold"
-                      style={softCodeStyle(color)}
-                    >
-                      {shift?.code ?? dayCode?.code}
-                    </span>
-                  )}
-                  <div className="min-w-0">
-                    {shift ? (
-                      <>
-                        <div className="font-medium">{shift.hours}</div>
-                        <div className="text-muted-foreground">
-                          {formatHoursMinutes(shift.paidMinutes)}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="font-medium">
-                        {dayCode ? dayCode.label : t.grid.empty}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <Lock className="size-3.5" />
-                  <span className="flex-1">{t.cellEditor.locked}</span>
-                  <Switch
-                    aria-label={t.cellEditor.locked}
-                    checked={cell?.isLocked ?? false}
-                    disabled
-                  />
-                </div>
-                {cell?.note && (
-                  <div className="rounded-lg border px-2.5 py-2 text-xs whitespace-pre-line text-muted-foreground">
-                    {cell.note}
-                  </div>
-                )}
-              </>
-            )}
-            {errors && errors.length > 0 && (
-              <ul className="flex flex-col gap-1 border-t pt-2.5 text-xs text-destructive">
-                {errors.map((error) => (
-                  <li key={error}>{error}</li>
-                ))}
-              </ul>
-            )}
-            {onSolve && (
-              <Button
-                size="sm"
-                className="self-end"
-                onClick={() => {
-                  close();
-                  onSolve();
-                }}
-              >
-                <Wand2 /> {t.grid.solve}
-              </Button>
-            )}
-          </HoverCard.Content>
-        </HoverCard.Portal>
-      </HoverCard.Root>
-    </CellCardContext>
-  );
-}
+});
