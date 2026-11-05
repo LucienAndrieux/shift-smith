@@ -130,9 +130,9 @@ export default async function StartPage() {
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-6 sm:px-6 sm:py-8">
         <a
           href="#demo"
-          className="flex items-center gap-3 text-2xl font-semibold tracking-tight sm:text-3xl"
+          className="flex items-center gap-3 font-display text-3xl font-extrabold tracking-[-0.04em] sm:gap-4 sm:text-5xl"
         >
-          <Logo animated className="size-10 sm:size-12" />
+          <Logo animated className="size-12 sm:size-16" />
           ShiftSmith
         </a>
         <nav className="flex items-center gap-1 text-sm">

@@ -20,10 +20,26 @@ export const LOGO_BLOCK_PATHS: readonly string[] = [
 ];
 
 /**
- * Grid distance of each plain block from the accent block (top-right), in the
- * order of LOGO_BLOCK_PATHS: the animated logo's wave reaches them in this order.
+ * Grid cell [column, row] of each plain block, in the order of LOGO_BLOCK_PATHS
+ * (0-based from the top-left). The accent block sits in LOGO_ACCENT_CELL.
  */
-export const LOGO_BLOCK_WAVE: readonly number[] = [2, 2, 4, 1, 1, 3, 3, 2];
+export const LOGO_BLOCK_CELLS: readonly (readonly [number, number])[] = [
+  [2, 2],
+  [0, 0],
+  [0, 2],
+  [1, 0],
+  [2, 1],
+  [1, 2],
+  [0, 1],
+  [1, 1],
+];
+export const LOGO_ACCENT_CELL = [2, 0] as const;
+
+/**
+ * When each plain block reacts to the accent block's landing, in the order of
+ * LOGO_BLOCK_PATHS: first its two neighbours, then the centre, then the rest.
+ */
+export const LOGO_BLOCK_WAVE: readonly number[] = [3, 3, 3, 1, 1, 3, 3, 2];
 
 /** The hatched accent block. */
 export const LOGO_ACCENT_PATHS: readonly string[] = [
