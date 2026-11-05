@@ -46,8 +46,11 @@ export function MonthGrid({
     (s) => !sectionId || s.id === sectionId,
   );
 
+  // Errors outlined in red (cells, day headers) belong to the planning view:
+  // managers only.
   const errorCells = useMemo(() => {
     const map = new Map<string, FixIssue[]>();
+    if (!canPlan) return map;
     for (const v of view.violations) {
       if (v.severity !== "error" || !v.employeeId || !v.date) continue;
       const key = `${v.employeeId}|${v.date}`;
@@ -55,11 +58,12 @@ export function MonthGrid({
       map.set(key, [...(map.get(key) ?? []), issue]);
     }
     return map;
-  }, [view.violations]);
+  }, [view.violations, canPlan]);
 
   /** Errors per day, limited to the displayed section. */
   const dayErrors = useMemo(() => {
     const map = new Map<string, View["violations"]>();
+    if (!canPlan) return map;
     for (const v of view.violations) {
       if (v.severity !== "error" || !v.date) continue;
       const vSection = v.employeeId
@@ -69,7 +73,7 @@ export function MonthGrid({
       map.set(v.date, [...(map.get(v.date) ?? []), v]);
     }
     return map;
-  }, [view.violations, index, sectionId]);
+  }, [view.violations, index, sectionId, canPlan]);
 
   const monthTotals = useMemo(
     () => new Map(view.totals.map((t) => [t.employeeId, t.month])),
@@ -177,21 +181,28 @@ export function MonthGrid({
                 {employees.map((employee) => {
                   const total = monthTotals.get(employee.id);
                   const own = employee.id === ownEmployeeId;
+                  // Playing an employee: their row stays in full colour, the
+                  // others step back (back to full on hover). On the contents,
+                  // not the row: the sticky name cell must stay opaque.
+                  const dim =
+                    !!ownEmployeeId &&
+                    !own &&
+                    "opacity-35 transition-opacity group-hover:opacity-100";
                   return (
                     <tr
                       key={employee.id}
                       className={cn(
-                        "hover:bg-muted/30",
-                        own && "bg-sky-500/10 font-semibold",
+                        "group hover:bg-muted/30",
+                        own && "font-semibold",
                       )}
                     >
-                      <td
-                        className={cn(
-                          "sticky left-0 z-[5] rounded-md px-2 py-0.5 whitespace-nowrap",
-                          own ? "bg-sky-100 dark:bg-sky-950" : "bg-card",
-                        )}
-                      >
-                        <div className="flex max-w-28 items-center gap-1.5 sm:max-w-none">
+                      <td className="sticky left-0 z-[5] rounded-md bg-card px-2 py-0.5 whitespace-nowrap">
+                        <div
+                          className={cn(
+                            "flex max-w-28 items-center gap-1.5 sm:max-w-none",
+                            dim,
+                          )}
+                        >
                           <Link
                             href={`/employees/${employee.id}`}
                             className="truncate hover:underline"
@@ -235,6 +246,7 @@ export function MonthGrid({
                               d.isWeekend && "bg-muted/50",
                               d.holiday &&
                                 "bg-amber-100/60 dark:bg-amber-900/30",
+                              dim,
                             )}
                           >
                             {canEdit && view.schedule ? (
@@ -259,8 +271,9 @@ export function MonthGrid({
                       })}
                       <td
                         className={cn(
-                          "px-2 text-right font-mono whitespace-nowrap",
+                          "rounded-md px-2 text-right font-mono whitespace-nowrap",
                           total && total.deltaMinutes < 0 && "text-destructive",
+                          dim,
                         )}
                         title={
                           total
@@ -385,7 +398,10 @@ function CellBox({
     >
       {label}
       {cell?.isLocked && (
-        <Lock className="absolute top-0.5 right-0.5 size-2 opacity-70" />
+        <Lock
+          strokeWidth={3}
+          className="absolute top-px right-px size-2.5 text-black drop-shadow-[0_0_1px_white]"
+        />
       )}
       {cell?.note && (
         <span className="absolute bottom-0.5 left-0.5 size-1 rounded-full bg-current opacity-70" />
