@@ -312,7 +312,7 @@ export const en = {
       },
       {
         title: "Read the schedule",
-        text: "Filter by section, open the code legend and switch between month and week. Click a cell to change it: days in error are circled in red.",
+        text: "Filter by section and switch between month and week. Hover a cell (tap it on a phone) to lock it, edit it or solve its error: cells in error are circled in red.",
       },
       {
         title: "Fix errors",
@@ -356,7 +356,7 @@ export const en = {
       },
       {
         title: "Browse the schedule",
-        text: "Filter by section, open the legend, switch between month and week, or print the month as a PDF.",
+        text: "Filter by section, switch between month and week, or print the month as a PDF.",
       },
       {
         title: "Everything in one place",
@@ -378,7 +378,7 @@ export const en = {
     absences: "Absences",
     hourBank: "Hour bank",
     constraints: "Constraints",
-    sections: "Sections & shifts",
+    sections: "Sections, shifts & codes",
     staffing: "Staffing",
     rules: "Rules",
     holidays: "Holidays",
@@ -756,12 +756,25 @@ export const en = {
   },
   sections: {
     pageText:
-      "Shift types per section. Paid hours are always computed from the periods.",
+      "Shift types per section and the day codes used in every schedule. Paid hours are always computed from the periods.",
+    dayCodesTitle: "Day codes",
+    dayCodesText:
+      "Codes for the days without a shift, the same in every section.",
+    meaning: "Meaning",
+    hourBank: "Hour bank",
+    effectCredited: "Counts as a worked day",
+    effectFromBank: "Taken from the hour bank",
+    effectNone: "No effect",
     code: "Code",
     periods: "Periods",
     paidColumn: "Paid",
     inactive: "Inactive",
     editSection: "Edit section",
+    addSection: "Add section",
+    newSection: "New section",
+    newSectionText:
+      "Then add its shift types, its staffing minimums and the employees who work in it.",
+    sectionCreated: "Section created",
     editTitle: (name: string) => `Edit ${name}`,
     name: "Name",
     sortOrder: "Sort order",
@@ -837,11 +850,8 @@ export const en = {
       "No schedule exists for this month yet. Create a draft to start planning.",
     noneYet: "No schedule has been published for this month yet.",
     all: "All",
-    legend: "Legend",
     month: "Month",
     week: "Week",
-    shifts: "Shifts",
-    shiftsAll: "Shifts (select a section for hours)",
     dayCodes: "Day codes",
     previousMonth: "Previous month",
     nextMonth: "Next month",
@@ -885,6 +895,8 @@ export const en = {
     empty: "Empty",
     locked: "Locked",
     note: (note: string) => `Note: ${note}`,
+    editCell: "Edit",
+    solve: "Solve",
   },
   cellEditor: {
     eligible: "Eligible shifts",
@@ -973,6 +985,9 @@ export const en = {
     description: "Description",
   },
   week: {
+    pick: "Week",
+    number: (week: number) => `Week ${week}`,
+    away: "Off / away",
     outside: (month: string) =>
       `Days outside ${month} are not part of this schedule.`,
     holiday: (name: string) => `Holiday: ${name}`,

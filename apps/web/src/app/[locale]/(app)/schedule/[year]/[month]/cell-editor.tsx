@@ -1,7 +1,7 @@
 "use client";
 
 import { Lock } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useId, useState } from "react";
 import { useLocale, useT } from "@/components/i18n-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ import type { View, ViewCell, ViewEmployee } from "./types";
 
 const EMPTY = "__empty__";
 
+/** Editor popover, opened from the Fix dialog's "Edit the cell by hand". */
 export function CellEditor({
   view,
   scheduleId,
@@ -46,27 +47,58 @@ export function CellEditor({
   employee: ViewEmployee;
   date: string;
   cell: ViewCell | undefined;
-  /** Controlled by the grid, which can also open it from the Fix dialog. */
+  /** Controlled by the grid. */
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: ReactNode;
 }) {
+  const locale = useLocale();
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent className="flex w-72 flex-col gap-3" align="center">
+        <div className="text-sm font-medium">
+          {employee.name} · {formatDayMonth(date, locale)}
+        </div>
+        <CellEditorForm
+          view={view}
+          scheduleId={scheduleId}
+          employee={employee}
+          date={date}
+          cell={cell}
+          onDone={() => onOpenChange(false)}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/**
+ * Code, solver lock and note of one cell, with Clear and Save. Starts from the
+ * cell each time it mounts (its popover or hover card opens).
+ */
+export function CellEditorForm({
+  view,
+  scheduleId,
+  employee,
+  date,
+  cell,
+  onDone,
+}: {
+  view: View;
+  scheduleId: string;
+  employee: ViewEmployee;
+  date: string;
+  cell: ViewCell | undefined;
+  /** After a successful save or clear. */
+  onDone: () => void;
+}) {
   const t = useT();
   const c = t.cellEditor;
-  const locale = useLocale();
+  const lockId = useId();
   const [value, setValue] = useState(cell ? encodeCellValue(cell) : "");
   const [isLocked, setIsLocked] = useState(cell?.isLocked ?? false);
   const [note, setNote] = useState(cell?.note ?? "");
-  // Every opening starts from the current cell.
-  const [wasOpen, setWasOpen] = useState(open);
-  if (open !== wasOpen) {
-    setWasOpen(open);
-    if (open) {
-      setValue(cell ? encodeCellValue(cell) : "");
-      setIsLocked(cell?.isLocked ?? false);
-      setNote(cell?.note ?? "");
-    }
-  }
   const { pending, run } = useAction();
 
   const eligible = view.shiftTypes.filter((s) =>
@@ -91,93 +123,85 @@ export function CellEditor({
         note,
       }),
     );
-    if (result.ok) onOpenChange(false);
+    if (result.ok) onDone();
   }
 
   return (
-    <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent className="w-72" align="center">
-        <div className="flex flex-col gap-3">
-          <div className="text-sm font-medium">
-            {employee.name} · {formatDayMonth(date, locale)}
-          </div>
-          <Select
-            value={value || EMPTY}
-            onValueChange={(v) => setValue(v === EMPTY ? "" : v)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={EMPTY}>— {t.grid.empty} —</SelectItem>
-              <SelectSeparator />
-              <SelectGroup>
-                <SelectLabel>{c.eligible}</SelectLabel>
-                {eligible.map((s) => (
-                  <SelectItem key={s.id} value={`s:${s.id}`}>
-                    {s.sectionId === employee.sectionId
-                      ? ""
-                      : `${sectionName(s.sectionId)} `}
-                    {s.code} · {s.hours} ({formatHours(s.paidMinutes)})
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-              {sectionShifts.length > 0 && (
-                <SelectGroup>
-                  <SelectLabel>{c.otherShifts}</SelectLabel>
-                  {sectionShifts.map((s) => (
-                    <SelectItem key={s.id} value={`s:${s.id}`}>
-                      {s.code} · {s.hours}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              )}
-              <SelectSeparator />
-              <SelectGroup>
-                <SelectLabel>{t.schedule.dayCodes}</SelectLabel>
-                {view.dayCodes.map((d) => (
-                  <SelectItem key={d.code} value={`d:${d.code}`}>
-                    {d.code} · {d.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <div className="flex items-center justify-between">
-            <Label
-              htmlFor="cell-lock"
-              className="flex items-center gap-1.5 font-normal"
-            >
-              <Lock className="size-3.5" /> {c.locked}
-            </Label>
-            <Switch
-              id="cell-lock"
-              checked={isLocked}
-              disabled={!value}
-              onCheckedChange={setIsLocked}
-            />
-          </div>
-          <Input
-            placeholder={c.note}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-          <div className="flex justify-between gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={pending || !cell}
-              onClick={() => save("")}
-            >
-              {c.clear}
-            </Button>
-            <Button size="sm" disabled={pending} onClick={() => save()}>
-              {t.common.save}
-            </Button>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+    <>
+      <Select
+        value={value || EMPTY}
+        onValueChange={(v) => setValue(v === EMPTY ? "" : v)}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={EMPTY}>— {t.grid.empty} —</SelectItem>
+          <SelectSeparator />
+          <SelectGroup>
+            <SelectLabel>{c.eligible}</SelectLabel>
+            {eligible.map((s) => (
+              <SelectItem key={s.id} value={`s:${s.id}`}>
+                {s.sectionId === employee.sectionId
+                  ? ""
+                  : `${sectionName(s.sectionId)} `}
+                {s.code} · {s.hours} ({formatHours(s.paidMinutes)})
+              </SelectItem>
+            ))}
+          </SelectGroup>
+          {sectionShifts.length > 0 && (
+            <SelectGroup>
+              <SelectLabel>{c.otherShifts}</SelectLabel>
+              {sectionShifts.map((s) => (
+                <SelectItem key={s.id} value={`s:${s.id}`}>
+                  {s.code} · {s.hours}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          )}
+          <SelectSeparator />
+          <SelectGroup>
+            <SelectLabel>{t.schedule.dayCodes}</SelectLabel>
+            {view.dayCodes.map((d) => (
+              <SelectItem key={d.code} value={`d:${d.code}`}>
+                {d.code} · {d.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+      <div className="flex items-center justify-between">
+        <Label
+          htmlFor={lockId}
+          className="flex items-center gap-1.5 font-normal"
+        >
+          <Lock className="size-3.5" /> {c.locked}
+        </Label>
+        <Switch
+          id={lockId}
+          checked={isLocked}
+          disabled={!value}
+          onCheckedChange={setIsLocked}
+        />
+      </div>
+      <Input
+        placeholder={c.note}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+      />
+      <div className="flex justify-between gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={pending || !cell}
+          onClick={() => save("")}
+        >
+          {c.clear}
+        </Button>
+        <Button size="sm" disabled={pending} onClick={() => save()}>
+          {t.common.save}
+        </Button>
+      </div>
+    </>
   );
 }

@@ -320,7 +320,7 @@ export const fr: Dictionary = {
       },
       {
         title: "Lire le planning",
-        text: "Filtrez par section, ouvrez la légende des codes et passez du mois à la semaine. Cliquez sur une case pour la modifier : les jours en erreur sont entourés en rouge.",
+        text: "Filtrez par section et passez du mois à la semaine. Survolez une case (touchez-la sur téléphone) pour la verrouiller, la modifier ou résoudre son erreur : les cases en erreur sont entourées en rouge.",
       },
       {
         title: "Corriger les erreurs",
@@ -364,7 +364,7 @@ export const fr: Dictionary = {
       },
       {
         title: "Parcourir le planning",
-        text: "Filtrez par section, ouvrez la légende, passez du mois à la semaine ou imprimez le mois en PDF.",
+        text: "Filtrez par section, passez du mois à la semaine ou imprimez le mois en PDF.",
       },
       {
         title: "Tout au même endroit",
@@ -386,7 +386,7 @@ export const fr: Dictionary = {
     absences: "Absences",
     hourBank: "Banque d'heures",
     constraints: "Contraintes",
-    sections: "Sections et services",
+    sections: "Sections, services et codes",
     staffing: "Effectifs",
     rules: "Règles",
     holidays: "Jours fériés",
@@ -764,12 +764,25 @@ export const fr: Dictionary = {
   },
   sections: {
     pageText:
-      "Types de service par section. Les heures payées sont toujours calculées à partir des plages.",
+      "Types de service par section et codes jour utilisés dans tous les plannings. Les heures payées sont toujours calculées à partir des plages.",
+    dayCodesTitle: "Codes jour",
+    dayCodesText:
+      "Codes des jours sans service, identiques dans toutes les sections.",
+    meaning: "Signification",
+    hourBank: "Banque d'heures",
+    effectCredited: "Compte comme un jour travaillé",
+    effectFromBank: "Pris sur la banque d'heures",
+    effectNone: "Sans effet",
     code: "Code",
     periods: "Plages",
     paidColumn: "Payé",
     inactive: "Inactif",
     editSection: "Modifier la section",
+    addSection: "Ajouter une section",
+    newSection: "Nouvelle section",
+    newSectionText:
+      "Ajoutez ensuite ses types de shifts, ses effectifs minimums et les employés qui y travaillent.",
+    sectionCreated: "Section créée",
     editTitle: (name) => `Modifier ${name}`,
     name: "Nom",
     sortOrder: "Ordre d'affichage",
@@ -845,11 +858,8 @@ export const fr: Dictionary = {
       "Aucun planning n'existe encore pour ce mois. Créez un brouillon pour commencer.",
     noneYet: "Aucun planning n'a encore été publié pour ce mois.",
     all: "Toutes",
-    legend: "Légende",
     month: "Mois",
     week: "Semaine",
-    shifts: "Services",
-    shiftsAll: "Services (choisissez une section pour les horaires)",
     dayCodes: "Codes jour",
     previousMonth: "Mois précédent",
     nextMonth: "Mois suivant",
@@ -889,6 +899,8 @@ export const fr: Dictionary = {
     empty: "Vide",
     locked: "Verrouillée",
     note: (note) => `Note : ${note}`,
+    editCell: "Modifier",
+    solve: "Résoudre",
   },
   cellEditor: {
     eligible: "Services autorisés",
@@ -976,6 +988,9 @@ export const fr: Dictionary = {
     description: "Description",
   },
   week: {
+    pick: "Semaine",
+    number: (week) => `Semaine ${week}`,
+    away: "Repos / absents",
     outside: (month) =>
       `Les jours en dehors de ${month} ne font pas partie de ce planning.`,
     holiday: (name) => `Jour férié : ${name}`,

@@ -18,11 +18,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { softCodeStyle } from "@/lib/colors";
 import { formatHoursMinutes, formatTimeOfDay } from "@/lib/domain/time";
+import { dayCodeLabel } from "@/lib/i18n/labels";
 import { getT } from "@/lib/i18n/server";
-import { getSections, getShiftTypes } from "@/server/queries/reference";
+import {
+  getDayCodes,
+  getSections,
+  getShiftTypes,
+} from "@/server/queries/reference";
 import { requireUser } from "@/server/session";
-import { SectionDialog } from "./section-dialog";
+import { NewSectionDialog, SectionDialog } from "./section-dialog";
 import { DeleteShiftTypeButton, ShiftTypeDialog } from "./shift-type-dialog";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -34,14 +40,25 @@ export default async function SectionsPage() {
   const t = await getT();
   const se = t.sections;
   const canManage = user.role === "manager";
-  const [sections, shiftTypes] = await Promise.all([
+  const [sections, shiftTypes, dayCodes] = await Promise.all([
     getSections(),
     getShiftTypes(),
+    getDayCodes(),
   ]);
 
   return (
     <>
-      <PageHeader title={t.nav.sections} description={se.pageText} />
+      <PageHeader
+        title={t.nav.sections}
+        description={se.pageText}
+        actions={
+          canManage && (
+            <NewSectionDialog
+              sortOrder={Math.max(0, ...sections.map((s) => s.sortOrder)) + 10}
+            />
+          )
+        }
+      />
       <div className="grid gap-4 xl:grid-cols-2">
         {sections.map((section) => {
           const shifts = shiftTypes.filter((s) => s.sectionId === section.id);
@@ -141,6 +158,50 @@ export default async function SectionsPage() {
             </Card>
           );
         })}
+        {/* The day codes: what the schedule cells mean besides shifts. */}
+        <Card className="xl:col-span-2">
+          <CardHeader>
+            <CardTitle>{se.dayCodesTitle}</CardTitle>
+            <CardDescription>{se.dayCodesText}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{se.code}</TableHead>
+                    <TableHead>{se.meaning}</TableHead>
+                    <TableHead>{se.hourBank}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dayCodes.map((d) => (
+                    <TableRow key={d.code}>
+                      <TableCell>
+                        <span
+                          className="inline-flex min-w-8 justify-center rounded px-1 text-xs font-bold"
+                          style={softCodeStyle(d.color)}
+                        >
+                          {d.code}
+                        </span>
+                      </TableCell>
+                      <TableCell className="whitespace-normal">
+                        {dayCodeLabel(t, d.code, d.label)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {d.creditsTime
+                          ? se.effectCredited
+                          : d.isDueDay
+                            ? se.effectFromBank
+                            : se.effectNone}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </>
   );

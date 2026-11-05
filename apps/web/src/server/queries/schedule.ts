@@ -7,6 +7,7 @@ import {
   scheduleAssignments,
   schedules,
 } from "@/db/schema";
+import { APP_TIME_ZONE } from "@/lib/dates";
 import { isWeekend, monthDates, weekday } from "@/lib/domain/calendar";
 import { computeShiftDuration } from "@/lib/domain/durations";
 import { formatTimeOfDay } from "@/lib/domain/time";
@@ -128,6 +129,8 @@ export async function getScheduleView(
   return {
     year,
     month,
+    /** The hotel's time zone: the week view's "now" line. */
+    timeZone: APP_TIME_ZONE,
     schedule: schedule
       ? {
           id: schedule.id,
@@ -170,6 +173,11 @@ export async function getScheduleView(
         isActive: s.isActive,
         toConfirm: s.toConfirm,
         paidMinutes,
+        /** Minutes from midnight, for the week view's time grid. */
+        periods: s.periods.map((p) => ({
+          start: p.startMinute,
+          end: p.endMinute,
+        })),
         hours: s.periods
           .map(
             (p) =>

@@ -315,7 +315,7 @@ export const pt: Dictionary = {
       },
       {
         title: "Ler a escala",
-        text: "Filtre por secção, abra a legenda dos códigos e alterne entre mês e semana. Clique numa célula para a alterar: os dias com erro ficam assinalados a vermelho.",
+        text: "Filtre por secção e alterne entre mês e semana. Passe o rato sobre uma célula (toque-lhe no telemóvel) para a bloquear, alterar ou resolver o seu erro: as células com erro ficam assinaladas a vermelho.",
       },
       {
         title: "Corrigir erros",
@@ -359,7 +359,7 @@ export const pt: Dictionary = {
       },
       {
         title: "Consultar a escala",
-        text: "Filtre por secção, abra a legenda, alterne entre mês e semana ou imprima o mês em PDF.",
+        text: "Filtre por secção, alterne entre mês e semana ou imprima o mês em PDF.",
       },
       {
         title: "Tudo no mesmo sítio",
@@ -381,7 +381,7 @@ export const pt: Dictionary = {
     absences: "Ausências",
     hourBank: "Banco de horas",
     constraints: "Restrições",
-    sections: "Secções e turnos",
+    sections: "Secções, turnos e códigos",
     staffing: "Efetivos",
     rules: "Regras",
     holidays: "Feriados",
@@ -764,12 +764,24 @@ export const pt: Dictionary = {
   },
   sections: {
     pageText:
-      "Tipos de turno por secção. As horas pagas são sempre calculadas a partir dos períodos.",
+      "Tipos de turno por secção e códigos de dia usados em todas as escalas. As horas pagas são sempre calculadas a partir dos períodos.",
+    dayCodesTitle: "Códigos de dia",
+    dayCodesText: "Códigos dos dias sem turno, iguais em todas as secções.",
+    meaning: "Significado",
+    hourBank: "Banco de horas",
+    effectCredited: "Conta como dia trabalhado",
+    effectFromBank: "Retirado do banco de horas",
+    effectNone: "Sem efeito",
     code: "Código",
     periods: "Períodos",
     paidColumn: "Pago",
     inactive: "Inativo",
     editSection: "Editar secção",
+    addSection: "Adicionar secção",
+    newSection: "Nova secção",
+    newSectionText:
+      "Depois adicione os seus tipos de turno, os efetivos mínimos e os funcionários que lá trabalham.",
+    sectionCreated: "Secção criada",
     editTitle: (name) => `Editar ${name}`,
     name: "Nome",
     sortOrder: "Ordem",
@@ -845,11 +857,8 @@ export const pt: Dictionary = {
       "Ainda não existe escala para este mês. Crie um rascunho para começar.",
     noneYet: "Ainda não foi publicada nenhuma escala para este mês.",
     all: "Todas",
-    legend: "Legenda",
     month: "Mês",
     week: "Semana",
-    shifts: "Turnos",
-    shiftsAll: "Turnos (escolha uma secção para ver os horários)",
     dayCodes: "Códigos de dia",
     previousMonth: "Mês anterior",
     nextMonth: "Mês seguinte",
@@ -889,6 +898,8 @@ export const pt: Dictionary = {
     empty: "Vazia",
     locked: "Bloqueada",
     note: (note) => `Nota: ${note}`,
+    editCell: "Editar",
+    solve: "Resolver",
   },
   cellEditor: {
     eligible: "Turnos habilitados",
@@ -976,6 +987,9 @@ export const pt: Dictionary = {
     description: "Descrição",
   },
   week: {
+    pick: "Semana",
+    number: (week) => `Semana ${week}`,
+    away: "Folga / ausentes",
     outside: (month) =>
       `Os dias fora de ${month} não fazem parte desta escala.`,
     holiday: (name) => `Feriado: ${name}`,

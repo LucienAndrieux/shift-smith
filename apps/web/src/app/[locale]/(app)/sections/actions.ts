@@ -14,6 +14,46 @@ import {
 import { ActionError, managerAction } from "@/server/action";
 import { audit, changes } from "@/server/audit";
 
+/** Stable code from the name ("Spa & Wellness" → "spa-wellness"), unique. */
+function sectionCode(name: string, taken: Set<string>): string {
+  const base =
+    name
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "section";
+  let code = base;
+  for (let n = 2; taken.has(code); n++) code = `${base}-${n}`;
+  return code;
+}
+
+export const createSection = managerAction(
+  sectionSchema,
+  async (values, user) => {
+    await db.transaction(async (tx) => {
+      const existing = await tx
+        .select({ code: sections.code, name: sections.name })
+        .from(sections);
+      const name = values.name.trim();
+      if (existing.some((s) => s.name.toLowerCase() === name.toLowerCase()))
+        throw new ActionError((t) => t.common.alreadyExists(name));
+      const code = sectionCode(name, new Set(existing.map((s) => s.code)));
+      const [row] = await tx
+        .insert(sections)
+        .values({ ...values, name, code })
+        .returning();
+      await audit(tx, {
+        userId: user.id,
+        action: "create",
+        entity: "section",
+        entityId: row.id,
+        diff: row,
+      });
+    });
+  },
+);
+
 export const updateSection = managerAction(
   sectionSchema.extend(idSchema.shape),
   async ({ id, ...values }, user) => {
