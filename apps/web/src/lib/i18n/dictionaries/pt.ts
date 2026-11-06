@@ -90,6 +90,7 @@ export const pt: Dictionary = {
     title: "Escalas de pessoal, feitas para a sua equipa",
     description:
       "Demo ao vivo de uma aplicação de escalas de pessoal de Lucien Andrieux, programador freelancer. Experimente-a e depois mande fazer a sua, com as suas regras e a sua imagem.",
+    navVideos: "Vídeos",
     navOffer: "A sua aplicação",
     navPricing: "Preços",
     navContact: "Contacto",
@@ -117,6 +118,27 @@ export const pt: Dictionary = {
       {
         title: "Pedidos em linguagem corrente",
         text: "«A Yuki não pode trabalhar de manhã na próxima semana» torna-se alterações que um responsável aprova.",
+      },
+    ],
+    videosTitle: "Veja em quatro vídeos curtos",
+    videosText:
+      "Cada um mostra uma parte da aplicação com os dados da demo, em inglês com legendas.",
+    videos: [
+      {
+        title: "Erros detetados enquanto planeia",
+        text: "A grelha do mês, as regras verificadas e a correção num clique.",
+      },
+      {
+        title: "Um mês inteiro em segundos",
+        text: "O solver prepara a escala de todas as secções para um novo mês.",
+      },
+      {
+        title: "Pedidos por palavras próprias",
+        text: "Um colaborador escreve o pedido por palavras suas; o responsável aprova a alteração.",
+      },
+      {
+        title: "Pensado à volta da sua equipa",
+        text: "Vista semanal, telemóvel, banco de horas, três línguas e a folha para imprimir.",
       },
     ],
     developerRole: "Programador freelancer, escalas e ferramentas internas",

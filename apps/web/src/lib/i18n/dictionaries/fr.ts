@@ -93,6 +93,7 @@ export const fr: Dictionary = {
     title: "Planning du personnel, conçu pour votre équipe",
     description:
       "Démo en ligne d'une application de planning du personnel par Lucien Andrieux, développeur freelance. Essayez-la, puis faites construire la vôtre avec vos règles et votre image.",
+    navVideos: "Vidéos",
     navOffer: "Votre application",
     navPricing: "Tarifs",
     navContact: "Contact",
@@ -120,6 +121,27 @@ export const fr: Dictionary = {
       {
         title: "Demandes en langage courant",
         text: "« Yuki ne peut pas travailler le matin la semaine prochaine » devient des modifications qu'un responsable approuve.",
+      },
+    ],
+    videosTitle: "La démo en quatre courtes vidéos",
+    videosText:
+      "Chacune montre une partie de l'application sur les données de la démo, en anglais sous-titré.",
+    videos: [
+      {
+        title: "Les erreurs repérées pendant la saisie",
+        text: "La grille du mois, les règles vérifiées et la correction en un clic.",
+      },
+      {
+        title: "Un mois entier en quelques secondes",
+        text: "Le solveur prépare le planning de toutes les sections pour un nouveau mois.",
+      },
+      {
+        title: "Les demandes avec leurs propres mots",
+        text: "Un employé écrit sa demande avec ses mots ; le responsable approuve le changement.",
+      },
+      {
+        title: "Pensé autour de votre équipe",
+        text: "Vue semaine, téléphone, banque d'heures, trois langues et la feuille imprimable.",
       },
     ],
     developerRole: "Développeur freelance, planning et outils internes",

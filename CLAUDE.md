@@ -177,6 +177,9 @@ All seed data is fictional (`docs/seed-data.json`, demo hotel "Demo Alpine Lodge
   Its pricing section shows three plans (one-off build "from" + monthly plan, the
   third on quote): texts in `start.plans` of the dictionaries, prices in euros in
   `PLAN_PRICES` of the page, one grid for every language (set for Portugal).
+  Its "videos" section (`components/demo/video-tour.tsx`) plays four explainer
+  videos from `public/videos` (English, subtitles burned in, same text as the
+  `.vtt` caption tracks); titles in `start.videos`, durations in `VIDEOS`.
 - Deployment: Docker Compose + Caddy (`infra/`), or natively on Windows Server
   (`infra/windows/`, NSSM services `ShiftSmithWeb` / `ShiftSmithSolver`) with
   `next start`; the Docker image builds the standalone output

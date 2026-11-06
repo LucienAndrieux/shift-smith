@@ -93,6 +93,7 @@ export const en = {
     title: "Staff scheduling, built for your team",
     description:
       "Live demo of a staff scheduling app by Lucien Andrieux, freelance developer. Try it, then have your own built with your rules and branding.",
+    navVideos: "Videos",
     navOffer: "Your own app",
     navPricing: "Pricing",
     navContact: "Contact",
@@ -120,6 +121,27 @@ export const en = {
       {
         title: "Plain-language requests",
         text: "“Yuki can't work mornings next week” becomes changes a manager approves.",
+      },
+    ],
+    videosTitle: "See it in four short videos",
+    videosText:
+      "Each one shows a part of the app on the demo data, in English with subtitles.",
+    videos: [
+      {
+        title: "Mistakes caught as you plan",
+        text: "The month grid, the rules it checks and the one-click fix.",
+      },
+      {
+        title: "A whole month in seconds",
+        text: "The solver drafts the schedule of every section for a new month.",
+      },
+      {
+        title: "Requests in plain words",
+        text: "An employee asks in their own words; the manager approves the change.",
+      },
+      {
+        title: "Built around your team",
+        text: "Week view, phones, hour bank, three languages and the printable sheet.",
       },
     ],
     developerRole: "Freelance developer, scheduling and internal tools",

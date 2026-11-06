@@ -20,6 +20,7 @@ import {
 import { ContactForm } from "@/components/demo/contact-form";
 import { RoleChooser } from "@/components/demo/role-chooser";
 import { SchedulePreview } from "@/components/demo/schedule-preview";
+import { VideoTour } from "@/components/demo/video-tour";
 import { LanguageButtons } from "@/components/language-switcher";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -137,6 +138,12 @@ export default async function StartPage() {
         </a>
         <nav className="flex items-center gap-1 text-sm">
           <a
+            href="#videos"
+            className="hidden rounded-md px-3 py-2 text-muted-foreground hover:text-foreground sm:block"
+          >
+            {t.start.navVideos}
+          </a>
+          <a
             href="#offer"
             className="hidden rounded-md px-3 py-2 text-muted-foreground hover:text-foreground sm:block"
           >
@@ -235,6 +242,29 @@ export default async function StartPage() {
               );
             })}
           </div>
+        </section>
+
+        {/* Explainer videos */}
+        <section
+          id="videos"
+          aria-labelledby="videos-title"
+          className="flex scroll-mt-6 flex-col gap-6 border-t py-20"
+        >
+          <div className="flex flex-col gap-3">
+            <h2
+              id="videos-title"
+              className={cn(
+                HEADING,
+                "text-4xl leading-[1.02] font-bold text-balance",
+              )}
+            >
+              {t.start.videosTitle}
+            </h2>
+            <p className="max-w-2xl leading-relaxed text-pretty text-muted-foreground">
+              {t.start.videosText}
+            </p>
+          </div>
+          <VideoTour videos={t.start.videos} />
         </section>
 
         {/* Custom build */}
