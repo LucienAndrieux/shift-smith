@@ -1,64 +1,64 @@
 WEBVTT
 
-00:01.760 --> 00:05.360
+00:05.060 --> 00:08.660
 Building a schedule for one month takes hours.
 
-00:05.680 --> 00:08.240
+00:08.980 --> 00:11.540
 You have to think about everything: days off,
 
-00:08.400 --> 00:10.560
+00:11.700 --> 00:13.860
 holidays, who can do which shift,
 
-00:10.880 --> 00:13.200
+00:14.180 --> 00:16.500
 how many people each section needs.
 
-00:13.300 --> 00:16.200
+00:16.600 --> 00:19.500
 With ShiftSmith, you just click "Generate".
 
-00:16.200 --> 00:18.120
+00:19.500 --> 00:21.420
 So, let me show you with a blank schedule,
 
-00:18.280 --> 00:20.680
+00:21.580 --> 00:23.980
 for example, January 2027.
 
-00:21.000 --> 00:23.960
+00:24.300 --> 00:27.260
 Click "Generate", then "Generate draft".
 
-00:25.480 --> 00:28.280
+00:28.780 --> 00:31.580
 So, behind this button, there is a solver.
 
-00:28.520 --> 00:30.680
+00:31.820 --> 00:33.980
 It knows all the rules of the hotel:
 
-00:31.000 --> 00:33.120
+00:34.300 --> 00:36.420
 contracts, rest days,
 
-00:33.360 --> 00:35.440
+00:36.660 --> 00:38.740
 the shifts each person can do,
 
-00:35.760 --> 00:38.160
+00:39.060 --> 00:41.460
 and the staff each section needs.
 
-00:40.630 --> 00:43.430
+00:43.930 --> 00:46.730
 A few seconds later, you have a full schedule:
 
-00:43.950 --> 00:46.190
+00:47.250 --> 00:49.490
 every section, every employee,
 
-00:46.510 --> 00:48.400
+00:49.810 --> 00:51.700
 every day.
 
-00:48.500 --> 00:53.870
+00:51.800 --> 00:57.170
 So this schedule is now generated as a draft,
 
-00:54.110 --> 00:56.750
+00:57.410 --> 01:00.050
 so no employee can see it for now.
 
-00:57.390 --> 01:02.070
+01:00.690 --> 01:05.370
 If you're happy with the schedule, you just click
 
-01:02.070 --> 01:07.900
+01:05.370 --> 01:11.200
 on "Publish", and the employees will now see the schedule.
 
-01:07.900 --> 01:12.800
+01:11.200 --> 01:16.100
 So what took a whole afternoon now takes a coffee break.

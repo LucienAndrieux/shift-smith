@@ -7,14 +7,15 @@ import { cn } from "@/lib/utils";
 
 /**
  * The four explainer videos (`public/videos`), in the order of `t.start.videos`. They are
- * recorded in English with burned-in subtitles; `width`/`height` give each player
+ * recorded in English with burned-in subtitles, between an animated intro and outro
+ * (made with Remotion, kept out of the repo); `width`/`height` give each player
  * its frame before the file loads.
  */
 const VIDEOS = [
-  { file: "video-1", seconds: 97, width: 1280, height: 570 },
-  { file: "video-2", seconds: 73, width: 1280, height: 570 },
-  { file: "video-3", seconds: 155, width: 1280, height: 570 },
-  { file: "video-4", seconds: 110, width: 1280, height: 604 },
+  { file: "video-1", seconds: 105, width: 1280, height: 570 },
+  { file: "video-2", seconds: 81, width: 1280, height: 570 },
+  { file: "video-3", seconds: 162, width: 1280, height: 570 },
+  { file: "video-4", seconds: 118, width: 1280, height: 604 },
 ];
 
 function duration(seconds: number) {
