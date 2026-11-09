@@ -123,6 +123,12 @@ export const pt: Dictionary = {
     videosTitle: "Veja em quatro vídeos curtos",
     videosText:
       "Cada um mostra uma parte da aplicação com os dados da demo, em inglês com legendas.",
+    shareVideo: "Partilhar",
+    shareCopyLink: "Copiar ligação",
+    shareCopied: "Ligação copiada",
+    shareCopyFailed: "Não foi possível copiar a ligação",
+    shareEmail: "E-mail",
+    shareMore: "Mais opções…",
     videos: [
       {
         title: "Erros detetados enquanto planeia",

@@ -1,7 +1,17 @@
 "use client";
 
-import { Play } from "lucide-react";
-import { useState } from "react";
+import { Link2, Mail, Play, Share2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useLocale, useT } from "@/components/i18n-provider";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +33,113 @@ function duration(seconds: number) {
 }
 
 /**
+ * Link to one video: the start page opens on the videos section with that video
+ * picked (`?video=` is 1-based), in the sharer's language.
+ */
+function videoLink(index: number, locale: string) {
+  const url = new URL("/start", window.location.origin);
+  url.searchParams.set("video", String(index + 1));
+  url.searchParams.set("lang", locale);
+  url.hash = "videos";
+  return url.toString();
+}
+
+/** `?video=` of the current URL as an index into `VIDEOS`, if valid. */
+function linkedVideo() {
+  const n = Number(new URLSearchParams(window.location.search).get("video"));
+  return Number.isInteger(n) && n >= 1 && n <= VIDEOS.length ? n - 1 : null;
+}
+
+/**
+ * Share menu of the playing video: copy the link, email, LinkedIn, WhatsApp and
+ * the system share sheet where the browser has one. The player's own "⋮" menu
+ * belongs to the browser and cannot take a share item.
+ */
+function ShareVideo({ index, title }: { index: number; title: string }) {
+  const t = useT();
+  const locale = useLocale();
+  // Known only in the browser: rendered after mount to match the server HTML.
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => setCanShare(typeof navigator.share === "function"), []);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(videoLink(index, locale));
+      toast.success(t.start.shareCopied);
+    } catch {
+      toast.error(t.start.shareCopyFailed);
+    }
+  }
+
+  function open(url: string) {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  async function systemShare() {
+    try {
+      await navigator.share({ title, url: videoLink(index, locale) });
+    } catch {
+      // Closed by the visitor, or refused: nothing to report.
+    }
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="shrink-0">
+          <Share2 />
+          {t.start.shareVideo}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={copy}>
+          <Link2 />
+          {t.start.shareCopyLink}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() => {
+            const link = videoLink(index, locale);
+            // Same tab: a mail client opens, the page stays.
+            window.location.href = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${title}
+${link}`)}`;
+          }}
+        >
+          <Mail />
+          {t.start.shareEmail}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() =>
+            open(
+              `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(videoLink(index, locale))}`,
+            )
+          }
+        >
+          LinkedIn
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() =>
+            open(
+              `https://wa.me/?text=${encodeURIComponent(`${title} ${videoLink(index, locale)}`)}`,
+            )
+          }
+        >
+          WhatsApp
+        </DropdownMenuItem>
+        {canShare && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={systemShare}>
+              <Share2 />
+              {t.start.shareMore}
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/**
  * One player and the list of videos: picking one plays it, and the next one
  * follows when a video ends.
  */
@@ -36,6 +153,12 @@ export function VideoTour({
   const [autoplay, setAutoplay] = useState(false);
   const video = VIDEOS[active];
 
+  // A shared link (`?video=`) opens on that video, without playing it.
+  useEffect(() => {
+    const linked = linkedVideo();
+    if (linked !== null) setActive(linked);
+  }, []);
+
   function pick(index: number) {
     setActive(index);
     setAutoplay(true);
@@ -45,33 +168,41 @@ export function VideoTour({
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:gap-8">
       {/* self-center: the frame keeps the video's height instead of
           stretching to the list's, which left a black band under it. */}
-      <div className="self-center overflow-hidden rounded-2xl border bg-black shadow-sm">
-        <video
-          // A new file: a fresh element, so the poster and progress reset.
-          key={video.file}
-          src={`/videos/${video.file}.mp4`}
-          poster={`/videos/${video.file}.jpg`}
-          width={video.width}
-          height={video.height}
-          aria-label={videos[active].title}
-          controls
-          playsInline
-          preload="metadata"
-          autoPlay={autoplay}
-          onEnded={() => {
-            if (active < VIDEOS.length - 1) pick(active + 1);
-          }}
-          className="block h-auto w-full"
-        >
-          {/* The same English text as the burned-in subtitles, for screen
+      <div className="flex flex-col gap-3 self-center">
+        <div className="overflow-hidden rounded-2xl border bg-black shadow-sm">
+          <video
+            // A new file: a fresh element, so the poster and progress reset.
+            key={video.file}
+            src={`/videos/${video.file}.mp4`}
+            poster={`/videos/${video.file}.jpg`}
+            width={video.width}
+            height={video.height}
+            aria-label={videos[active].title}
+            controls
+            playsInline
+            preload="metadata"
+            autoPlay={autoplay}
+            onEnded={() => {
+              if (active < VIDEOS.length - 1) pick(active + 1);
+            }}
+            className="block h-auto w-full"
+          >
+            {/* The same English text as the burned-in subtitles, for screen
               readers and players that read captions; off by default. */}
-          <track
-            kind="captions"
-            src={`/videos/${video.file}.vtt`}
-            srcLang="en"
-            label="English"
-          />
-        </video>
+            <track
+              kind="captions"
+              src={`/videos/${video.file}.vtt`}
+              srcLang="en"
+              label="English"
+            />
+          </video>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <p className="min-w-0 truncate text-sm font-medium">
+            {videos[active].title}
+          </p>
+          <ShareVideo index={active} title={videos[active].title} />
+        </div>
       </div>
 
       <ol className="flex flex-col gap-2">

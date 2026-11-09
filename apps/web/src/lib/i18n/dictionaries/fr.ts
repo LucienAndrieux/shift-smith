@@ -126,6 +126,12 @@ export const fr: Dictionary = {
     videosTitle: "La démo en quatre courtes vidéos",
     videosText:
       "Chacune montre une partie de l'application sur les données de la démo, en anglais sous-titré.",
+    shareVideo: "Partager",
+    shareCopyLink: "Copier le lien",
+    shareCopied: "Lien copié",
+    shareCopyFailed: "Impossible de copier le lien",
+    shareEmail: "E-mail",
+    shareMore: "Autres options…",
     videos: [
       {
         title: "Les erreurs repérées pendant la saisie",

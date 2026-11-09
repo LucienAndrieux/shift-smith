@@ -126,6 +126,12 @@ export const en = {
     videosTitle: "See it in four short videos",
     videosText:
       "Each one shows a part of the app on the demo data, in English with subtitles.",
+    shareVideo: "Share",
+    shareCopyLink: "Copy link",
+    shareCopied: "Link copied",
+    shareCopyFailed: "Could not copy the link",
+    shareEmail: "Email",
+    shareMore: "More options…",
     videos: [
       {
         title: "Mistakes caught as you plan",
