@@ -4,7 +4,6 @@ import { Link2, Mail, Play, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useLocale, useT } from "@/components/i18n-provider";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,9 +52,19 @@ function linkedVideo() {
 /**
  * Share menu of the playing video: copy the link, email, LinkedIn, WhatsApp and
  * the system share sheet where the browser has one. The player's own "⋮" menu
- * belongs to the browser and cannot take a share item.
+ * belongs to the browser and cannot take a share item, so the menu opens from a
+ * round icon in the player's top-right corner, as on video sites.
  */
-function ShareVideo({ index, title }: { index: number; title: string }) {
+function ShareVideo({
+  index,
+  title,
+  paused,
+}: {
+  index: number;
+  title: string;
+  /** The icon shows while paused, and on hover or focus while playing. */
+  paused: boolean;
+}) {
   const t = useT();
   const locale = useLocale();
   // Known only in the browser: rendered after mount to match the server HTML.
@@ -86,10 +95,17 @@ function ShareVideo({ index, title }: { index: number; title: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="shrink-0">
-          <Share2 />
-          {t.start.shareVideo}
-        </Button>
+        <button
+          type="button"
+          aria-label={t.start.shareVideo}
+          title={t.start.shareVideo}
+          className={cn(
+            "absolute top-3 right-3 z-10 flex size-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur transition-opacity hover:bg-black/80 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none data-[state=open]:opacity-100",
+            paused ? "opacity-100" : "opacity-0 group-hover/player:opacity-100",
+          )}
+        >
+          <Share2 className="size-5" />
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onSelect={copy}>
@@ -151,6 +167,8 @@ export function VideoTour({
   const [active, setActive] = useState(0);
   // Off on load: a video only plays once the visitor picks one or presses play.
   const [autoplay, setAutoplay] = useState(false);
+  // Hides the share icon while the video plays (shown again on hover).
+  const [paused, setPaused] = useState(true);
   const video = VIDEOS[active];
 
   // A shared link (`?video=`) opens on that video, without playing it.
@@ -162,6 +180,8 @@ export function VideoTour({
   function pick(index: number) {
     setActive(index);
     setAutoplay(true);
+    // The new video's `play` event hides the icon again, if autoplay is allowed.
+    setPaused(true);
   }
 
   return (
@@ -169,7 +189,7 @@ export function VideoTour({
       {/* self-center: the frame keeps the video's height instead of
           stretching to the list's, which left a black band under it. */}
       <div className="flex flex-col gap-3 self-center">
-        <div className="overflow-hidden rounded-2xl border bg-black shadow-sm">
+        <div className="group/player relative overflow-hidden rounded-2xl border bg-black shadow-sm">
           <video
             // A new file: a fresh element, so the poster and progress reset.
             key={video.file}
@@ -182,6 +202,8 @@ export function VideoTour({
             playsInline
             preload="metadata"
             autoPlay={autoplay}
+            onPlay={() => setPaused(false)}
+            onPause={() => setPaused(true)}
             onEnded={() => {
               if (active < VIDEOS.length - 1) pick(active + 1);
             }}
@@ -196,13 +218,15 @@ export function VideoTour({
               label="English"
             />
           </video>
+          <ShareVideo
+            paused={paused}
+            index={active}
+            title={videos[active].title}
+          />
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <p className="min-w-0 truncate text-sm font-medium">
-            {videos[active].title}
-          </p>
-          <ShareVideo index={active} title={videos[active].title} />
-        </div>
+        <p className="min-w-0 truncate text-sm font-medium">
+          {videos[active].title}
+        </p>
       </div>
 
       <ol className="flex flex-col gap-2">
